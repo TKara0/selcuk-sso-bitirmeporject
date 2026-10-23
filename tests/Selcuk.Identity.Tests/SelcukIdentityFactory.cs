@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Selcuk.Identity.Data;
+using Selcuk.Identity.Oidc;
 
 namespace Selcuk.Identity.Tests;
 
@@ -21,6 +22,9 @@ namespace Selcuk.Identity.Tests;
 public sealed partial class SelcukIdentityFactory : WebApplicationFactory<Program>
 {
     private readonly SqliteConnection _connection = new("DataSource=:memory:");
+
+    /// <summary>Back-Channel Logout POST'larını yakalayan sahte HTTP alıcısı (gerçek ağa çıkılmaz).</summary>
+    public SahteBackChannelAlicisi BackChannel { get; } = new();
 
     public SelcukIdentityFactory()
     {
@@ -45,6 +49,8 @@ public sealed partial class SelcukIdentityFactory : WebApplicationFactory<Progra
                 options.UseSqlite(_connection);
                 options.UseOpenIddict();
             });
+            services.AddHttpClient(BackChannelLogoutGonderici.HttpIstemciAdi)
+                .ConfigurePrimaryHttpMessageHandler(() => BackChannel);
         });
     }
 

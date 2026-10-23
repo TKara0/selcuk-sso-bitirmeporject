@@ -1,20 +1,33 @@
 @page
+@model Selcuk.Identity.Pages.IndexModel
 @{
-    ViewData["Title"] = "Ana sayfa";
+    ViewData["Title"] = "Uygulamalarım";
 }
 <section class="kart">
-    <h1>Tek Şifre Giriş</h1>
+    <h1>Uygulamalarım</h1>
     <p class="aciklama">
-        Fakülte ve bölüm web uygulamaları için merkezi kimlik doğrulama sunucusu.
-        Tek kullanıcı adı ve şifreyle tüm bağlı uygulamalara giriş yapılır.
+        Oturumunuz açık: <strong>@User.Identity?.Name</strong>. Aşağıdaki uygulamalara şifre girmeden geçebilirsiniz.
     </p>
-    @if (User.Identity?.IsAuthenticated == true)
+
+    @if (Model.Uygulamalar.Count == 0)
     {
-        <p>Oturum açık: <strong>@User.Identity.Name</strong></p>
-        <a class="dugme ikincil" href="/connect/logout">Çıkış yap</a>
+        <p>Kayıtlı uygulama bulunmuyor.</p>
     }
     else
     {
-        <a class="dugme birincil" asp-page="/Account/Login">Giriş yap</a>
+        <ul class="uygulamalar">
+            @foreach (var uygulama in Model.Uygulamalar)
+            {
+                <li>
+                    <a class="uygulama" href="@uygulama.GirisAdresi">
+                        <strong>@uygulama.Ad</strong>
+                        <span>@uygulama.Aciklama</span>
+                        <small>@uygulama.AnaSayfa</small>
+                    </a>
+                </li>
+            }
+        </ul>
     }
+
+    <a class="dugme ikincil cikis" href="/connect/logout">Çıkış yap</a>
 </section>

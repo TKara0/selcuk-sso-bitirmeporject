@@ -16,6 +16,9 @@ public static class OidcKimlik
     public const string FakulteClaim = "fakulte";
     public const string BolumClaim = "bolum";
 
+    /// <summary>Kimlik sunucusu oturum kimliği (OIDC Back-Channel Logout 1.0, "sid").</summary>
+    public const string SidClaim = "sid";
+
     public static ClaimsIdentity YeniKimlik() =>
         new(TokenValidationParameters.DefaultAuthenticationType, Claims.Name, Claims.Role);
 
@@ -67,6 +70,11 @@ public static class OidcKimlik
                     yield return Destinations.AccessToken;
                     yield return Destinations.IdentityToken;
                 }
+                yield break;
+
+            // sid yalnızca id_token'da: istemci, Back-Channel Logout bildirimini oturumuyla eşler.
+            case SidClaim:
+                yield return Destinations.IdentityToken;
                 yield break;
 
             // Identity'nin güvenlik damgası hiçbir tokena yazılmaz.

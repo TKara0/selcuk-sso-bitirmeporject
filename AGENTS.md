@@ -16,20 +16,34 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   - **OpenIddict Server**: authorize, token, userinfo, end-session ve discovery uç noktaları.
     Authorization Code + PKCE (zorunlu, yalnızca S256) ve Refresh Token akışları. Access token'lar imzalı JWT.
     `profile` kapsamıyla `name`, `fakulte`, `bolum`; `roles` kapsamıyla `role` claim'leri verilir.
-  - **İstemciler**: tanımlar `Data/Istemciler.cs` içinde. `demo-obis` (gizli istemci, PKCE zorunlu, explicit onay)
-    Development'ta açılışta oluşturulur veya güncellenir; secret user-secrets'tan okunur.
-  - **EF Core + SQL Server** (geliştirmede LocalDB, veritabanı `SelcukSSO`). Identity ve OpenIddict tabloları aynı
-    `ApplicationDbContext` içinde.
-  - **Razor Pages** (Türkçe arayüz): Giriş, Onay, Çıkış, Erişim reddedildi. Tüm yanıtlarda güvenlik başlıkları
-    (`GuvenlikBasliklari.cs`: nosniff, no-referrer, X-Frame-Options DENY, CSP).
-- `src/Selcuk.Demo.Obis`: ilk alt uygulama (https://localhost:5101). Razor Pages, Cookie + OpenID Connect istemcisi
-  (code + PKCE, `response_mode=query`, SaveTokens, userinfo). Rol bazlı sayfalar (Notlarım: ogrenci, Ders Yönetimi:
+  - **Oturum ve tek çıkış**: her kimlik sunucusu oturumuna bir `sid` verilir (`Oidc/OturumKimligi.cs`) ve id_token'a
+    yazılır. Token uç noktası hangi istemciye token verildiğini `IstemciOturumlari` tablosuna kaydeder. Çıkışta
+    `BackChannelLogoutGonderici` o sid'deki her istemcinin `backchannel_logout_uri`'sine imzalı `logout+jwt`
+    gönderir (OIDC Back-Channel Logout 1.0). Discovery'de `backchannel_logout_supported` ilan edilir.
+  - **İstemciler**: tanımlar `Data/Istemciler.cs` içinde. `demo-obis` ve `demo-yemekhane` (gizli istemci, PKCE
+    zorunlu, explicit onay) Development'ta açılışta oluşturulur veya güncellenir; secret'lar user-secrets'tan
+    okunur. Özel ayarlar (`backchannel_logout_uri`, `client_uri`, `initiate_login_uri`, `aciklama`) OpenIddict
+    `Properties` alanında.
+  - **EF Core + SQL Server** (geliştirmede LocalDB, veritabanı `SelcukSSO`). Identity, OpenIddict ve
+    `IstemciOturumlari` tabloları aynı `ApplicationDbContext` içinde.
+  - **Razor Pages** (Türkçe arayüz): Uygulamalarım (ana sayfa), Giriş, Onay, Çıkış, Erişim reddedildi. Tüm
+    yanıtlarda güvenlik başlıkları (`GuvenlikBasliklari.cs`: nosniff, no-referrer, X-Frame-Options DENY, CSP).
+- `src/Selcuk.Istemci.Ortak`: alt uygulamaların ortak kütüphanesi. `AddSelcukSSO(configuration)` (Cookie + OIDC,
+  code + PKCE, `response_mode=query`, SaveTokens, userinfo, claim eşlemeleri, `DefaultForbidScheme` = cookie),
+  `UseSelcukGuvenlikBasliklari()`, `MapSelcukBackChannelLogout()` (POST `/signout-backchannel`: logout_token
+  doğrulama, jti tekrar koruması, sid iptali) ve `OturumIptalDeposu` (iptal edilen oturumu çerez doğrulamasında
+  reddeder). Yeni bir alt uygulama bu kütüphaneyle bağlanır.
+- `src/Selcuk.Demo.Obis` (https://localhost:5101): rol bazlı sayfalar (Notlarım: ogrenci, Ders Yönetimi:
   akademisyen), Profilim, yalnızca Development'ta Token İnceleme, RP-initiated logout. Veriler uydurmadır.
-- `tests/Selcuk.Identity.Tests`: xUnit + `WebApplicationFactory` entegrasyon ve uçtan uca protokol testleri. Her test
-  SQLite in-memory üzerinde kendi veritabanını kullanır; ortam adı `Testing`.
-- `tests/Selcuk.Demo.Obis.Tests`: Demo OBİS yönlendirme ve rol testleri; gerçek kimlik sunucusu yerine sabit
-  discovery bilgisi ve sahte kimlik doğrulama şeması kullanır.
-- `scripts/run-all.ps1`: iki uygulamayı ayrı pencerelerde başlatır.
+- `src/Selcuk.Demo.Yemekhane` (https://localhost:5102): Haftalık menü (herkese açık), Rezervasyonlarım (bellek içi),
+  Yemekhane Yönetimi (personel), Profilim, RP-initiated logout. Veriler uydurmadır.
+- `tests/Selcuk.Identity.Tests`: xUnit + `WebApplicationFactory` entegrasyon, uçtan uca protokol, tek giriş ve tek
+  çıkış testleri. Her test SQLite in-memory üzerinde kendi veritabanını kullanır; ortam adı `Testing`. Back-Channel
+  Logout POST'ları sahte HTTP handler ile yakalanır.
+- `tests/Selcuk.Istemci.Ortak.Tests`: Back-Channel Logout alıcısı testleri; yerel RSA anahtarı ve sahte JWKS.
+- `tests/Selcuk.Demo.Obis.Tests`, `tests/Selcuk.Demo.Yemekhane.Tests`: yönlendirme ve rol testleri; gerçek kimlik
+  sunucusu yerine sabit discovery bilgisi ve sahte kimlik doğrulama şeması kullanır.
+- `scripts/run-all.ps1`: üç uygulamayı ayrı pencerelerde başlatır.
 
 Ayrıntılar için `README.md` dosyasına bakın.
 
@@ -64,7 +78,8 @@ dotnet build
 dotnet test
 dotnet run --project src/Selcuk.Identity                                   # https://localhost:5001
 dotnet run --project src/Selcuk.Demo.Obis                                  # https://localhost:5101
-powershell -ExecutionPolicy Bypass -File scripts\run-all.ps1               # ikisi birlikte
+dotnet run --project src/Selcuk.Demo.Yemekhane                             # https://localhost:5102
+powershell -ExecutionPolicy Bypass -File scripts\run-all.ps1               # üçü birlikte
 dotnet tool restore
 dotnet ef migrations add <Ad> --project src/Selcuk.Identity --output-dir Data/Migrations
 dotnet ef database update --project src/Selcuk.Identity

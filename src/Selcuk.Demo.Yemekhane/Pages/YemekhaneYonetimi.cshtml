@@ -1,0 +1,22 @@
+@page
+@model Selcuk.Demo.Yemekhane.Pages.YemekhaneYonetimiModel
+@{
+    ViewData["Title"] = "Yemekhane Yönetimi";
+}
+<section class="kart genis">
+    <h1>Yemekhane Yönetimi</h1>
+    <p class="aciklama">Önümüzdeki iş günleri için rezervasyon sayıları.</p>
+    <div class="tablo-kap">
+        <table>
+            <thead>
+                <tr><th>Gün</th><th>Rezervasyon</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var (gun, sayi) in Model.Sayilar)
+                {
+                    <tr><td>@Takvim.Yaz(gun)</td><td><strong>@sayi</strong></td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>

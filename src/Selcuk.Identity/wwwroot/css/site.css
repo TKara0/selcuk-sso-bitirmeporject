@@ -121,6 +121,23 @@ input:focus-visible, .dugme:focus-visible {
 
 .alan-hatasi { color: var(--hata); font-size: 0.875rem; }
 
+.uygulamalar { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.uygulama {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 14px 16px;
+    color: var(--metin);
+    text-decoration: none;
+    border: 1px solid var(--cizgi);
+    border-radius: 8px;
+}
+.uygulama:hover, .uygulama:focus-visible { border-color: var(--vurgu); }
+.uygulama strong { color: var(--vurgu); }
+.uygulama span { color: var(--soluk); font-size: 0.9rem; }
+.uygulama small { color: var(--soluk); font-size: 0.8rem; overflow-wrap: anywhere; }
+.cikis { margin-top: 20px; }
+
 .kapsamlar { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--cizgi); }
 .kapsamlar li {
     display: flex;

@@ -1,0 +1,44 @@
+@page
+@model Selcuk.Demo.Yemekhane.Pages.RezervasyonlarimModel
+@{
+    ViewData["Title"] = "Rezervasyonlarım";
+}
+<section class="kart genis">
+    <h1>Rezervasyonlarım</h1>
+    <p class="aciklama">Öğle yemeği için gün seçip rezervasyon yapın veya iptal edin (veriler bellekte tutulur).</p>
+
+    @if (Model.Bos.Count > 0)
+    {
+        <form method="post" asp-page-handler="Ekle" class="satir-form">
+            <label for="gun">Gün</label>
+            <select id="gun" name="gun">
+                @foreach (var gun in Model.Bos)
+                {
+                    <option value="@gun.ToString("yyyy-MM-dd")">@Takvim.Yaz(gun)</option>
+                }
+            </select>
+            <button type="submit" class="dugme birincil">Rezervasyon yap</button>
+        </form>
+    }
+
+    <h2>Kayıtlı rezervasyonlar</h2>
+    @if (Model.Rezervasyonlar.Count == 0)
+    {
+        <p class="ipucu">Henüz rezervasyonunuz yok.</p>
+    }
+    else
+    {
+        <ul class="liste">
+            @foreach (var gun in Model.Rezervasyonlar)
+            {
+                <li>
+                    <span>@Takvim.Yaz(gun)</span>
+                    <form method="post" asp-page-handler="Iptal" class="satir-ici">
+                        <input type="hidden" name="gun" value="@gun.ToString("yyyy-MM-dd")" />
+                        <button type="submit" class="dugme ikincil">İptal et</button>
+                    </form>
+                </li>
+            }
+        </ul>
+    }
+</section>

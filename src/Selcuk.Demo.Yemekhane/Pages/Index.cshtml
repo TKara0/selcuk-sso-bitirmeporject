@@ -1,0 +1,27 @@
+@page
+@inject TimeProvider Zaman
+@{
+    ViewData["Title"] = "Haftalık menü";
+    var menu = Takvim.HaftalikMenu(DateOnly.FromDateTime(Zaman.GetLocalNow().DateTime));
+}
+<section class="kart genis">
+    <h1>Haftalık menü</h1>
+    <p class="aciklama">Bu haftanın öğle yemeği menüsü (örnek veri).</p>
+    <div class="tablo-kap">
+        <table>
+            <thead>
+                <tr><th>Gün</th><th>Çorba</th><th>Ana yemek</th><th>Yardımcı</th><th>Tatlı / içecek</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var gun in menu)
+                {
+                    <tr><td>@Takvim.Yaz(gun.Gun)</td><td>@gun.Corba</td><td>@gun.AnaYemek</td><td>@gun.Yardimci</td><td>@gun.Tatli</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    @if (User.Identity?.IsAuthenticated != true)
+    {
+        <p class="ipucu">Rezervasyon yapmak için <a asp-page="/Giris">giriş yapın</a>.</p>
+    }
+</section>

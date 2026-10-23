@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.CookiePolicy;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using OpenIddict.Server;
 using Selcuk.Identity;
 using Selcuk.Identity.Data;
 using Selcuk.Identity.Oidc;
@@ -48,7 +50,17 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.LoginPath = "/Account/Login";
     options.LogoutPath = "/connect/logout";
     options.AccessDeniedPath = "/Account/AccessDenied";
+    // Her oturuma bir oturum kimliği (sid) verilir; id_token'a ve Back-Channel Logout'a girer.
+    options.Events.OnSigningIn = OturumKimligi.OturumAcilirkenAsync;
 });
+
+builder.Services.Configure<SecurityStampValidatorOptions>(options =>
+    options.OnRefreshingPrincipal = OturumKimligi.PrincipalYenilenirkenAsync);
+
+builder.Services.TryAddSingleton(TimeProvider.System);
+builder.Services.AddHttpClient(BackChannelLogoutGonderici.HttpIstemciAdi,
+    client => client.Timeout = TimeSpan.FromSeconds(5));
+builder.Services.AddScoped<BackChannelLogoutGonderici>();
 
 builder.Services.AddAntiforgery(options =>
 {
@@ -93,6 +105,17 @@ builder.Services.AddOpenIddict()
         options.Configure(server => server.CodeChallengeMethods.Remove(CodeChallengeMethods.Plain));
 
         options.RegisterScopes(Scopes.OpenId, Scopes.Profile, Scopes.Email, Scopes.Roles);
+        options.RegisterClaims(Claims.Subject, Claims.Name, Claims.Email, Claims.Role,
+            OidcKimlik.FakulteClaim, OidcKimlik.BolumClaim, OidcKimlik.SidClaim);
+
+        // OIDC Back-Channel Logout 1.0 desteği discovery'de ilan edilir (gönderim: BackChannelLogoutGonderici).
+        options.AddEventHandler<OpenIddictServerEvents.HandleConfigurationRequestContext>(handler =>
+            handler.UseInlineHandler(context =>
+            {
+                context.Metadata["backchannel_logout_supported"] = true;
+                context.Metadata["backchannel_logout_session_supported"] = true;
+                return default;
+            }));
 
         if (builder.Environment.IsDevelopment())
         {

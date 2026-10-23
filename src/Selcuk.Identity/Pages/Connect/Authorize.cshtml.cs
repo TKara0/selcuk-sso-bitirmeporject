@@ -72,7 +72,8 @@ public class AuthorizeModel(
             case ConsentTypes.Implicit:
             case ConsentTypes.External:
             case ConsentTypes.Explicit when authorizations.Count is not 0 && !request.HasPromptValue(PromptValues.Consent):
-                return await OturumAcAsync(user, application, request, authorizations.LastOrDefault());
+                return await OturumAcAsync(user, application, request, authorizations.LastOrDefault(),
+                    result.Principal.FindFirst(OidcKimlik.SidClaim)?.Value);
 
             case ConsentTypes.Explicit when request.HasPromptValue(PromptValues.None):
             case ConsentTypes.Systematic when request.HasPromptValue(PromptValues.None):
@@ -107,14 +108,17 @@ public class AuthorizeModel(
             return Reddet(Errors.ConsentRequired, "Bu uygulamaya erişim yetkiniz yok.");
         }
 
-        return await OturumAcAsync(user, application, request, authorizations.LastOrDefault());
+        return await OturumAcAsync(user, application, request, authorizations.LastOrDefault(),
+            User.FindFirst(OidcKimlik.SidClaim)?.Value);
     }
 
     private async Task<IActionResult> OturumAcAsync(
-        ApplicationUser user, object application, OpenIddictRequest request, object? authorization)
+        ApplicationUser user, object application, OpenIddictRequest request, object? authorization, string? sid)
     {
         var identity = OidcKimlik.YeniKimlik();
         await OidcKimlik.KullaniciClaimleriniEkleAsync(identity, user, userManager);
+        // Kimlik sunucusu oturumu: aynı oturumdan giriş yapılan tüm istemcilere aynı sid verilir.
+        identity.SetClaim(OidcKimlik.SidClaim, sid);
 
         identity.SetScopes(request.GetScopes());
         identity.SetResources(await scopeManager.ListResourcesAsync(identity.GetScopes()).ToListAsync());

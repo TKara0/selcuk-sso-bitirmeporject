@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
 using Selcuk.Identity.Data;
@@ -25,7 +26,9 @@ public static class OidcUcNoktalari
     private static async Task<IResult> TokenAsync(
         HttpContext context,
         UserManager<ApplicationUser> userManager,
-        SignInManager<ApplicationUser> signInManager)
+        SignInManager<ApplicationUser> signInManager,
+        ApplicationDbContext db,
+        TimeProvider zaman)
     {
         var request = context.GetOpenIddictServerRequest()
             ?? throw new InvalidOperationException("OpenID Connect isteği alınamadı.");
@@ -52,8 +55,34 @@ public static class OidcUcNoktalari
         await OidcKimlik.KullaniciClaimleriniEkleAsync(identity, user, userManager);
         identity.SetDestinations(OidcKimlik.Hedefler);
 
+        // Bu oturumda bu istemciye token verildiği kaydedilir; çıkışta Back-Channel Logout bildirimi gider.
+        var clientId = request.ClientId ?? result.Principal.GetPresenters().FirstOrDefault();
+        if (request.IsAuthorizationCodeGrantType()
+            && identity.GetClaim(OidcKimlik.SidClaim) is { } sid && clientId is not null)
+        {
+            await IstemciOturumuKaydetAsync(db, zaman, sid, user.Id, clientId);
+        }
+
         return Results.SignIn(new ClaimsPrincipal(identity),
             authenticationScheme: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+    }
+
+    private static async Task IstemciOturumuKaydetAsync(
+        ApplicationDbContext db, TimeProvider zaman, string sid, string kullaniciId, string clientId)
+    {
+        if (await db.IstemciOturumlari.AnyAsync(o => o.Sid == sid && o.ClientId == clientId))
+        {
+            return;
+        }
+
+        db.IstemciOturumlari.Add(new IstemciOturumu
+        {
+            Sid = sid,
+            KullaniciId = kullaniciId,
+            ClientId = clientId,
+            OlusturmaZamani = zaman.GetUtcNow(),
+        });
+        await db.SaveChangesAsync();
     }
 
     private static async Task<IResult> UserInfoAsync(HttpContext context, UserManager<ApplicationUser> userManager)

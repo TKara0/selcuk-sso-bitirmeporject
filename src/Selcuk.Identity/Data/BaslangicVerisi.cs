@@ -5,7 +5,7 @@ namespace Selcuk.Identity.Data;
 
 /// <summary>
 /// Uygulama açılışında rolleri oluşturur. Yalnızca Development ortamında, şifreleri
-/// user-secrets'tan okunan test kullanıcılarını ve demo-obis istemcisini ekler.
+/// user-secrets'tan okunan test kullanıcılarını ve demo istemcileri (demo-obis, demo-yemekhane) ekler.
 /// </summary>
 public sealed class BaslangicVerisi(
     IServiceProvider services,
@@ -56,35 +56,37 @@ public sealed class BaslangicVerisi(
             }
 
             var applicationManager = scope.ServiceProvider.GetRequiredService<IOpenIddictApplicationManager>();
-            await DemoObisKaydetAsync(applicationManager);
+            await IstemciKaydetAsync(applicationManager, "Istemciler:DemoObis:ClientSecret", Istemciler.DemoObis);
+            await IstemciKaydetAsync(applicationManager, "Istemciler:DemoYemekhane:ClientSecret", Istemciler.DemoYemekhane);
         }
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
-    private async Task DemoObisKaydetAsync(IOpenIddictApplicationManager applicationManager)
+    private async Task IstemciKaydetAsync(
+        IOpenIddictApplicationManager applicationManager,
+        string secretAnahtari,
+        Func<string, OpenIddictApplicationDescriptor> tanim)
     {
-        var secret = configuration["Istemciler:DemoObis:ClientSecret"];
+        var secret = configuration[secretAnahtari];
         if (string.IsNullOrEmpty(secret))
         {
-            logger.LogWarning(
-                "{ClientId} istemcisi kaydedilmedi: 'Istemciler:DemoObis:ClientSecret' user-secrets'ta tanımlı değil.",
-                Istemciler.DemoObisClientId);
+            logger.LogWarning("İstemci kaydedilmedi: '{Anahtar}' user-secrets'ta tanımlı değil.", secretAnahtari);
             return;
         }
 
-        var descriptor = Istemciler.DemoObis(secret);
-        var mevcut = await applicationManager.FindByClientIdAsync(Istemciler.DemoObisClientId);
+        var descriptor = tanim(secret);
+        var mevcut = await applicationManager.FindByClientIdAsync(descriptor.ClientId!);
         if (mevcut is null)
         {
             await applicationManager.CreateAsync(descriptor);
-            logger.LogInformation("İstemci kaydedildi: {ClientId}", Istemciler.DemoObisClientId);
+            logger.LogInformation("İstemci kaydedildi: {ClientId}", descriptor.ClientId);
         }
         else
         {
-            // Tanım (izinler, adresler, secret) her açılışta user-secrets ve koddaki hâliyle eşitlenir.
+            // Tanım (izinler, adresler, özel ayarlar, secret) her açılışta user-secrets ve koddaki hâliyle eşitlenir.
             await applicationManager.UpdateAsync(mevcut, descriptor);
-            logger.LogInformation("İstemci güncellendi: {ClientId}", Istemciler.DemoObisClientId);
+            logger.LogInformation("İstemci güncellendi: {ClientId}", descriptor.ClientId);
         }
     }
 
