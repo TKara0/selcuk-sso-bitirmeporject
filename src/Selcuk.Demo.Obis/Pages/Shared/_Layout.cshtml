@@ -1,0 +1,44 @@
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Ortam
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] · Demo OBİS</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <header class="ust">
+        <a class="marka" href="/">Demo OBİS — test uygulaması</a>
+        <nav class="menu">
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                @if (User.IsInRole(Roller.Ogrenci))
+                {
+                    <a asp-page="/Notlarim">Notlarım</a>
+                }
+                @if (User.IsInRole(Roller.Akademisyen))
+                {
+                    <a asp-page="/DersYonetimi">Ders Yönetimi</a>
+                }
+                <a asp-page="/Profilim">Profilim</a>
+                @if (Ortam.IsDevelopment())
+                {
+                    <a asp-page="/TokenInceleme">Token İnceleme</a>
+                }
+                <form method="post" asp-page="/Cikis" class="satir-ici">
+                    <button type="submit" class="baglanti">Çıkış</button>
+                </form>
+            }
+            else
+            {
+                <a asp-page="/Giris">Giriş yap</a>
+            }
+        </nav>
+    </header>
+    <main class="kap">
+        @RenderBody()
+    </main>
+    <footer class="alt">Bu uygulama yalnızca test amaçlıdır; veriler uydurmadır.</footer>
+</body>
+</html>

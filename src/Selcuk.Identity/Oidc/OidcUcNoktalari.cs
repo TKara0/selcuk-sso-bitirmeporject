@@ -78,6 +78,16 @@ public static class OidcUcNoktalari
         {
             claims[Claims.Name] = user.AdSoyad;
             claims[Claims.PreferredUsername] = user.UserName!;
+
+            if (user.Fakulte is not null)
+            {
+                claims[OidcKimlik.FakulteClaim] = user.Fakulte;
+            }
+
+            if (user.Bolum is not null)
+            {
+                claims[OidcKimlik.BolumClaim] = user.Bolum;
+            }
         }
 
         if (principal.HasScope(Scopes.Email))

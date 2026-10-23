@@ -55,23 +55,38 @@ public sealed partial class SelcukIdentityFactory : WebApplicationFactory<Progra
     });
 
     /// <summary>Rastgele adlı ve çalışma anında üretilmiş şifreli bir kullanıcı oluşturur.</summary>
-    public async Task<(string KullaniciAdi, string Sifre)> KullaniciOlusturAsync()
+    public async Task<(string KullaniciAdi, string Sifre)> KullaniciOlusturAsync(
+        string? rol = null, string? fakulte = null, string? bolum = null)
     {
         var kullaniciAdi = $"test.{Guid.NewGuid():N}"[..13];
         var sifre = $"Aa1{Guid.NewGuid():N}";
 
         await using var scope = Services.CreateAsyncScope();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-        var sonuc = await userManager.CreateAsync(new ApplicationUser
+        var kullanici = new ApplicationUser
         {
             UserName = kullaniciAdi,
             Email = $"{kullaniciAdi}@test.local",
             EmailConfirmed = true,
             AdSoyad = "Test Kullanıcısı",
-        }, sifre);
+            Fakulte = fakulte,
+            Bolum = bolum,
+        };
+        var sonuc = await userManager.CreateAsync(kullanici, sifre);
+        if (sonuc.Succeeded && rol is not null)
+        {
+            sonuc = await userManager.AddToRoleAsync(kullanici, rol);
+        }
 
         Assert.True(sonuc.Succeeded, string.Join("; ", sonuc.Errors.Select(e => e.Description)));
         return (kullaniciAdi, sifre);
+    }
+
+    public static string AntiforgeryTokenAl(string html)
+    {
+        var token = AntiforgeryToken().Match(html).Groups[1].Value;
+        Assert.False(string.IsNullOrEmpty(token), "Formda antiforgery token bulunamadı.");
+        return token;
     }
 
     /// <summary>Giriş formunu antiforgery token'ıyla birlikte gönderir.</summary>
@@ -80,8 +95,7 @@ public sealed partial class SelcukIdentityFactory : WebApplicationFactory<Progra
         var sayfa = await client.GetAsync("/Account/Login");
         Assert.Equal(HttpStatusCode.OK, sayfa.StatusCode);
 
-        var token = AntiforgeryToken().Match(await sayfa.Content.ReadAsStringAsync()).Groups[1].Value;
-        Assert.False(string.IsNullOrEmpty(token), "Giriş formunda antiforgery token bulunamadı.");
+        var token = AntiforgeryTokenAl(await sayfa.Content.ReadAsStringAsync());
 
         return await client.PostAsync("/Account/Login", new FormUrlEncodedContent(new Dictionary<string, string>
         {

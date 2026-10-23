@@ -14,12 +14,22 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   - **ASP.NET Core Identity**: kullanıcılar (`ApplicationUser`: `AdSoyad`, `Fakulte`, `Bolum`), roller
     (`ogrenci`, `akademisyen`, `personel`), şifre politikası, hesap kilitleme.
   - **OpenIddict Server**: authorize, token, userinfo, end-session ve discovery uç noktaları.
-    Authorization Code + PKCE (zorunlu) ve Refresh Token akışları. Access token'lar imzalı JWT.
+    Authorization Code + PKCE (zorunlu, yalnızca S256) ve Refresh Token akışları. Access token'lar imzalı JWT.
+    `profile` kapsamıyla `name`, `fakulte`, `bolum`; `roles` kapsamıyla `role` claim'leri verilir.
+  - **İstemciler**: tanımlar `Data/Istemciler.cs` içinde. `demo-obis` (gizli istemci, PKCE zorunlu, explicit onay)
+    Development'ta açılışta oluşturulur veya güncellenir; secret user-secrets'tan okunur.
   - **EF Core + SQL Server** (geliştirmede LocalDB, veritabanı `SelcukSSO`). Identity ve OpenIddict tabloları aynı
     `ApplicationDbContext` içinde.
-  - **Razor Pages** (Türkçe arayüz): Giriş, Onay, Çıkış, Erişim reddedildi.
-- `tests/Selcuk.Identity.Tests`: xUnit + `WebApplicationFactory` entegrasyon testleri. Her test SQLite in-memory
-  üzerinde kendi veritabanını kullanır; ortam adı `Testing`.
+  - **Razor Pages** (Türkçe arayüz): Giriş, Onay, Çıkış, Erişim reddedildi. Tüm yanıtlarda güvenlik başlıkları
+    (`GuvenlikBasliklari.cs`: nosniff, no-referrer, X-Frame-Options DENY, CSP).
+- `src/Selcuk.Demo.Obis`: ilk alt uygulama (https://localhost:5101). Razor Pages, Cookie + OpenID Connect istemcisi
+  (code + PKCE, `response_mode=query`, SaveTokens, userinfo). Rol bazlı sayfalar (Notlarım: ogrenci, Ders Yönetimi:
+  akademisyen), Profilim, yalnızca Development'ta Token İnceleme, RP-initiated logout. Veriler uydurmadır.
+- `tests/Selcuk.Identity.Tests`: xUnit + `WebApplicationFactory` entegrasyon ve uçtan uca protokol testleri. Her test
+  SQLite in-memory üzerinde kendi veritabanını kullanır; ortam adı `Testing`.
+- `tests/Selcuk.Demo.Obis.Tests`: Demo OBİS yönlendirme ve rol testleri; gerçek kimlik sunucusu yerine sabit
+  discovery bilgisi ve sahte kimlik doğrulama şeması kullanır.
+- `scripts/run-all.ps1`: iki uygulamayı ayrı pencerelerde başlatır.
 
 Ayrıntılar için `README.md` dosyasına bakın.
 
@@ -44,12 +54,17 @@ e) **Kriptografi elle yazılmaz.** Şifre özetleme, token imzalama/şifreleme v
 
 f) **Her değişiklikten sonra `dotnet build` ve `dotnet test` geçmelidir.**
 
+g) **Her adım sonunda sır kontrolünden geçmiş tek bir commit atılır ve origin/main'e push edilir; force push ve
+   geçmişi yeniden yazma yasak.**
+
 ## Sık kullanılan komutlar
 
 ```powershell
 dotnet build
 dotnet test
 dotnet run --project src/Selcuk.Identity                                   # https://localhost:5001
+dotnet run --project src/Selcuk.Demo.Obis                                  # https://localhost:5101
+powershell -ExecutionPolicy Bypass -File scripts\run-all.ps1               # ikisi birlikte
 dotnet tool restore
 dotnet ef migrations add <Ad> --project src/Selcuk.Identity --output-dir Data/Migrations
 dotnet ef database update --project src/Selcuk.Identity

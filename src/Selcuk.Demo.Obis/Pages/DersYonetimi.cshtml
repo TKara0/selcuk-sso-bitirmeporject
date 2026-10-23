@@ -1,0 +1,22 @@
+@page
+@model Selcuk.Demo.Obis.Pages.DersYonetimiModel
+@{
+    ViewData["Title"] = "Ders Yönetimi";
+}
+<section class="kart genis">
+    <h1>Ders Yönetimi</h1>
+    <p class="aciklama">Verdiğiniz dersler (örnek veri)</p>
+    <div class="tablo-kap">
+        <table>
+            <thead>
+                <tr><th>Kod</th><th>Ders</th><th>Dönem</th><th>Öğrenci</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var ders in SahteVeri.Dersler)
+                {
+                    <tr><td>@ders.Kod</td><td>@ders.Ad</td><td>@ders.Donem</td><td>@ders.OgrenciSayisi</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>

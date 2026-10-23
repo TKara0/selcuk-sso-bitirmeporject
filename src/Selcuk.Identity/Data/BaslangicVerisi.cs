@@ -1,10 +1,11 @@
 using Microsoft.AspNetCore.Identity;
+using OpenIddict.Abstractions;
 
 namespace Selcuk.Identity.Data;
 
 /// <summary>
 /// Uygulama açılışında rolleri oluşturur. Yalnızca Development ortamında, şifreleri
-/// user-secrets'tan okunan test kullanıcılarını ekler.
+/// user-secrets'tan okunan test kullanıcılarını ve demo-obis istemcisini ekler.
 /// </summary>
 public sealed class BaslangicVerisi(
     IServiceProvider services,
@@ -53,10 +54,39 @@ public sealed class BaslangicVerisi(
             {
                 await TestKullanicisiOlusturAsync(userManager, kullanici);
             }
+
+            var applicationManager = scope.ServiceProvider.GetRequiredService<IOpenIddictApplicationManager>();
+            await DemoObisKaydetAsync(applicationManager);
         }
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    private async Task DemoObisKaydetAsync(IOpenIddictApplicationManager applicationManager)
+    {
+        var secret = configuration["Istemciler:DemoObis:ClientSecret"];
+        if (string.IsNullOrEmpty(secret))
+        {
+            logger.LogWarning(
+                "{ClientId} istemcisi kaydedilmedi: 'Istemciler:DemoObis:ClientSecret' user-secrets'ta tanımlı değil.",
+                Istemciler.DemoObisClientId);
+            return;
+        }
+
+        var descriptor = Istemciler.DemoObis(secret);
+        var mevcut = await applicationManager.FindByClientIdAsync(Istemciler.DemoObisClientId);
+        if (mevcut is null)
+        {
+            await applicationManager.CreateAsync(descriptor);
+            logger.LogInformation("İstemci kaydedildi: {ClientId}", Istemciler.DemoObisClientId);
+        }
+        else
+        {
+            // Tanım (izinler, adresler, secret) her açılışta user-secrets ve koddaki hâliyle eşitlenir.
+            await applicationManager.UpdateAsync(mevcut, descriptor);
+            logger.LogInformation("İstemci güncellendi: {ClientId}", Istemciler.DemoObisClientId);
+        }
+    }
 
     private async Task TestKullanicisiOlusturAsync(UserManager<ApplicationUser> userManager, TestKullanicisi bilgi)
     {

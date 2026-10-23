@@ -1,0 +1,20 @@
+@page
+@{
+    ViewData["Title"] = "Ana sayfa";
+}
+<section class="kart">
+    <h1>Demo OBİS</h1>
+    <p class="aciklama">
+        Merkezi kimlik sunucusuna OpenID Connect ile bağlanan örnek öğrenci bilgi sistemi.
+        Tek kullanıcı adı ve şifrenizle giriş yapın.
+    </p>
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <p>Hoş geldiniz, <strong>@User.Identity.Name</strong>.</p>
+        <a class="dugme ikincil" asp-page="/Profilim">Profilim</a>
+    }
+    else
+    {
+        <a class="dugme birincil" asp-page="/Giris">Giriş yap</a>
+    }
+</section>

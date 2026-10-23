@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.CookiePolicy;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Selcuk.Identity;
 using Selcuk.Identity.Data;
 using Selcuk.Identity.Oidc;
 using static OpenIddict.Abstractions.OpenIddictConstants;
@@ -88,6 +89,8 @@ builder.Services.AddOpenIddict()
         options.AllowAuthorizationCodeFlow()
                .AllowRefreshTokenFlow();
         options.RequireProofKeyForCodeExchange();
+        // Yalnızca S256: "plain" yöntemi code_verifier'ı açıkta taşıdığı için kabul edilmez.
+        options.Configure(server => server.CodeChallengeMethods.Remove(CodeChallengeMethods.Plain));
 
         options.RegisterScopes(Scopes.OpenId, Scopes.Profile, Scopes.Email, Scopes.Roles);
 
@@ -121,6 +124,8 @@ builder.Services.AddRazorPages();
 builder.Services.AddHostedService<BaslangicVerisi>();
 
 var app = builder.Build();
+
+app.UseGuvenlikBasliklari();
 
 if (!app.Environment.IsDevelopment())
 {

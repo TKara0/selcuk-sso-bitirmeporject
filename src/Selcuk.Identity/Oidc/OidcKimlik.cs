@@ -12,6 +12,10 @@ namespace Selcuk.Identity.Oidc;
 /// </summary>
 public static class OidcKimlik
 {
+    /// <summary>Kuruma özel claim'ler; profile kapsamıyla birlikte verilir.</summary>
+    public const string FakulteClaim = "fakulte";
+    public const string BolumClaim = "bolum";
+
     public static ClaimsIdentity YeniKimlik() =>
         new(TokenValidationParameters.DefaultAuthenticationType, Claims.Name, Claims.Role);
 
@@ -22,6 +26,8 @@ public static class OidcKimlik
         identity.SetClaim(Claims.Subject, await userManager.GetUserIdAsync(user))
                 .SetClaim(Claims.Name, user.AdSoyad)
                 .SetClaim(Claims.PreferredUsername, await userManager.GetUserNameAsync(user))
+                .SetClaim(FakulteClaim, user.Fakulte)
+                .SetClaim(BolumClaim, user.Bolum)
                 .SetClaim(Claims.Email, await userManager.GetEmailAsync(user))
                 .SetClaims(Claims.Role, [.. await userManager.GetRolesAsync(user)]);
     }
@@ -39,7 +45,7 @@ public static class OidcKimlik
                 yield return Destinations.IdentityToken;
                 yield break;
 
-            case Claims.Name or Claims.PreferredUsername:
+            case Claims.Name or Claims.PreferredUsername or FakulteClaim or BolumClaim:
                 if (claim.Subject!.HasScope(Scopes.Profile))
                 {
                     yield return Destinations.AccessToken;

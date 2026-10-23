@@ -1,0 +1,33 @@
+@page
+@model Selcuk.Demo.Obis.Pages.TokenIncelemeModel
+@{
+    ViewData["Title"] = "Token İnceleme";
+}
+<section class="kart genis">
+    <h1>Token İnceleme</h1>
+    <p class="aciklama">
+        Yalnızca Development ortamında görünür. Token'ların çözülmüş header ve payload kısımları gösterilir;
+        imza kısmı gösterilmez.
+    </p>
+
+    @foreach (var token in Model.Tokenlar)
+    {
+        <h2>@token.Ad</h2>
+        @if (token.Bitis is { } bitis)
+        {
+            <p class="ipucu">
+                Son kullanma: <strong>@bitis.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")</strong>
+                (@(bitis > DateTimeOffset.UtcNow ? $"{(int)(bitis - DateTimeOffset.UtcNow).TotalMinutes} dk kaldı" : "süresi doldu"))
+            </p>
+        }
+        <h3>Header</h3>
+        <pre>@token.Header</pre>
+        <h3>Payload</h3>
+        <pre>@token.Payload</pre>
+    }
+
+    @if (Model.Tokenlar.Count == 0)
+    {
+        <p>Oturumda kayıtlı token bulunamadı.</p>
+    }
+</section>
