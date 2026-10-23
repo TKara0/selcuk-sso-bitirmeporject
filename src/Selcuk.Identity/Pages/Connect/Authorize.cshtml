@@ -1,0 +1,37 @@
+@page "/connect/authorize"
+@model Selcuk.Identity.Pages.Connect.AuthorizeModel
+@{
+    ViewData["Title"] = "Erişim onayı";
+}
+<section class="kart">
+    <h1>Erişim onayı</h1>
+    <p class="aciklama">
+        <strong>@Model.UygulamaAdi</strong> uygulaması hesabınıza erişmek istiyor.
+        İzin verirseniz aşağıdaki bilgiler bu uygulamayla paylaşılacak:
+    </p>
+
+    <ul class="kapsamlar">
+        @foreach (var kapsam in Model.Kapsamlar)
+        {
+            var (baslik, aciklama) = Selcuk.Identity.Pages.Connect.AuthorizeModel.KapsamBilgisi(kapsam);
+            <li><strong>@baslik</strong><span>@aciklama</span></li>
+        }
+    </ul>
+
+    <form method="post" asp-page="/Connect/Authorize">
+        @* OIDC isteğinin parametreleri onay formuyla birlikte yeniden gönderilir. *@
+        @foreach (var parametre in Request.Query)
+        {
+            foreach (var deger in parametre.Value)
+            {
+                <input type="hidden" name="@parametre.Key" value="@deger" />
+            }
+        }
+        <div class="dugmeler">
+            <button type="submit" name="karar" value="kabul" class="dugme birincil">İzin ver</button>
+            <button type="submit" name="karar" value="red" class="dugme ikincil">Reddet</button>
+        </div>
+    </form>
+
+    <p class="ipucu">Bu onay her uygulama için bir kez istenir.</p>
+</section>

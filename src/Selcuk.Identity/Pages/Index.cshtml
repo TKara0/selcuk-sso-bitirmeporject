@@ -1,0 +1,20 @@
+@page
+@{
+    ViewData["Title"] = "Ana sayfa";
+}
+<section class="kart">
+    <h1>Tek Şifre Giriş</h1>
+    <p class="aciklama">
+        Fakülte ve bölüm web uygulamaları için merkezi kimlik doğrulama sunucusu.
+        Tek kullanıcı adı ve şifreyle tüm bağlı uygulamalara giriş yapılır.
+    </p>
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <p>Oturum açık: <strong>@User.Identity.Name</strong></p>
+        <a class="dugme ikincil" href="/connect/logout">Çıkış yap</a>
+    }
+    else
+    {
+        <a class="dugme birincil" asp-page="/Account/Login">Giriş yap</a>
+    }
+</section>

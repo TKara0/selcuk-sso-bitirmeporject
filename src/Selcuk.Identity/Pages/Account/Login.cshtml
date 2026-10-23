@@ -1,0 +1,28 @@
+@page
+@model Selcuk.Identity.Pages.Account.LoginModel
+@{
+    ViewData["Title"] = "Giriş";
+}
+<section class="kart">
+    <h1>Giriş yap</h1>
+    <p class="aciklama">Tek kullanıcı adı ve şifrenizle tüm fakülte uygulamalarına erişin.</p>
+
+    <form method="post" class="form">
+        <div asp-validation-summary="ModelOnly" class="hata" role="alert"></div>
+        <input type="hidden" asp-for="ReturnUrl" />
+
+        <label asp-for="Input.KullaniciAdi"></label>
+        <input asp-for="Input.KullaniciAdi" autocomplete="username" autocapitalize="none" spellcheck="false" autofocus />
+        <span asp-validation-for="Input.KullaniciAdi" class="alan-hatasi"></span>
+
+        <label asp-for="Input.Sifre"></label>
+        <input asp-for="Input.Sifre" autocomplete="current-password" />
+        <span asp-validation-for="Input.Sifre" class="alan-hatasi"></span>
+
+        <button type="submit" class="dugme birincil">Giriş yap</button>
+    </form>
+
+    <p class="ipucu">
+        Öğrenciler öğrenci numarasıyla, akademik ve idari personel kullanıcı adıyla giriş yapar.
+    </p>
+</section>
