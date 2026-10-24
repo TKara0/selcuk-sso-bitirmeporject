@@ -195,8 +195,16 @@ yeterlidir (bkz. öneriler).
    ```
 4. **Ayarları yazın** (`appsettings.json`):
    ```json
-   "Kimlik": { "Authority": "https://localhost:5001", "ClientId": "<client_id>", "CerezAdi": "<Uygulama>.Oturum" }
+   "Kimlik": {
+     "Authority": "https://localhost:5001",
+     "ClientId": "<client_id>",
+     "CerezAdi": "<Uygulama>.Oturum",
+     "GirisHatasiYolu": "/GirisHatasi"
+   }
    ```
+   `GirisHatasiYolu` isteğe bağlıdır (varsayılan `/GirisHatasi`): `/signin-oidc` dönüşü başarısız olduğunda (geri
+   tuşu, süresi dolmuş giriş, reddedilen onay) giriş yapmamış kullanıcı bu sayfaya `?neden=oturum-suresi` veya
+   `?neden=erisim-reddedildi` ile yönlendirilir.
 5. **Sayfaları ekleyin:** `/Giris` (OIDC challenge), `/Cikis` (çerez + OIDC SignOut), `/ErisimReddedildi`.
    Rol korumalı sayfalarda `[Authorize(Roles = "...")]` kullanın; rol claim'i `role`, ad claim'i `name`.
 6. Kimlik sunucusunu yeniden başlatın: istemci kaydedilir ve "Uygulamalarım" sayfasında görünür.
@@ -330,6 +338,10 @@ ekler.
    açılır; `/Notlarim` adresine gidince **Erişim reddedildi** sayfası görünür.
 4. **`personel.test`** (şifresi `TestKullanicilari:Personel:Sifre`) ile Yemekhane'de **Yemekhane Yönetimi** açılır
    ve günlük rezervasyon sayılarını gösterir. Öğrenci hesabıyla aynı sayfa **Erişim reddedildi** verir.
+5. Demo OBİS'e giriş yaptıktan sonra tarayıcıda iki kez **geri** tuşuna basın. Uygulamanın ana sayfasına
+   dönülmeli; "Correlation failed" veya başka bir hata sayfası görünmemelidir. Giriş yapmadan
+   https://localhost:5101/signin-oidc?code=x&state=y adresine gidilirse **Giriş tamamlanamadı** sayfası ve
+   **Tekrar giriş yap** düğmesi görünür.
 
 ## Testler
 

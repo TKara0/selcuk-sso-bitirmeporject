@@ -1,0 +1,21 @@
+@page
+@using Selcuk.Istemci.Ortak
+@{
+    ViewData["Title"] = "Giriş tamamlanamadı";
+    var erisimReddedildi = Request.Query["neden"] == GirisDonusHatasi.ErisimReddedildi;
+}
+<section class="kart">
+    <h1>Giriş tamamlanamadı</h1>
+    @if (erisimReddedildi)
+    {
+        <p class="aciklama">Uygulamaya erişim izni verilmedi.</p>
+    }
+    else
+    {
+        <p class="aciklama">
+            Giriş işlemi tamamlanamadı. Bu genellikle tarayıcıda geri tuşuna basıldığında ya da giriş sayfası uzun süre
+            açık kaldığında olur.
+        </p>
+    }
+    <a class="dugme birincil" asp-page="/Giris">Tekrar giriş yap</a>
+</section>

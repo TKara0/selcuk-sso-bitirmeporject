@@ -13,7 +13,8 @@ namespace Selcuk.Istemci.Ortak;
 
 /// <summary>
 /// Alt uygulamaları merkezi kimlik sunucusuna bağlayan ortak yapılandırma.
-/// Ayarlar "Kimlik" bölümünden okunur: Authority, ClientId, ClientSecret (user-secrets) ve isteğe bağlı CerezAdi.
+/// Ayarlar "Kimlik" bölümünden okunur: Authority, ClientId, ClientSecret (user-secrets) ve isteğe bağlı CerezAdi ile
+/// GirisHatasiYolu (varsayılan /GirisHatasi).
 /// </summary>
 public static class SelcukSsoUzantilari
 {
@@ -22,6 +23,7 @@ public static class SelcukSsoUzantilari
         var kimlik = configuration.GetSection("Kimlik");
         var clientId = kimlik["ClientId"]
             ?? throw new InvalidOperationException("'Kimlik:ClientId' ayarı tanımlı değil.");
+        var girisHatasiYolu = kimlik["GirisHatasiYolu"] ?? GirisDonusHatasi.VarsayilanYol;
 
         services.AddMemoryCache();
         services.TryAddSingleton(TimeProvider.System);
@@ -82,6 +84,8 @@ public static class SelcukSsoUzantilari
                 options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.Always;
                 options.NonceCookie.SecurePolicy = CookieSecurePolicy.Always;
                 options.SignedOutRedirectUri = "/";
+                // Geri tuşu, süresi dolmuş giriş veya reddedilen onay: geliştirici hata sayfası yerine yönlendirme.
+                options.Events.OnRemoteFailure = context => GirisDonusHatasi.IsleAsync(context, girisHatasiYolu);
             });
 
         return services;
