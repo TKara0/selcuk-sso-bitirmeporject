@@ -301,8 +301,9 @@ public sealed partial class TekOturumTests : IDisposable
         var html = WebUtility.HtmlDecode(await yanit.Content.ReadAsStringAsync());
         Assert.Contains("Demo OBİS", html);
         Assert.Contains("Demo Yemekhane", html);
-        Assert.Contains("href=\"https://localhost:5101/Giris\"", html);
-        Assert.Contains("href=\"https://localhost:5102/Giris\"", html);
+        // initiate_login_uri'ye OIDC Core 1.0 bölüm 4 gereği iss parametresi eklenir.
+        Assert.Contains("href=\"https://localhost:5101/Giris?iss=https%3A%2F%2Flocalhost%3A5001%2F\"", html);
+        Assert.Contains("href=\"https://localhost:5102/Giris?iss=https%3A%2F%2Flocalhost%3A5001%2F\"", html);
     }
 
     [GeneratedRegex("<input type=\"hidden\" name=\"([^\"]+)\" value=\"([^\"]*)\" />")]

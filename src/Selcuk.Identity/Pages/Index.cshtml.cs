@@ -1,16 +1,22 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Options;
 using OpenIddict.Abstractions;
+using OpenIddict.Server;
 using Selcuk.Identity.Data;
 
 namespace Selcuk.Identity.Pages;
 
 /// <summary>
 /// "Uygulamalarım": kayıtlı istemcilerin kartları. Kart, istemcinin giriş başlatma adresine (initiate_login_uri)
-/// gider; kimlik sunucusunda oturum açık olduğu için şifre sorulmadan içeri girilir.
+/// gider; kimlik sunucusunda oturum açık olduğu için şifre sorulmadan içeri girilir. OIDC Core 1.0 bölüm 4'e göre
+/// initiate_login_uri'ye iss parametresi eklenir; istemci bunu kendi kimlik sunucusuyla karşılaştırır.
 /// </summary>
 [Authorize]
-public class IndexModel(IOpenIddictApplicationManager applicationManager) : PageModel
+public class IndexModel(
+    IOpenIddictApplicationManager applicationManager,
+    IOptionsMonitor<OpenIddictServerOptions> serverAyarlari) : PageModel
 {
     public sealed record UygulamaKarti(string Ad, string Aciklama, string AnaSayfa, string GirisAdresi);
 
@@ -30,7 +36,7 @@ public class IndexModel(IOpenIddictApplicationManager applicationManager) : Page
             }
 
             var girisAdresi = ozellikler.TryGetValue(Istemciler.InitiateLoginUriOzelligi, out var giris)
-                ? giris.GetString()!
+                ? QueryHelpers.AddQueryString(giris.GetString()!, "iss", serverAyarlari.CurrentValue.Issuer!.AbsoluteUri)
                 : anaSayfa.GetString()!;
             var aciklama = ozellikler.TryGetValue(Istemciler.AciklamaOzelligi, out var a) ? a.GetString()! : string.Empty;
             var ad = await applicationManager.GetLocalizedDisplayNameAsync(uygulama, HttpContext.RequestAborted)

@@ -1,0 +1,18 @@
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.Extensions.Options
+@inject IOptions<IdentityOptions> IdentityAyarlari
+@{
+    // Açıklama Identity'nin şifre ayarlarından üretilir; politika değişirse metin de değişir.
+    var politika = IdentityAyarlari.Value.Password;
+    var icermeli = new List<string>();
+    if (politika.RequireUppercase) { icermeli.Add("bir büyük harf"); }
+    if (politika.RequireLowercase) { icermeli.Add("bir küçük harf"); }
+    if (politika.RequireDigit) { icermeli.Add("bir rakam"); }
+    if (politika.RequireNonAlphanumeric) { icermeli.Add("bir sembol"); }
+    var kurallar = icermeli.Count == 0
+        ? string.Empty
+        : " ve en az " + (icermeli.Count == 1
+            ? icermeli[0]
+            : string.Join(", ", icermeli.Take(icermeli.Count - 1)) + " ve " + icermeli[^1]) + " içermelidir";
+}
+<p class="ipucu">Şifre en az @politika.RequiredLength karakter olmalı@(kurallar). Başka sitelerde kullandığınız bir şifreyi seçmeyin.</p>

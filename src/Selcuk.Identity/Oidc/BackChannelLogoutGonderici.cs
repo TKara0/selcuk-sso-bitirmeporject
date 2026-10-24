@@ -57,6 +57,25 @@ public sealed class BackChannelLogoutGonderici(
         await db.SaveChangesAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// Kullanıcının açık tüm oturumlarını (haricSid verilirse o oturum dışında) kapatır ve her birindeki istemcilere
+    /// bildirim gönderir. Şifre sıfırlama ve şifre değiştirmede kullanılır.
+    /// </summary>
+    public async Task KullaniciOturumlariniKapatAsync(string kullaniciId, string? haricSid,
+        CancellationToken cancellationToken = default)
+    {
+        var sidler = await db.IstemciOturumlari
+            .Where(o => o.KullaniciId == kullaniciId && o.KapanmaZamani == null && o.Sid != haricSid)
+            .Select(o => o.Sid)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        foreach (var sid in sidler)
+        {
+            await OturumuKapatAsync(sid, cancellationToken);
+        }
+    }
+
     private async Task<Uri?> BackChannelAdresiAsync(string clientId, CancellationToken cancellationToken)
     {
         var uygulama = await applicationManager.FindByClientIdAsync(clientId, cancellationToken);

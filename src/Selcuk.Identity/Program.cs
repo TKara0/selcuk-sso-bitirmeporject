@@ -5,6 +5,8 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using OpenIddict.Server;
 using Selcuk.Identity;
 using Selcuk.Identity.Data;
+using Selcuk.Identity.Eposta;
+using Selcuk.Identity.Hesap;
 using Selcuk.Identity.Oidc;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
@@ -30,13 +32,21 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 
         options.User.RequireUniqueEmail = true;
 
+        // Şifre sıfırlama token'ı ayrı sağlayıcıdan: 30 dakika geçerli, güvenlik damgasına bağlı (tek kullanımlık).
+        options.Tokens.PasswordResetTokenProvider = SifreSifirlamaTokenSaglayici.Ad;
+
         // Oturum çerezindeki claim adları OIDC adlarıyla aynı olsun.
         options.ClaimsIdentity.UserIdClaimType = Claims.Subject;
         options.ClaimsIdentity.UserNameClaimType = Claims.Name;
         options.ClaimsIdentity.RoleClaimType = Claims.Role;
         options.ClaimsIdentity.EmailClaimType = Claims.Email;
     })
-    .AddEntityFrameworkStores<ApplicationDbContext>();
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddTokenProvider<SifreSifirlamaTokenSaglayici>(SifreSifirlamaTokenSaglayici.Ad)
+    .AddErrorDescriber<TurkceIdentityHatalari>();
+
+// Kimlik sunucusu oturumu ve istemci çerezleri aynı süreyi kullanır (istemcide Kimlik:OturumSuresi).
+var oturumSuresi = builder.Configuration.GetValue<TimeSpan?>("Oturum:Sure") ?? TimeSpan.FromHours(8);
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
@@ -45,13 +55,15 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     // Lax: istemci uygulamadan /connect/authorize'a yapılan yönlendirmede oturum çerezi gönderilebilsin.
     options.Cookie.SameSite = SameSiteMode.Lax;
-    options.ExpireTimeSpan = TimeSpan.FromHours(8);
+    options.ExpireTimeSpan = oturumSuresi;
     options.SlidingExpiration = true;
     options.LoginPath = "/Account/Login";
     options.LogoutPath = "/connect/logout";
     options.AccessDeniedPath = "/Account/AccessDenied";
     // Her oturuma bir oturum kimliği (sid) verilir; id_token'a ve Back-Channel Logout'a girer.
     options.Events.OnSigningIn = OturumKimligi.OturumAcilirkenAsync;
+    // Güvenlik damgası her istekte kontrol edilir: şifre değişince diğer oturumlar hemen kapanır.
+    options.Events.OnValidatePrincipal = OturumDamgasi.DogrulaAsync;
 });
 
 builder.Services.Configure<SecurityStampValidatorOptions>(options =>
@@ -61,6 +73,24 @@ builder.Services.TryAddSingleton(TimeProvider.System);
 builder.Services.AddHttpClient(BackChannelLogoutGonderici.HttpIstemciAdi,
     client => client.Timeout = TimeSpan.FromSeconds(5));
 builder.Services.AddScoped<BackChannelLogoutGonderici>();
+
+// E-posta: Development'ta App_Data/eposta/ klasörüne .eml, diğer ortamlarda SMTP. Gönderim arka planda (kuyruk).
+builder.Services.Configure<EpostaAyarlari>(builder.Configuration.GetSection(EpostaAyarlari.Bolum));
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddSingleton<IEpostaGonderici, DosyaEpostaGonderici>();
+}
+else
+{
+    builder.Services.AddSingleton<IEpostaGonderici, SmtpEpostaGonderici>();
+}
+
+builder.Services.AddSingleton<EpostaKuyrugu>();
+builder.Services.AddHostedService<EpostaGonderimHizmeti>();
+
+builder.Services.AddScoped<SahteSifreDogrulayici>();
+builder.Services.AddScoped<SifreDegisikligi>();
+builder.Services.AddHizSiniri(builder.Configuration);
 
 builder.Services.AddAntiforgery(options =>
 {
@@ -160,6 +190,7 @@ app.UseHttpsRedirection();
 app.UseCookiePolicy();
 app.UseStaticFiles();
 app.UseRouting();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 

@@ -488,3 +488,6 @@ secrets.json
 *.pem
 *.key
 *.snk
+
+# Development e-postaları (DosyaEpostaGonderici): şifre sıfırlama bağlantıları içerir
+**/App_Data/eposta/

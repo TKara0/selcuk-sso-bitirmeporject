@@ -8,6 +8,7 @@
     --vurgu-koyu: #233a56;
     --hata: #a8323e;
     --hata-zemin: #fbecee;
+    --bilgi-zemin: #eaf0f7;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -21,6 +22,7 @@
         --vurgu-koyu: #9bb9dc;
         --hata: #f08b95;
         --hata-zemin: #3a2226;
+        --bilgi-zemin: #1f2d3d;
     }
 }
 
@@ -121,6 +123,15 @@ input:focus-visible, .dugme:focus-visible {
 
 .alan-hatasi { color: var(--hata); font-size: 0.875rem; }
 
+.bilgi {
+    background: var(--bilgi-zemin);
+    color: var(--metin);
+    border-left: 3px solid var(--vurgu);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin: 0 0 16px;
+}
+
 .uygulamalar { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 .uygulama {
     display: flex;
@@ -136,7 +147,6 @@ input:focus-visible, .dugme:focus-visible {
 .uygulama strong { color: var(--vurgu); }
 .uygulama span { color: var(--soluk); font-size: 0.9rem; }
 .uygulama small { color: var(--soluk); font-size: 0.8rem; overflow-wrap: anywhere; }
-.cikis { margin-top: 20px; }
 
 .kapsamlar { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--cizgi); }
 .kapsamlar li {

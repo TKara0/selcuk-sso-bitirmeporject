@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Selcuk.Istemci.Ortak;
@@ -43,7 +44,18 @@ internal static class BackChannelLogout
         }
 
         var ayarlar = oidcAyarlari.Get(OpenIdConnectDefaults.AuthenticationScheme);
-        var yapilandirma = await ayarlar.ConfigurationManager!.GetConfigurationAsync(context.RequestAborted);
+        OpenIdConnectConfiguration yapilandirma;
+        try
+        {
+            yapilandirma = await ayarlar.ConfigurationManager!.GetConfigurationAsync(context.RequestAborted);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // Kimlik sunucusunun discovery veya JWKS adresine ulaşılamıyor: token doğrulanamaz. Geçici bir durum
+            // olduğundan 500 yerine 503 döner; kimlik sunucusu bunu başarısız gönderim olarak loglar.
+            logger.LogWarning("logout_token doğrulanamadı: discovery/JWKS alınamadı ({Hata}).", ex.GetType().Name);
+            return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+        }
 
         // İmza (kimlik sunucusunun JWKS'i), iss, aud (client_id), exp ve typ doğrulaması.
         var sonuc = await new JsonWebTokenHandler().ValidateTokenAsync(token, new TokenValidationParameters
@@ -72,7 +84,8 @@ internal static class BackChannelLogout
         }
 
         // Tekrar oynatma koruması: aynı jti token geçerli olduğu sürece bir kez kabul edilir.
-        if (!depo.JtiIlkKezMi(jti, new DateTimeOffset(jwt.ValidTo, TimeSpan.Zero) + SaatKaymasi))
+        if (!await depo.JtiIlkKezMiAsync(jti, new DateTimeOffset(jwt.ValidTo, TimeSpan.Zero) + SaatKaymasi,
+                context.RequestAborted))
         {
             logger.LogWarning("Daha önce kullanılmış logout_token (jti) reddedildi.");
             return Results.BadRequest();
@@ -80,11 +93,11 @@ internal static class BackChannelLogout
 
         if (sid is not null)
         {
-            depo.SidIptalEt(sid);
+            await depo.SidIptalEtAsync(sid, context.RequestAborted);
         }
         else
         {
-            depo.SubIptalEt(sub!);
+            await depo.SubIptalEtAsync(sub!, context.RequestAborted);
         }
 
         return Results.Ok();

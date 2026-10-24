@@ -26,21 +26,41 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
     `Properties` alanında.
   - **EF Core + SQL Server** (geliştirmede LocalDB, veritabanı `SelcukSSO`). Identity, OpenIddict ve
     `IstemciOturumlari` tabloları aynı `ApplicationDbContext` içinde.
-  - **Razor Pages** (Türkçe arayüz): Uygulamalarım (ana sayfa), Giriş, Onay, Çıkış, Erişim reddedildi. Tüm
-    yanıtlarda güvenlik başlıkları (`GuvenlikBasliklari.cs`: nosniff, no-referrer, X-Frame-Options DENY, CSP).
+  - **Razor Pages** (Türkçe arayüz): Uygulamalarım (ana sayfa; kartlar `initiate_login_uri?iss=…`), Giriş, Şifremi
+    unuttum, Şifre sıfırlama, Hesabım, Şifre değiştir, Onay, Çıkış, Erişim reddedildi. Tüm yanıtlarda güvenlik
+    başlıkları (`GuvenlikBasliklari.cs`: nosniff, no-referrer, X-Frame-Options DENY, CSP).
+  - **Şifre sıfırlama ve değiştirme** (`Hesap/`): Identity'nin yerleşik `DataProtectorTokenProvider`'ı ayrı adla
+    (`SifreSifirlamaTokenSaglayici`, 30 dk, güvenlik damgasına bağlı, tek kullanımlık). Bağlantı `OpenIddict:Issuer`
+    adresinden üretilir. Başarıda `SifreDegisikligi`: kilit/sayaç sıfırlama (yalnızca sıfırlamada), kullanıcının
+    oturumlarına Back-Channel Logout (`BackChannelLogoutGonderici.KullaniciOturumlariniKapatAsync`; değiştirmede
+    mevcut sid hariç), bilgilendirme e-postası. `OturumDamgasi` kimlik sunucusu çerezinin güvenlik damgasını her
+    istekte doğrular (çerezi yenilemeden).
+  - **Kaba kuvvet koruması**: `HizSiniri` (ASP.NET Core rate limiter, IP + sayfa başına dakikada 10 POST: giriş,
+    şifremi unuttum, sıfırlama; 429 + Türkçe sayfa). Girişte kullanıcı yoksa veya hesap kilitliyse
+    `SahteSifreDogrulayici` aynı maliyette sahte PBKDF2 doğrulaması yapar; şifremi unuttum her durumda aynı işi yapar.
+    5 deneme / 15 dk kilitleme. Identity'nin şifre hataları Türkçe (`TurkceIdentityHatalari`).
+  - **E-posta** (`Eposta/`): `IEpostaGonderici`; Development'ta `DosyaEpostaGonderici` (`App_Data/eposta/*.eml`,
+    .gitignore'da), diğer ortamlarda `SmtpEpostaGonderici` (`Eposta:Smtp`, şifre user-secrets/ortam değişkeni).
+    Sayfalar `EpostaKuyrugu`'na bırakır, `EpostaGonderimHizmeti` arka planda gönderir. Şablonlar düz metin, Türkçe.
+  - **Oturum süresi**: kimlik sunucusu çerezi `Oturum:Sure` (varsayılan 8 saat, kayan).
 - `src/Selcuk.Istemci.Ortak`: alt uygulamaların ortak kütüphanesi. `AddSelcukSSO(configuration)` (Cookie + OIDC,
   code + PKCE, `response_mode=query`, SaveTokens, userinfo, claim eşlemeleri, `DefaultForbidScheme` = cookie),
   `UseSelcukGuvenlikBasliklari()`, `MapSelcukBackChannelLogout()` (POST `/signout-backchannel`: logout_token
-  doğrulama, jti tekrar koruması, sid iptali) ve `OturumIptalDeposu` (iptal edilen oturumu çerez doğrulamasında
-  reddeder). Yeni bir alt uygulama bu kütüphaneyle bağlanır.
+  doğrulama, jti tekrar koruması, sid iptali; discovery/JWKS alınamazsa 503) ve `OturumIptalDeposu` (iptal edilen
+  oturumu çerez doğrulamasında reddeder; kayıtlar `IDistributedCache`'te, varsayılan bellek içi, en az çerez süresi
+  kadar). Çerez süresi `Kimlik:OturumSuresi` (varsayılan 8 saat, kayan). `GirisDonusHatasi` `/signin-oidc`
+  hatalarını `/GirisHatasi`'na yönlendirir; `UcuncuTarafGiris` initiate_login isteğindeki `iss`'i doğrular (yanlışsa
+  400). Yeni bir alt uygulama bu kütüphaneyle bağlanır.
 - `src/Selcuk.Demo.Obis` (https://localhost:5101): rol bazlı sayfalar (Notlarım: ogrenci, Ders Yönetimi:
   akademisyen), Profilim, yalnızca Development'ta Token İnceleme, RP-initiated logout. Veriler uydurmadır.
 - `src/Selcuk.Demo.Yemekhane` (https://localhost:5102): Haftalık menü (herkese açık), Rezervasyonlarım (bellek içi),
   Yemekhane Yönetimi (personel), Profilim, RP-initiated logout. Veriler uydurmadır.
 - `tests/Selcuk.Identity.Tests`: xUnit + `WebApplicationFactory` entegrasyon, uçtan uca protokol, tek giriş ve tek
-  çıkış testleri. Her test SQLite in-memory üzerinde kendi veritabanını kullanır; ortam adı `Testing`. Back-Channel
-  Logout POST'ları sahte HTTP handler ile yakalanır.
-- `tests/Selcuk.Istemci.Ortak.Tests`: Back-Channel Logout alıcısı testleri; yerel RSA anahtarı ve sahte JWKS.
+  çıkış, şifre sıfırlama/değiştirme, istek sınırı ve tahmin koruması testleri. Her test SQLite in-memory üzerinde
+  kendi veritabanını kullanır; ortam adı `Testing`. Back-Channel Logout POST'ları sahte HTTP handler ile, e-postalar
+  `SahteEpostaGonderici` ile yakalanır.
+- `tests/Selcuk.Istemci.Ortak.Tests`: Back-Channel Logout alıcısı, çerez süresi, ortak dağıtık önbellek, JWKS hatası
+  (503) ve `iss` doğrulaması testleri; yerel RSA anahtarı ve sahte JWKS.
 - `tests/Selcuk.Demo.Obis.Tests`, `tests/Selcuk.Demo.Yemekhane.Tests`: yönlendirme ve rol testleri; gerçek kimlik
   sunucusu yerine sabit discovery bilgisi ve sahte kimlik doğrulama şeması kullanır.
 - `scripts/run-all.ps1`: üç uygulamayı ayrı pencerelerde başlatır.
@@ -70,6 +90,8 @@ f) **Her değişiklikten sonra `dotnet build` ve `dotnet test` geçmelidir.**
 
 g) **Her adım sonunda sır kontrolünden geçmiş tek bir commit atılır ve origin/main'e push edilir; force push ve
    geçmişi yeniden yazma yasak.**
+
+h) **Başlarken 5001/5101/5102 portlarında çalışan uygulama varsa dur ve raporla; kullanıcının süreçlerini kapatma.**
 
 ## Sık kullanılan komutlar
 

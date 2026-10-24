@@ -1,7 +1,8 @@
+using System.Buffers.Binary;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -9,57 +10,86 @@ namespace Selcuk.Istemci.Ortak;
 
 /// <summary>
 /// Back-Channel Logout ile iptal edilen oturumları (sid) ve kullanılmış logout_token kimliklerini (jti)
-/// bellek içinde, süreli olarak tutar. Uygulama yeniden başlarsa kayıtlar silinir (demo için yeterli).
+/// <see cref="IDistributedCache"/> üzerinde, süreli olarak tutar. Varsayılan önbellek bellek içidir; aynı uygulamanın
+/// birden çok örneği çalışıyorsa Redis veya SQL Server dağıtık önbelleği kaydedilir (README).
+/// Kayıtlar en az çerez süresi kadar saklanır: iptal edilen bir oturumun çerezi bu süreden önce geçerliliğini yitirmez.
 /// </summary>
 public sealed class OturumIptalDeposu(
-    IMemoryCache cache,
+    IDistributedCache cache,
     TimeProvider zaman,
     IOptionsMonitor<CookieAuthenticationOptions> cerezAyarlari)
 {
-    private readonly Lock _jtiKilidi = new();
+    private static readonly byte[] Isaret = [1];
+
+    // Aynı örnekteki eşzamanlı isteklerde jti kontrolü ve kaydı tek adımdır. IDistributedCache'te atomik "yoksa ekle"
+    // olmadığından birden çok örnekte aynı token'ın iki kez kabul edilmesi mümkündür; etkisi aynı oturumun ikinci kez
+    // iptal edilmesidir.
+    private readonly SemaphoreSlim _jtiKilidi = new(1, 1);
 
     /// <summary>jti daha önce görülmediyse kaydeder ve true döner; tekrar oynatmada false.</summary>
-    public bool JtiIlkKezMi(string jti, DateTimeOffset saklamaBitisi)
+    public async Task<bool> JtiIlkKezMiAsync(string jti, DateTimeOffset tokenBitisi, CancellationToken cancellationToken = default)
     {
         var anahtar = "bcl:jti:" + jti;
-        lock (_jtiKilidi)
+        await _jtiKilidi.WaitAsync(cancellationToken);
+        try
         {
-            if (cache.TryGetValue(anahtar, out _))
+            if (await cache.GetAsync(anahtar, cancellationToken) is not null)
             {
                 return false;
             }
 
-            cache.Set(anahtar, true, saklamaBitisi);
+            var kalan = tokenBitisi - zaman.GetUtcNow();
+            await cache.SetAsync(anahtar, Isaret, SureliKayit(kalan > Saklama ? kalan : Saklama), cancellationToken);
             return true;
+        }
+        finally
+        {
+            _jtiKilidi.Release();
         }
     }
 
-    public void SidIptalEt(string sid) => cache.Set("bcl:sid:" + sid, true, Saklama);
+    public Task SidIptalEtAsync(string sid, CancellationToken cancellationToken = default) =>
+        cache.SetAsync("bcl:sid:" + sid, Isaret, SureliKayit(Saklama), cancellationToken);
 
     /// <summary>sid'siz logout_token: kullanıcının bu ana kadar açılmış tüm oturumları geçersiz.</summary>
-    public void SubIptalEt(string sub) => cache.Set("bcl:sub:" + sub, zaman.GetUtcNow(), Saklama);
+    public Task SubIptalEtAsync(string sub, CancellationToken cancellationToken = default)
+    {
+        var deger = new byte[sizeof(long)];
+        BinaryPrimitives.WriteInt64BigEndian(deger, zaman.GetUtcNow().UtcTicks);
+        return cache.SetAsync("bcl:sub:" + sub, deger, SureliKayit(Saklama), cancellationToken);
+    }
 
-    public bool IptalEdildiMi(ClaimsPrincipal principal, DateTimeOffset? oturumBaslangici)
+    public async Task<bool> IptalEdildiMiAsync(ClaimsPrincipal principal, DateTimeOffset? oturumBaslangici,
+        CancellationToken cancellationToken = default)
     {
         var sid = principal.FindFirst("sid")?.Value;
-        if (sid is not null && cache.TryGetValue("bcl:sid:" + sid, out _))
+        if (sid is not null && await cache.GetAsync("bcl:sid:" + sid, cancellationToken) is not null)
         {
             return true;
         }
 
         var sub = principal.FindFirst("sub")?.Value;
-        return sub is not null
-            && cache.TryGetValue("bcl:sub:" + sub, out DateTimeOffset iptalZamani)
-            && (oturumBaslangici is null || oturumBaslangici <= iptalZamani);
+        if (sub is null || await cache.GetAsync("bcl:sub:" + sub, cancellationToken) is not { Length: sizeof(long) } deger)
+        {
+            return false;
+        }
+
+        var iptalZamani = new DateTimeOffset(BinaryPrimitives.ReadInt64BigEndian(deger), TimeSpan.Zero);
+        return oturumBaslangici is null || oturumBaslangici <= iptalZamani;
     }
 
-    // İptal kaydı, çerezin geçerli kalabileceği süre boyunca tutulur.
+    // Kayıt, iptal edilen oturumun çerezinin geçerli kalabileceği süre boyunca tutulur.
     private TimeSpan Saklama => cerezAyarlari.Get(CookieAuthenticationDefaults.AuthenticationScheme).ExpireTimeSpan;
+
+    // Göreli süre: önbelleğin kendi saatiyle uygulamanın TimeProvider'ı farklı olsa da kayıt doğru süre yaşar.
+    private static DistributedCacheEntryOptions SureliKayit(TimeSpan sure) =>
+        new() { AbsoluteExpirationRelativeToNow = sure };
 
     internal static async Task CerezDogrulaAsync(CookieValidatePrincipalContext context)
     {
         var depo = context.HttpContext.RequestServices.GetRequiredService<OturumIptalDeposu>();
-        if (context.Principal is not null && depo.IptalEdildiMi(context.Principal, context.Properties.IssuedUtc))
+        if (context.Principal is not null
+            && await depo.IptalEdildiMiAsync(context.Principal, context.Properties.IssuedUtc, context.HttpContext.RequestAborted))
         {
             context.RejectPrincipal();
             await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);

@@ -1,0 +1,34 @@
+@page
+@model Selcuk.Identity.Pages.Account.HesabimModel
+@{
+    ViewData["Title"] = "Hesabım";
+}
+<section class="kart">
+    <h1>Hesabım</h1>
+
+    @if (Model.SifreDegisti)
+    {
+        <p class="bilgi" role="status">
+            Şifreniz değiştirildi. Bu oturum açık kaldı; diğer cihaz ve tarayıcılardaki oturumlarınız kapatıldı.
+        </p>
+    }
+
+    <ul class="kapsamlar">
+        <li><strong>Ad soyad</strong><span>@Model.Kullanici.AdSoyad</span></li>
+        <li><strong>Kullanıcı adı</strong><span>@Model.Kullanici.UserName</span></li>
+        <li><strong>E-posta</strong><span>@Model.Kullanici.Email</span></li>
+        @if (Model.Kullanici.Fakulte is not null)
+        {
+            <li><strong>Fakülte</strong><span>@Model.Kullanici.Fakulte</span></li>
+        }
+        @if (Model.Kullanici.Bolum is not null)
+        {
+            <li><strong>Bölüm</strong><span>@Model.Kullanici.Bolum</span></li>
+        }
+    </ul>
+
+    <div class="dugmeler">
+        <a class="dugme birincil" asp-page="/Account/SifreDegistir">Şifre değiştir</a>
+        <a class="dugme ikincil" asp-page="/Index">Uygulamalarım</a>
+    </div>
+</section>

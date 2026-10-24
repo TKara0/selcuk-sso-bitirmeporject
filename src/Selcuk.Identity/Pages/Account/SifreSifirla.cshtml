@@ -1,0 +1,41 @@
+@page
+@model Selcuk.Identity.Pages.Account.SifreSifirlaModel
+@{
+    ViewData["Title"] = "Yeni şifre belirle";
+}
+<section class="kart">
+    <h1>Yeni şifre belirle</h1>
+
+    @if (Model.Tamamlandi)
+    {
+        <p class="bilgi" role="status">@SifreSifirlaModel.TamamlandiMesaji</p>
+        <a class="dugme birincil" asp-page="/Account/Login">Giriş yap</a>
+    }
+    else if (Model.BaglantiGecersiz)
+    {
+        <p class="hata" role="alert">@SifreSifirlaModel.GecersizBaglantiMesaji</p>
+        <div class="dugmeler">
+            <a class="dugme birincil" asp-page="/Account/SifremiUnuttum">Yeni bağlantı iste</a>
+        </div>
+    }
+    else
+    {
+        <form method="post" class="form">
+            <div asp-validation-summary="ModelOnly" class="hata" role="alert"></div>
+            <input type="hidden" asp-for="Input.Kullanici" />
+            <input type="hidden" asp-for="Input.Kod" />
+
+            <label asp-for="Input.YeniSifre"></label>
+            <input asp-for="Input.YeniSifre" autocomplete="new-password" autofocus />
+            <span asp-validation-for="Input.YeniSifre" class="alan-hatasi"></span>
+
+            <label asp-for="Input.YeniSifreTekrar"></label>
+            <input asp-for="Input.YeniSifreTekrar" autocomplete="new-password" />
+            <span asp-validation-for="Input.YeniSifreTekrar" class="alan-hatasi"></span>
+
+            <partial name="_SifrePolitikasi" />
+
+            <button type="submit" class="dugme birincil">Şifreyi değiştir</button>
+        </form>
+    }
+</section>

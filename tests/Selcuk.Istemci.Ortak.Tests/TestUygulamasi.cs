@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing.Handlers;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.JsonWebTokens;
@@ -21,6 +22,7 @@ namespace Selcuk.Istemci.Ortak.Tests;
 /// <summary>
 /// AddSelcukSSO kullanan küçük bir test uygulaması. Kimlik sunucusu yerine yerel bir RSA anahtar çifti ve
 /// bu anahtarı yayınlayan sahte discovery/JWKS uç noktaları kullanılır (OIDC ara katmanının backchannel'ı).
+/// İsteğe bağlı: ek "Kimlik" ayarları, birden çok örneğin paylaştığı dağıtık önbellek ve ulaşılamayan JWKS.
 /// </summary>
 public sealed class TestUygulamasi : IAsyncDisposable
 {
@@ -38,7 +40,12 @@ public sealed class TestUygulamasi : IAsyncDisposable
         _imzaAnahtari = imzaAnahtari;
     }
 
-    public static async Task<TestUygulamasi> BaslatAsync()
+    public IServiceProvider Services => _app.Services;
+
+    public static async Task<TestUygulamasi> BaslatAsync(
+        IDictionary<string, string?>? ekAyarlar = null,
+        IDistributedCache? ortakOnbellek = null,
+        bool jwksUlasilamaz = false)
     {
         var imzaAnahtari = new RsaSecurityKey(RSA.Create(2048)) { KeyId = AnahtarKimligi };
 
@@ -50,10 +57,20 @@ public sealed class TestUygulamasi : IAsyncDisposable
             ["Kimlik:ClientId"] = ClientId,
             ["Kimlik:ClientSecret"] = "kullanilmayan-test-degeri",
         });
+        if (ekAyarlar is not null)
+        {
+            builder.Configuration.AddInMemoryCollection(ekAyarlar);
+        }
+
+        if (ortakOnbellek is not null)
+        {
+            // AddSelcukSSO'dan önce kaydedilen dağıtık önbellek kullanılır (uygulamanın Redis kaydetmesi gibi).
+            builder.Services.AddSingleton(ortakOnbellek);
+        }
 
         builder.Services.AddSelcukSSO(builder.Configuration);
         builder.Services.Configure<OpenIdConnectOptions>(OpenIdConnectDefaults.AuthenticationScheme,
-            options => options.BackchannelHttpHandler = new SahteKimlikSunucusu(imzaAnahtari));
+            options => options.BackchannelHttpHandler = new SahteKimlikSunucusu(imzaAnahtari, jwksUlasilamaz));
 
         var app = builder.Build();
         app.UseSelcukGuvenlikBasliklari();
@@ -70,6 +87,9 @@ public sealed class TestUygulamasi : IAsyncDisposable
             return Results.Ok();
         });
         app.MapGet("/korumali", () => "korumalı içerik").RequireAuthorization();
+        // Demo uygulamalardaki /Giris sayfası gibi: kimlik sunucusuna OIDC challenge (initiate_login_uri).
+        app.MapGet("/giris", () => Results.Challenge(new AuthenticationProperties { RedirectUri = "/" },
+            [OpenIdConnectDefaults.AuthenticationScheme]));
 
         await app.StartAsync();
         return new TestUygulamasi(app, imzaAnahtari);
@@ -81,7 +101,6 @@ public sealed class TestUygulamasi : IAsyncDisposable
         {
             BaseAddress = new Uri("https://localhost"),
         };
-
     public async Task<HttpClient> OturumAcmisTarayiciAsync(string sid, string sub = "kullanici-1")
     {
         var tarayici = YeniTarayici();
@@ -135,7 +154,7 @@ public sealed class TestUygulamasi : IAsyncDisposable
     }
 
     /// <summary>Kimlik sunucusunun discovery ve JWKS yanıtlarını taklit eder.</summary>
-    private sealed class SahteKimlikSunucusu(RsaSecurityKey imzaAnahtari) : HttpMessageHandler
+    private sealed class SahteKimlikSunucusu(RsaSecurityKey imzaAnahtari, bool jwksUlasilamaz) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
@@ -156,6 +175,11 @@ public sealed class TestUygulamasi : IAsyncDisposable
             }
             else if (adres == Issuer + ".well-known/jwks")
             {
+                if (jwksUlasilamaz)
+                {
+                    throw new HttpRequestException("Sahte bağlantı hatası.");
+                }
+
                 // Yalnızca açık anahtar yayınlanır.
                 var jwk = JsonWebKeyConverter.ConvertFromRSASecurityKey(
                     new RsaSecurityKey(imzaAnahtari.Rsa.ExportParameters(false)) { KeyId = imzaAnahtari.KeyId });

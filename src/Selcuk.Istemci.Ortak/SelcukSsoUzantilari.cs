@@ -13,19 +13,23 @@ namespace Selcuk.Istemci.Ortak;
 
 /// <summary>
 /// Alt uygulamaları merkezi kimlik sunucusuna bağlayan ortak yapılandırma.
-/// Ayarlar "Kimlik" bölümünden okunur: Authority, ClientId, ClientSecret (user-secrets) ve isteğe bağlı CerezAdi ile
-/// GirisHatasiYolu (varsayılan /GirisHatasi).
+/// Ayarlar "Kimlik" bölümünden okunur: Authority, ClientId, ClientSecret (user-secrets) ve isteğe bağlı CerezAdi,
+/// GirisHatasiYolu (varsayılan /GirisHatasi) ile OturumSuresi (varsayılan 8 saat, kimlik sunucusuyla aynı).
 /// </summary>
 public static class SelcukSsoUzantilari
 {
+    public static readonly TimeSpan VarsayilanOturumSuresi = TimeSpan.FromHours(8);
+
     public static IServiceCollection AddSelcukSSO(this IServiceCollection services, IConfiguration configuration)
     {
         var kimlik = configuration.GetSection("Kimlik");
         var clientId = kimlik["ClientId"]
             ?? throw new InvalidOperationException("'Kimlik:ClientId' ayarı tanımlı değil.");
         var girisHatasiYolu = kimlik["GirisHatasiYolu"] ?? GirisDonusHatasi.VarsayilanYol;
+        var oturumSuresi = kimlik.GetValue<TimeSpan?>("OturumSuresi") ?? VarsayilanOturumSuresi;
 
-        services.AddMemoryCache();
+        // Uygulama Redis veya SQL Server dağıtık önbelleği kaydettiyse o kullanılır; yoksa bellek içi.
+        services.AddDistributedMemoryCache();
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton<OturumIptalDeposu>();
         services.AddAuthorization();
@@ -46,6 +50,9 @@ public static class SelcukSsoUzantilari
                 options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
                 options.Cookie.SameSite = SameSiteMode.Lax;
                 options.AccessDeniedPath = "/ErisimReddedildi";
+                // Kimlik sunucusu oturumuyla aynı süre, kayan: kullanıcı süre boyunca işlem yapmazsa oturum kapanır.
+                options.ExpireTimeSpan = oturumSuresi;
+                options.SlidingExpiration = true;
                 // Back-Channel Logout ile iptal edilen oturumlar her istekte reddedilir.
                 options.Events.OnValidatePrincipal = OturumIptalDeposu.CerezDogrulaAsync;
             })
@@ -86,6 +93,8 @@ public static class SelcukSsoUzantilari
                 options.SignedOutRedirectUri = "/";
                 // Geri tuşu, süresi dolmuş giriş veya reddedilen onay: geliştirici hata sayfası yerine yönlendirme.
                 options.Events.OnRemoteFailure = context => GirisDonusHatasi.IsleAsync(context, girisHatasiYolu);
+                // initiate_login_uri'ye kimlik sunucusundan gelen iss parametresi doğrulanır.
+                options.Events.OnRedirectToIdentityProvider = UcuncuTarafGiris.IssDogrulaAsync;
             });
 
         return services;
