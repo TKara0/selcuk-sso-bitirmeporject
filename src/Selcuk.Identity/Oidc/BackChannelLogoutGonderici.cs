@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using OpenIddict.Abstractions;
 using OpenIddict.Server;
 using Selcuk.Identity.Data;
+using Selcuk.Identity.Denetim;
 
 namespace Selcuk.Identity.Oidc;
 
@@ -18,6 +19,7 @@ public sealed class BackChannelLogoutGonderici(
     IOpenIddictApplicationManager applicationManager,
     IHttpClientFactory httpClientFactory,
     IOptionsMonitor<OpenIddictServerOptions> serverAyarlari,
+    DenetimKaydedici denetim,
     TimeProvider zaman,
     ILogger<BackChannelLogoutGonderici> logger)
 {
@@ -103,11 +105,15 @@ public sealed class BackChannelLogoutGonderici(
             if (yanit.IsSuccessStatusCode)
             {
                 logger.LogInformation("Back-channel logout gönderildi: {ClientId}", kayit.ClientId);
+                denetim.Ekle(DenetimOlayi.BackChannelLogoutGonderildi, DenetimSonucu.Basarili,
+                    kayit.KullaniciId, kayit.ClientId);
             }
             else
             {
                 logger.LogWarning("Back-channel logout {ClientId} istemcisinde başarısız: HTTP {Durum}",
                     kayit.ClientId, (int)yanit.StatusCode);
+                denetim.Ekle(DenetimOlayi.BackChannelLogoutBasarisiz, DenetimSonucu.Basarisiz,
+                    kayit.KullaniciId, kayit.ClientId, $"http={(int)yanit.StatusCode}");
             }
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
@@ -115,6 +121,8 @@ public sealed class BackChannelLogoutGonderici(
             // Token içeriği loglanmaz; yalnızca istemci ve hata türü.
             logger.LogWarning("Back-channel logout {ClientId} istemcisine ulaşamadı: {Hata}",
                 kayit.ClientId, ex.GetType().Name);
+            denetim.Ekle(DenetimOlayi.BackChannelLogoutBasarisiz, DenetimSonucu.Basarisiz,
+                kayit.KullaniciId, kayit.ClientId, $"hata={ex.GetType().Name}");
         }
     }
 

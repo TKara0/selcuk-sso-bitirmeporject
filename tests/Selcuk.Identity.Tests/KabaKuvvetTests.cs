@@ -35,6 +35,28 @@ public sealed class KabaKuvvetTests : IDisposable
         Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/Account/Login")).StatusCode);
     }
 
+    [Theory]
+    [InlineData("/Account/IkiAdim")]
+    [InlineData("/Account/IkiAdimDogrulama")]
+    [InlineData("/Account/SifreDegistir")]
+    public async Task Iki_adim_ve_sifre_degistirme_POST_siniri_asilinca_429_ve_denetim_kaydi(string sayfa)
+    {
+        // İstek sınırı kimlik doğrulama ve antiforgery'den önce çalışır: geçersiz POST'lar da sayılır.
+        var client = _factory.HttpsIstemcisi();
+        for (var i = 0; i < HizSiniri.VarsayilanDakikadaIstek; i++)
+        {
+            var deneme = await client.PostAsync(sayfa, new FormUrlEncodedContent([]));
+            Assert.NotEqual(HttpStatusCode.TooManyRequests, deneme.StatusCode);
+        }
+
+        var yanit = await client.PostAsync(sayfa, new FormUrlEncodedContent([]));
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, yanit.StatusCode);
+        Assert.Contains("Çok fazla deneme", await yanit.Content.ReadAsStringAsync());
+        await _factory.DenetimKayitlariAsync(k =>
+            k.Any(x => x.OlayTuru == Data.DenetimOlayi.HizSiniriAsildi && x.Ayrinti == $"sayfa={sayfa}"));
+    }
+
     [Fact]
     public async Task Olmayan_kullanici_ve_yanlis_sifre_ayni_mesaji_donuyor()
     {

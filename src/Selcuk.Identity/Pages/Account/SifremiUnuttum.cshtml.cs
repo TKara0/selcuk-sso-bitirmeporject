@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
 using OpenIddict.Server;
 using Selcuk.Identity.Data;
+using Selcuk.Identity.Denetim;
 using Selcuk.Identity.Eposta;
 using Selcuk.Identity.Hesap;
 
@@ -21,6 +22,7 @@ namespace Selcuk.Identity.Pages.Account;
 public class SifremiUnuttumModel(
     UserManager<ApplicationUser> userManager,
     EpostaKuyrugu eposta,
+    DenetimKaydedici denetim,
     IOptions<SifreSifirlamaTokenAyarlari> tokenAyarlari,
     IOptionsMonitor<OpenIddictServerOptions> serverAyarlari) : PageModel
 {
@@ -70,6 +72,11 @@ public class SifremiUnuttumModel(
         {
             eposta.Ekle(mesaj);
         }
+
+        // Hesap bulunamadıysa yazılan metin saklanmaz; normalize hâlinin özeti saklanır (girişteki gibi).
+        denetim.Ekle(DenetimOlayi.SifreSifirlamaIstendi, DenetimSonucu.Basarili, kullanici?.Id,
+            ayrinti: kullanici is null ? "hesap=bulunamadi; " + DenetimKaydedici.KullaniciAdiOzeti(userManager.NormalizeName(girdi))
+                : gonderilecek ? "eposta=gonderildi" : "eposta=gonderilmedi; neden=eposta-dogrulanmamis");
 
         Gonderildi = true;
         return Page();

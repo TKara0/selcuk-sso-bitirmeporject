@@ -1,0 +1,35 @@
+@page
+@model Selcuk.Identity.Pages.Account.IkiAdimModel
+@{
+    ViewData["Title"] = "İki aşamalı doğrulama";
+}
+<section class="kart">
+    <h1>İki aşamalı doğrulama</h1>
+    <p class="aciklama">
+        Doğrulayıcı uygulamanızdaki (Google Authenticator, Microsoft Authenticator vb.) 6 haneli kodu girin.
+        Telefonunuz yanınızda değilse kurtarma kodlarınızdan birini kullanabilirsiniz.
+    </p>
+
+    <form method="post" class="form">
+        <div asp-validation-summary="ModelOnly" class="hata" role="alert"></div>
+        <input type="hidden" asp-for="ReturnUrl" />
+
+        <label asp-for="Input.Kod"></label>
+        <input asp-for="Input.Kod" type="text" inputmode="text" autocomplete="one-time-code" autocapitalize="characters"
+               spellcheck="false" autofocus />
+        <span asp-validation-for="Input.Kod" class="alan-hatasi"></span>
+
+        <label class="secim">
+            <input asp-for="Input.CihaziHatirla" />
+            <span>Bu cihazı @Model.HatirlamaGun gün hatırla</span>
+        </label>
+
+        <button type="submit" class="dugme birincil">Doğrula</button>
+    </form>
+
+    <p class="ipucu">
+        Kurtarma kodu her biri bir kez kullanılabilir. "Bu cihazı hatırla" yalnızca kendi cihazınızda seçilmelidir;
+        şifreniz veya iki aşamalı doğrulama ayarınız değişince hatırlanan cihazlar geçersiz olur.
+    </p>
+    <p class="ipucu"><a asp-page="/Account/Login">Giriş sayfasına dön</a></p>
+</section>

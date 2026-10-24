@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.WebUtilities;
 using Selcuk.Identity.Data;
+using Selcuk.Identity.Denetim;
 using Selcuk.Identity.Hesap;
 
 namespace Selcuk.Identity.Pages.Account;
@@ -17,7 +18,8 @@ namespace Selcuk.Identity.Pages.Account;
 [EnableRateLimiting(HizSiniri.HassasForm)]
 public class SifreSifirlaModel(
     UserManager<ApplicationUser> userManager,
-    SifreDegisikligi sifreDegisikligi) : PageModel
+    SifreDegisikligi sifreDegisikligi,
+    DenetimKaydedici denetim) : PageModel
 {
     public const string GecersizBaglantiMesaji =
         "Bağlantı geçersiz, süresi dolmuş veya daha önce kullanılmış. Şifremi unuttum sayfasından yeni bir bağlantı isteyin.";
@@ -91,6 +93,8 @@ public class SifreSifirlaModel(
             // kullanılmamış sayılır (damga değişmedi) ve kullanıcı aynı bağlantıyla yeniden deneyebilir.
             if (sonuc.Errors.Any(e => e.Code == nameof(IdentityErrorDescriber.InvalidToken)))
             {
+                denetim.Ekle(DenetimOlayi.SifreSifirlandi, DenetimSonucu.Basarisiz, user.Id,
+                    ayrinti: "neden=gecersiz-baglanti");
                 BaglantiGecersiz = true;
                 return Page();
             }

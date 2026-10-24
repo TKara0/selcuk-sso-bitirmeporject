@@ -8,6 +8,8 @@ using Microsoft.Extensions.Primitives;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
 using Selcuk.Identity.Data;
+using Selcuk.Identity.Denetim;
+using Selcuk.Identity.Hesap;
 using Selcuk.Identity.Oidc;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
@@ -21,7 +23,9 @@ public class AuthorizeModel(
     IOpenIddictApplicationManager applicationManager,
     IOpenIddictAuthorizationManager authorizationManager,
     IOpenIddictScopeManager scopeManager,
-    UserManager<ApplicationUser> userManager) : PageModel
+    UserManager<ApplicationUser> userManager,
+    IkiAdimIslemleri ikiAdim,
+    DenetimKaydedici denetim) : PageModel
 {
     public string UygulamaAdi { get; private set; } = string.Empty;
 
@@ -61,6 +65,16 @@ public class AuthorizeModel(
 
         var user = await userManager.GetUserAsync(result.Principal)
             ?? throw new InvalidOperationException("Oturumdaki kullanıcı bulunamadı.");
+
+        // Rolü iki aşamalı doğrulama gerektiren kullanıcı kurulumu bitirmeden kod alamaz; kurulumdan sonra bu isteğe döner.
+        if (await ikiAdim.KurulumGerekliAsync(user))
+        {
+            return request.HasPromptValue(PromptValues.None)
+                ? Reddet(Errors.InteractionRequired, "İki aşamalı doğrulama kurulumu gerekli.")
+                : RedirectToPage("/Account/IkiAdimDogrulama",
+                    new { returnUrl = Request.PathBase + Request.Path + Request.QueryString });
+        }
+
         var application = await UygulamaAsync(request);
         var authorizations = await YetkilendirmelerAsync(user, application, request);
 
@@ -72,8 +86,7 @@ public class AuthorizeModel(
             case ConsentTypes.Implicit:
             case ConsentTypes.External:
             case ConsentTypes.Explicit when authorizations.Count is not 0 && !request.HasPromptValue(PromptValues.Consent):
-                return await OturumAcAsync(user, application, request, authorizations.LastOrDefault(),
-                    result.Principal.FindFirst(OidcKimlik.SidClaim)?.Value);
+                return await OturumAcAsync(user, application, request, authorizations.LastOrDefault(), result.Principal);
 
             case ConsentTypes.Explicit when request.HasPromptValue(PromptValues.None):
             case ConsentTypes.Systematic when request.HasPromptValue(PromptValues.None):
@@ -95,8 +108,15 @@ public class AuthorizeModel(
             return Reddet(Errors.LoginRequired, "Kullanıcı oturum açmamış.");
         }
 
+        // Kurulumu bitmemiş zorunlu 2FA kullanıcısı onay formunu doğrudan gönderse de kod alamaz.
+        if (await ikiAdim.KurulumGerekliAsync(user))
+        {
+            return Reddet(Errors.AccessDenied, "İki aşamalı doğrulama kurulumu gerekli.");
+        }
+
         if (karar != "kabul")
         {
+            denetim.Ekle(DenetimOlayi.OnayReddedildi, DenetimSonucu.Basarisiz, user.Id, request.ClientId);
             return Reddet(Errors.AccessDenied, "Kullanıcı erişim iznini reddetti.");
         }
 
@@ -108,17 +128,21 @@ public class AuthorizeModel(
             return Reddet(Errors.ConsentRequired, "Bu uygulamaya erişim yetkiniz yok.");
         }
 
-        return await OturumAcAsync(user, application, request, authorizations.LastOrDefault(),
-            User.FindFirst(OidcKimlik.SidClaim)?.Value);
+        denetim.Ekle(DenetimOlayi.OnayVerildi, DenetimSonucu.Basarili, user.Id, request.ClientId,
+            $"scope={string.Join(' ', request.GetScopes())}");
+        return await OturumAcAsync(user, application, request, authorizations.LastOrDefault(), User);
     }
 
     private async Task<IActionResult> OturumAcAsync(
-        ApplicationUser user, object application, OpenIddictRequest request, object? authorization, string? sid)
+        ApplicationUser user, object application, OpenIddictRequest request, object? authorization,
+        ClaimsPrincipal oturum)
     {
         var identity = OidcKimlik.YeniKimlik();
         await OidcKimlik.KullaniciClaimleriniEkleAsync(identity, user, userManager);
         // Kimlik sunucusu oturumu: aynı oturumdan giriş yapılan tüm istemcilere aynı sid verilir.
-        identity.SetClaim(OidcKimlik.SidClaim, sid);
+        identity.SetClaim(OidcKimlik.SidClaim, oturum.FindFirst(OidcKimlik.SidClaim)?.Value);
+        // Kullanıcının bu oturumda nasıl doğrulandığı (RFC 8176): ["pwd"] veya ["pwd", "mfa"].
+        OidcKimlik.AmrAyarla(identity, OidcKimlik.AmrDegerleri(oturum));
 
         identity.SetScopes(request.GetScopes());
         identity.SetResources(await scopeManager.ListResourcesAsync(identity.GetScopes()).ToListAsync());

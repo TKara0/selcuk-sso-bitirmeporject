@@ -157,6 +157,34 @@ input:focus-visible, .dugme:focus-visible {
 }
 .kapsamlar span { color: var(--soluk); font-size: 0.9rem; }
 
+h2 { margin: 24px 0 8px; font-size: 1.1rem; }
+
+.secim { display: flex; align-items: center; gap: 8px; font-weight: 400; }
+
+.adimlar { margin: 0 0 16px; padding-left: 20px; }
+.adimlar li { margin-bottom: 4px; }
+
+/* QR kod beyaz zemin üzerinde kalır (koyu temada da okunabilsin). */
+.qr { margin: 0 0 16px; text-align: center; }
+.qr img { background: #ffffff; padding: 8px; border-radius: 6px; }
+
+.anahtar, .kodlar code {
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    letter-spacing: 0.05em;
+    overflow-wrap: anywhere;
+}
+
+.kodlar {
+    list-style: none;
+    margin: 0;
+    padding: 12px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    border: 1px solid var(--cizgi);
+    border-radius: 6px;
+}
+
 .alt {
     padding: 16px;
     text-align: center;

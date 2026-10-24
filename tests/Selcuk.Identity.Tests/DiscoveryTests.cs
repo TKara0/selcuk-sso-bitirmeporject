@@ -46,4 +46,10 @@ public sealed class DiscoveryTests : IDisposable
 
         Assert.Contains("S256", Dizi(belge, "code_challenge_methods_supported"));
     }
+
+    [Fact]
+    public async Task Discovery_claims_supported_amr_iceriyor()
+    {
+        Assert.Contains("amr", Dizi(await DiscoveryAsync(), "claims_supported"));
+    }
 }

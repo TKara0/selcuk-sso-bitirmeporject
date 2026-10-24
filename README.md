@@ -9,9 +9,10 @@ Bitirme projesi: fakülte ve bölüm web uygulamaları için merkezi kimlik sunu
 
 Depoda şu an **kimlik sunucusu**, ona OpenID Connect ile bağlanan iki alt uygulama (**Demo OBİS**, **Demo Yemekhane**)
 ve bu uygulamaların ortak istemci kütüphanesi var. **Tek giriş** (bir kez giriş, diğer uygulamalara şifresiz geçiş),
-OIDC Back-Channel Logout ile **tek çıkış** (bir uygulamadan çıkınca hepsinden çıkış), e-postayla **şifre sıfırlama**
-ve **şifre değiştirme** çalışıyor. Alınan önlemler [Güvenlik önlemleri](#güvenlik-önlemleri) bölümünde. Diğer
-özellikler [yol haritasında](#yapılacaklar-yol-haritası).
+OIDC Back-Channel Logout ile **tek çıkış** (bir uygulamadan çıkınca hepsinden çıkış), e-postayla **şifre sıfırlama**,
+**şifre değiştirme**, TOTP tabanlı **iki aşamalı doğrulama** (2FA) ve güvenlik olaylarının **denetim kaydı** çalışıyor.
+Alınan önlemler [Güvenlik önlemleri](#güvenlik-önlemleri) bölümünde. Diğer özellikler
+[yol haritasında](#yapılacaklar-yol-haritası).
 
 ## Mimari özet
 
@@ -46,6 +47,9 @@ ve **şifre değiştirme** çalışıyor. Alınan önlemler [Güvenlik önlemler
 | Şifremi unuttum | `/Account/SifremiUnuttum` | Kullanıcı adı, öğrenci no veya e-postayla sıfırlama bağlantısı isteği |
 | Şifre sıfırlama | `/Account/SifreSifirla?kullanici=…&kod=…` | E-postadaki bağlantı: yeni şifre + tekrar |
 | Hesabım | `/Account/Hesabim` | Hesap bilgileri; **Şifre değiştir** (`/Account/SifreDegistir`) |
+| Girişin ikinci adımı | `/Account/IkiAdim` | 2FA açık kullanıcıda şifreden sonra: TOTP kodu veya kurtarma kodu, "Bu cihazı hatırla" |
+| İki aşamalı doğrulama | `/Account/IkiAdimDogrulama` | Hesabım → 2FA kurulumu (anahtar + QR), kurtarma kodlarını yenileme, kapatma |
+| Güvenlik geçmişi | `/Account/GuvenlikGecmisi` | Hesabım → kullanıcının kendi son 20 güvenlik olayı |
 
 **Akışlar:** yalnızca Authorization Code + PKCE ve Refresh Token. PKCE sunucu genelinde zorunlu ve **yalnızca
 `S256`** kabul edilir (`plain` kapalı). Implicit, hybrid, password ve client credentials akışları kapalı.
@@ -54,7 +58,7 @@ ve **şifre değiştirme** çalışıyor. Alınan önlemler [Güvenlik önlemler
 
 | Kapsam | Claim'ler |
 |---|---|
-| `openid` | `sub`; id_token'da ayrıca `sid` (kimlik sunucusu oturum kimliği) |
+| `openid` | `sub`; id_token'da ayrıca `sid` (kimlik sunucusu oturum kimliği) ve `amr` (`["pwd"]` veya `["pwd","mfa"]`) |
 | `profile` | `name` (AdSoyad), `preferred_username` (öğrenci no / kullanıcı adı), `fakulte`, `bolum` |
 | `email` | `email` (userinfo'da ayrıca `email_verified`) |
 | `roles` | `role` (`ogrenci`, `akademisyen`, `personel`) |
@@ -62,7 +66,7 @@ ve **şifre değiştirme** çalışıyor. Alınan önlemler [Güvenlik önlemler
 Claim'ler yalnızca kullanıcı ilgili kapsama onay verdiyse tokenlara yazılır. Access token'lar **imzalı ama şifresiz
 JWT** (`typ: at+jwt`, `DisableAccessTokenEncryption`), içerikleri tezde gösterilebilir. Henüz ayrı bir API (kaynak
 sunucusu) tanımlı olmadığı için access token'da `aud` yoktur; tokenın verildiği istemci `client_id` claim'inde
-taşınır. Discovery'deki `claims_supported` listesi: `aud exp iat iss sub name email role fakulte bolum sid`.
+taşınır. Discovery'deki `claims_supported` listesi: `aud exp iat iss sub name email role fakulte bolum sid amr`.
 
 **Kullanıcı modeli:** `ApplicationUser : IdentityUser` + `AdSoyad`, `Fakulte`, `Bolum`. Öğrencilerin `UserName`'i
 öğrenci numarası, akademik/idari personelinki kurumsal kullanıcı adıdır.
@@ -142,8 +146,8 @@ sequenceDiagram
     O-->>K: 302 /connect/authorize → kimlik sunucusu giriş ister
 ```
 
-Aynı mekanizma şifre sıfırlamada (kullanıcının tüm oturumları) ve şifre değiştirmede (şifreyi değiştiren oturum
-dışındakiler) da kullanılır.
+Aynı mekanizma şifre sıfırlamada (kullanıcının tüm oturumları), şifre değiştirmede ve 2FA'nın açılması, kapatılması
+veya kurtarma kodlarının yenilenmesinde (işlemi yapan oturum dışındakiler) da kullanılır.
 
 ### İptal kayıtları ve dağıtık önbellek
 
@@ -217,6 +221,109 @@ E-postalar bir kuyruğa bırakılır ve arka planda gönderilir; sayfanın yanı
 `Eposta:Gonderen` (varsayılan `tek-sifre@test.local`). Alıcı adresi ve e-posta gövdesi (sıfırlama bağlantısı)
 loglanmaz.
 
+## İki aşamalı doğrulama (2FA)
+
+TOTP (RFC 6238, 6 hane, 30 saniye) tabanlıdır; Google Authenticator, Microsoft Authenticator gibi uygulamalarla
+çalışır. Anahtar üretimi ve kod doğrulama Identity'nin yerleşik `AuthenticatorTokenProvider`'ı ve `UserManager`
+API'siyle yapılır; kriptografi elle yazılmadı.
+
+**Kurulum** (Uygulamalarım → Hesabım → **İki aşamalı doğrulama**):
+
+1. **Kurulumu başlat**: Identity yeni bir paylaşılan anahtar üretir (`ResetAuthenticatorKeyAsync`).
+2. Anahtar hem metin olarak (4'lü gruplar) hem QR kod olarak gösterilir. QR kod **QRCoder** ile sunucu tarafında SVG
+   olarak üretilir ve `<img src="data:image/svg+xml;base64,…">` ile gösterilir: harici CDN veya JavaScript yok, CSP
+   değişmedi (`img-src 'self' data:` zaten vardı). otpauth URI'si:
+   `otpauth://totp/Selcuk%20SSO%20%28Test%29:<kullanıcı adı>?secret=<anahtar>&issuer=Selcuk%20SSO%20%28Test%29&digits=6`.
+3. Uygulamadaki 6 haneli kod doğrulanmadan 2FA **açılmaz**.
+4. Açılınca 10 kurtarma kodu üretilir ve **yalnızca o yanıtta bir kez** gösterilir (TempData veya çerezle taşınmaz).
+   Anahtar ve kod içeren yanıtlar `Cache-Control: no-store` ile döner.
+5. **Kurtarma kodlarını yenile** ve **2FA'yı kapat**: ikisi de mevcut şifre + geçerli TOTP kodu ister. Biri yanlışsa
+   hatalı deneme sayacı artar (5'te hesap kilitlenir). Kapatınca anahtar yenilenir, kalan kurtarma kodları silinir.
+6. Açma, kapatma ve kurtarma kodu yenilemede güvenlik damgası yenilenir: bu oturum yeniden imzalanıp açık kalır,
+   kullanıcının diğer oturumları kapanır ve onların istemcilerine Back-Channel Logout gider (şifre değiştirmedeki
+   mekanizma), hatırlanan cihazlar geçersizleşir ve bilgilendirme e-postası gönderilir.
+
+**Giriş:** şifre doğru ve 2FA açıksa kullanıcı `/Account/IkiAdim` sayfasına gider (Identity'nin 5 dakikalık
+`TwoFactorUserId` çereziyle; kimlik sunucusu oturumu henüz açılmaz, authorize kod vermez). Tek alana TOTP kodu veya
+kurtarma kodu yazılır (6 rakamsa TOTP, değilse kurtarma kodu; boşluk ve tire yok sayılır).
+
+- Hatalı TOTP'yi Identity hatalı deneme sayacına ekler; hatalı kurtarma kodunu Identity saymadığı için sayfa ekler.
+  5 denemede hesap 15 dakika kilitlenir. Identity kurtarma koduyla girişte kilidi kontrol etmediği için kilit iki yol
+  için de sayfada kontrol edilir.
+- POST istek sınırına tabidir (dakikada 10).
+- Kullanılan kurtarma kodu silinir (tek kullanımlık) ve kullanıcıya kalan kod sayısıyla bilgilendirme e-postası gider.
+- **Bu cihazı 30 gün hatırla**: Identity'nin `TwoFactorRememberMe` çerezi; süresi `IkiAdimCihazHatirlamaGun`
+  (varsayılan 30). Çerez güvenlik damgasını içerir; şifre veya 2FA ayarı değişince geçersiz olur.
+
+**Kurtarma kodlarının saklanması:** Identity varsayılan olarak kurtarma kodlarını `AspNetUserTokens` tablosunda düz
+metin (`;` ile birleşik) tutar. `Hesap/KurtarmaKoduOzetDeposu`, Identity'nin EF Core kullanıcı deposunu
+(`UserStore`) genişletir ve yalnızca üç metodu değiştirir: `ReplaceCodesAsync` her kodu Identity'nin
+`IPasswordHasher<ApplicationUser>`'ıyla (kullanıcı şifreleriyle aynı PBKDF2 biçimi ve ayarları, kod başına rastgele
+tuz) özetler ve yalnızca özetleri saklar (`[SelcukSSO]` / `KurtarmaKoduOzetleri`); `RedeemCodeAsync` girilen kodu
+özetlerle `VerifyHashedPassword` ile karşılaştırır ve eşleşen özeti siler; `CountCodesAsync` özetleri sayar.
+`UserManager` ve `SignInManager`'ın kurtarma kodu API'si değişmeden bu depoyu kullanır. Kod büyük/küçük harf, boşluk ve
+tireden bağımsız (normalize edilerek) özetlenir.
+
+**`amr` claim'i (RFC 8176):** id_token'a yazılır ve her zaman JSON dizisidir: yalnızca şifreyle girişte `["pwd"]`,
+şifre + TOTP veya kurtarma koduyla girişte `["pwd","mfa"]`. "Bu cihazı hatırla" ile ikinci adım atlandıysa `["pwd"]`
+(Identity bu girişi şifre girişi sayar). 2FA kurulumunu bu oturumda tamamlayan kullanıcının oturumu da `mfa` sayılır
+(şifre ve geçerli bir TOTP kodu doğrulandı). `otp` değeri eklenmedi: Identity oturum yenilemede yalnızca tek bir `amr`
+değeri taşıyor, TOTP ile kurtarma kodunu ayırmak için ek durum gerekirdi. `claims_supported`'a `amr` eklendi. Demo
+uygulamalar `amr`'yi göstermez ve zorunlu kılmaz (step-up yok).
+
+**Rol bazlı zorunluluk:** `IkiAdimZorunluRoller` (varsayılan boş liste) içindeki bir role sahip ve 2FA'sı kapalı
+kullanıcı şifreyle girince kurulum sayfasına yönlendirilir. Kurulum bitmeden authorize kod vermez (kurulum sayfasına
+dönüş adresiyle yönlendirir; `prompt=none`'da `interaction_required`), onay formu doğrudan gönderilse de
+`access_denied` döner, token uç noktası da (kod veya refresh token zorunluluktan önce alınmış olsa bile)
+`invalid_grant` döner. Zorunlu roldeki kullanıcı 2FA'yı kapatamaz.
+
+| Ayar (`appsettings.json` kökü) | Varsayılan | Açıklama |
+|---|---|---|
+| `IkiAdimZorunluRoller` | `[]` | 2FA'nın zorunlu olduğu roller, ör. `["akademisyen", "personel"]` |
+| `IkiAdimCihazHatirlamaGun` | `30` | "Bu cihazı hatırla" çerezinin süresi (gün) |
+
+## Denetim kaydı
+
+Güvenlik olayları `DenetimKayitlari` tablosuna yazılır (migration `DenetimKayitlari`): `Id`, `ZamanUtc`, `OlayTuru`,
+`KullaniciId`, `IstemciId`, `IpAdresi`, `KisaUserAgent` (en fazla 200 karakter), `Sonuc` (`Basarili`/`Basarisiz`),
+`Ayrinti` (kısa serbest metin, en fazla 500 karakter, ör. `neden=sifre-yanlis`).
+
+**Kaydedilen olaylar:** giriş başarılı/başarısız, hesap kilitlendi, 2FA başarılı/başarısız, kurtarma kodu kullanıldı,
+2FA açıldı/kapatıldı (başarısız denemeler dahil), kurtarma kodları yenilendi, çıkış, şifre sıfırlama istendi, şifre
+sıfırlandı (geçersiz bağlantı dahil), şifre değişti (yanlış mevcut şifre dahil), onay verildi/reddedildi, istemciye
+token verildi (`client_id` ile), back-channel logout gönderildi/başarısız, hız sınırı aşıldı.
+
+**Asla kaydedilmeyenler:** şifre, TOTP veya kurtarma kodu, paylaşılan anahtar, sıfırlama token'ı, access/id/refresh
+token, yetkilendirme kodu, çerez, logout_token. Var olmayan bir kullanıcı adıyla başarısız girişte (ve şifremi
+unuttumda) yazılan metin saklanmaz, çünkü kullanıcılar bazen şifrelerini bu alana yazar. Bunun yerine normalize
+edilmiş (Identity'nin `NormalizeName`'i, büyük harf) hâlinin SHA-256 özeti (`System.Security.Cryptography`)
+`Ayrinti`'ye `kullanici_adi_sha256=<hex>` olarak yazılır; aynı hedefe yapılan denemeler böylece gruplanabilir.
+
+**Yazım:** sayfalar kaydı bellek içi bir kuyruğa bırakır (`Denetim/DenetimKaydedici`), arka plan hizmeti
+(`DenetimYazmaHizmeti`) toplu olarak yazar. İstek yavaşlamaz; yazım hatası ana işlemi bozmaz, yalnızca loglanır.
+Kapanışta kuyrukta kalanlar da yazılır.
+
+**Saklama süresi (KVKK):** `DenetimKaydiSaklamaGun` (varsayılan **180**). `DenetimTemizlemeHizmeti` açılışta ve
+ardından günde bir kez bu süreden eski kayıtları siler.
+
+**Güvenlik geçmişi** (Hesabım → **Güvenlik geçmişi**): kullanıcı yalnızca kendi son 20 olayını görür (zaman TSİ,
+Türkçe olay adı, uygulamanın görünen adı, IP). Yönetici ekranı yol haritasında (6. adım).
+
+### Proxy arkasında çalışma (`GuvenilenProxyler`)
+
+İstek sınırı ve denetim kaydı istemci IP'sini kullanır. `GuvenilenProxyler` (varsayılan boş liste) **boşsa**
+`X-Forwarded-For` başlığı hiç işlenmez; ASP.NET Core'un loopback'ten gelen başlığa güvenen varsayılanı da kapatılır.
+Böylece bir istemci başlığı kendisi yazarak istek sınırını atlatamaz veya kayıtlara sahte IP yazdıramaz. Uygulama bir
+ters proxy (IIS ARR, nginx, YARP vb.) arkasındaysa proxy'nin adresi listeye yazılır; başlık **yalnızca** bu
+adreslerden gelen isteklerde kabul edilir ve `RemoteIpAddress` gerçek istemci IP'si olur:
+
+```json
+"GuvenilenProxyler": [ "10.0.0.5", "10.1.0.0/24" ]
+```
+
+Tek adres veya CIDR ağı yazılabilir; geçersiz bir değerde uygulama açıklayıcı bir hatayla açılmaz.
+Yalnızca `X-Forwarded-For` işlenir (`ForwardLimit` 1: en sağdaki, proxy'nin eklediği adres).
+
 ## Güvenlik önlemleri
 
 Şu ana kadar sisteme eklenen önlemler ve her birinin kısa gerekçesi:
@@ -232,12 +339,16 @@ loglanmaz.
 3. **Şifre politikası ve özetleme.** En az 10 karakter, büyük harf, küçük harf ve rakam. Şifreler Identity'nin
    `PasswordHasher`'ıyla (PBKDF2) özetlenir, açık hâliyle saklanmaz. *Gerekçe:* tahmin edilebilir şifreleri azaltır;
    veritabanı sızsa bile şifreler doğrudan okunamaz. Kriptografi elle yazılmadı.
-4. **Hesap kilitleme.** 5 hatalı denemede hesap 15 dakika kilitlenir. *Gerekçe:* tek bir hesaba karşı şifre
-   denemesini yavaşlatır.
-5. **İstek sınırı (rate limit).** Giriş, şifremi unuttum ve şifre sıfırlama formlarının POST'u IP başına dakikada 10
-   istekle sınırlıdır (`HizSiniri:DakikadaIstek`); aşılınca 429, `Retry-After` ve Türkçe hata sayfası. *Gerekçe:*
-   kilitleme tek hesabı korur; birçok hesaba yayılan denemeleri (password spraying), kullanıcı adı taramasını ve
-   e-posta bombardımanını yavaşlatmak için IP başına sınır gerekir.
+4. **Hesap kilitleme.** 5 hatalı denemede hesap 15 dakika kilitlenir. Yanlış şifre, yanlış TOTP veya kurtarma kodu,
+   şifre değiştirmede yanlış mevcut şifre ve 2FA kapatma/kod yenilemede yanlış şifre veya kod aynı sayaca eklenir;
+   kilitliyken şifre değiştirilemez. *Gerekçe:* tek bir hesaba karşı şifre ve kod denemesini yavaşlatır; ele
+   geçirilmiş bir oturumdan mevcut şifre tahmin edilemez.
+5. **İstek sınırı (rate limit).** Giriş, girişin ikinci adımı, 2FA kurulum/yönetim, şifremi unuttum, şifre sıfırlama ve
+   şifre değiştirme formlarının POST'u IP başına dakikada 10 istekle sınırlıdır (`HizSiniri:DakikadaIstek`); aşılınca
+   429, `Retry-After`, Türkçe hata sayfası ve denetim kaydı. IP, yalnızca `GuvenilenProxyler`'den gelen
+   `X-Forwarded-For` ile değişir. *Gerekçe:* kilitleme tek hesabı korur; birçok hesaba yayılan denemeleri (password
+   spraying), kullanıcı adı taramasını ve e-posta bombardımanını yavaşlatmak için IP başına sınır gerekir. Herkesin
+   yazabildiği bir başlığa güvenilseydi sınır atlatılabilirdi.
 6. **Kullanıcı adı tahmini koruması.** Yanlış şifre, var olmayan kullanıcı ve kilitli hesap için aynı genel mesaj;
    şifremi unuttumda hesap olsun olmasın aynı mesaj. Yanıt süresi de bu durumlar arasında ayırt edilemeyecek şekilde
    eşitlenmiştir (ayrıntı aşağıda). *Gerekçe:* saldırgan, mesajdan veya yanıt süresinden hangi kullanıcı adlarının
@@ -284,6 +395,25 @@ loglanmaz.
     `dotnet user-secrets`, diğer ortamlarda ortam değişkeni veya sır deposu. Şifreler, token'lar, sıfırlama
     bağlantıları ve çerez değerleri loglanmaz; Development e-postalarının yazıldığı klasör `.gitignore`'dadır. Test
     verileri kurgusaldır (`@test.local`). *Gerekçe:* repo veya log sızıntısı hesapları ele geçirmeye yetmemeli.
+16. **İki aşamalı doğrulama (TOTP).** Identity'nin yerleşik authenticator altyapısı; kod doğrulanmadan açılmaz,
+    açma/kapatma/kod yenilemede güvenlik damgası yenilenir, diğer oturumlar ve istemcileri kapanır, e-posta gider;
+    kapatma ve kod yenileme şifre + TOTP ister; `IkiAdimZorunluRoller` ile rol bazlı zorunluluk (kurulum bitmeden
+    authorize ve token uç noktası reddeder). *Gerekçe:* şifre çalınsa bile ikinci faktör olmadan giriş yapılamaz;
+    ayar değişikliğini yalnızca hem şifreyi hem telefonu olan kişi yapabilir.
+17. **`amr` claim'i.** id_token'da `["pwd"]` veya `["pwd","mfa"]` (RFC 8176), discovery'de ilan edilir. *Gerekçe:*
+    istemci uygulama kullanıcının nasıl doğrulandığını standart yolla öğrenir; ileride hassas sayfalar için çok faktör
+    şartı (step-up) koyabilir.
+18. **Kurtarma kodları özetlenerek saklanır.** Identity'nin düz metin varsayılanı yerine her kod
+    `IPasswordHasher` (PBKDF2, tuzlu) ile özetlenir; tek kullanımlıktır, yalnızca bir kez gösterilir, kullanımı
+    e-postayla bildirilir. *Gerekçe:* veritabanı sızsa bile kurtarma kodları 2FA'yı atlatmak için kullanılamaz.
+19. **Denetim kaydı.** Giriş, 2FA, şifre, onay, token, çıkış, back-channel logout ve istek sınırı olayları kim (kullanıcı
+    kimliği), ne zaman, hangi uygulama, hangi IP ile kaydedilir; şifre, kod, token, çerez kaydedilmez, var olmayan
+    kullanıcı adı yalnızca SHA-256 özetiyle tutulur; yazım arka planda, isteği yavaşlatmaz ve hata ana işlemi bozmaz.
+    Kullanıcı kendi son 20 olayını görebilir. *Gerekçe:* saldırı ve kötüye kullanım sonradan incelenebilir, kullanıcı
+    tanımadığı bir girişi fark edebilir; kaydın kendisi yeni bir sızıntı kaynağı olmamalıdır.
+20. **KVKK saklama süresi.** Denetim kayıtları `DenetimKaydiSaklamaGun` (varsayılan 180) gün sonra günlük arka plan
+    işiyle silinir. *Gerekçe:* kişisel veri (IP, kullanıcı kimliği) amaç için gereken süreden uzun tutulmaz (veri
+    minimizasyonu).
 
 ### Yanıt süresi eşitleme (kod incelemesi)
 
@@ -373,16 +503,22 @@ dotnet-tools.json                 dotnet-ef yerel aracı
 .gitattributes                    Satır sonu kuralları
 scripts/run-all.ps1               Üç uygulamayı ayrı pencerelerde başlatır
 src/Selcuk.Identity/
-  Program.cs                      Identity, OpenIddict, çerez/HSTS ayarları, e-posta, istek sınırı, discovery ek alanları
+  Program.cs                      Identity, OpenIddict, çerez/HSTS ayarları, e-posta, istek sınırı, denetim kaydı,
+                                  ForwardedHeaders, discovery ek alanları
   GuvenlikBasliklari.cs           Güvenlik başlıkları ara katmanı
-  Data/                           ApplicationUser, DbContext, IstemciOturumu, Roller, Istemciler, BaslangicVerisi, Migrations
+  GuvenilenProxyler.cs            X-Forwarded-For'a yalnızca listedeki proxy'lerden güvenilmesi
+  Data/                           ApplicationUser, DbContext, IstemciOturumu, DenetimKaydi, Roller, Istemciler,
+                                  BaslangicVerisi, Migrations
+  Denetim/                        DenetimKaydedici (kuyruk) + yazma hizmeti, saklama süresi temizliği, Türkçe olay adları
   Eposta/                         IEpostaGonderici, DosyaEpostaGonderici, SmtpEpostaGonderici, kuyruk, şablonlar
   Hesap/                          Sıfırlama token sağlayıcısı, sahte şifre doğrulama, istek sınırı, oturum damgası,
-                                  şifre değişikliği sonrası işler, Türkçe Identity hataları
-  Oidc/                           Token/UserInfo uç noktaları, claim hedefleri, OturumKimligi (sid),
+                                  şifre değişikliği sonrası işler, Türkçe Identity hataları, IkiAdimIslemleri (2FA),
+                                  KurtarmaKoduOzetDeposu
+  Oidc/                           Token/UserInfo uç noktaları, claim hedefleri (amr dahil), OturumKimligi (sid),
                                   BackChannelLogoutGonderici
-  Pages/                          Uygulamalarım (Index), Account/Login, SifremiUnuttum, SifreSifirla, Hesabim,
-                                  SifreDegistir, AccessDenied, Connect/Authorize, Logout
+  Pages/                          Uygulamalarım (Index), Account/Login, IkiAdim, IkiAdimDogrulama, GuvenlikGecmisi,
+                                  SifremiUnuttum, SifreSifirla, Hesabim, SifreDegistir, AccessDenied,
+                                  Connect/Authorize, Logout
 src/Selcuk.Istemci.Ortak/         AddSelcukSSO, güvenlik başlıkları, Back-Channel Logout alıcısı, OturumIptalDeposu
                                   (IDistributedCache), giriş dönüşü hataları, iss doğrulaması
 src/Selcuk.Demo.Obis/             Notlarım, Ders Yönetimi, Profilim, Token İnceleme …
@@ -413,8 +549,9 @@ dotnet dev-certs https --trust                               # (bir kez) HTTPS g
 ```
 
 Migration'lar: `Baslangic` (Identity + OpenIddict tabloları), `IstemciOturumlari` (tek çıkış için oturum–istemci
-kayıtları). Mevcut bir veritabanında yeni migration'ı uygulamak için yine `dotnet ef database update` yeterlidir.
-Şifre sıfırlama yeni tablo gerektirmez (token'lar veritabanında tutulmaz).
+kayıtları), `DenetimKayitlari` (denetim kaydı). Mevcut bir veritabanında yeni migration'ı uygulamak için yine
+`dotnet ef database update` yeterlidir. Şifre sıfırlama yeni tablo gerektirmez (token'lar veritabanında tutulmaz);
+2FA anahtarı ve kurtarma kodu özetleri Identity'nin mevcut `AspNetUserTokens` tablosundadır.
 
 `dotnet dev-certs https --trust` istemciler için gereklidir: istemciler kimlik sunucusunun discovery ve JWKS
 adreslerine HTTPS ile bağlanır. Komut Windows'ta bir onay penceresi açar.
@@ -524,6 +661,33 @@ ekler.
    (Uygulamalarım → **Hesabım** → **Şifre değiştir**). Bu sırada başka bir tarayıcıdaki oturum kapanır, şifreyi
    değiştirdiğiniz oturum açık kalır.
 
+### İki aşamalı doğrulama ve güvenlik geçmişi
+
+1. Üç uygulamayı başlatın (`dotnet ef database update` ile `DenetimKayitlari` migration'ının uygulandığından emin
+   olun). **`203011001`** ile giriş yapın → Uygulamalarım → **Hesabım** → **İki aşamalı doğrulama** → **Kurulumu
+   başlat**.
+2. Telefonda **Google Authenticator** veya **Microsoft Authenticator**'ı açıp yeni hesap ekleyin ve sayfadaki **QR
+   kodu okutun** (veya 4'lü gruplar hâlindeki anahtarı elle girin). Uygulamada "Selcuk SSO (Test)" adıyla bir hesap
+   görünür.
+3. Uygulamadaki 6 haneli kodu yazıp **Doğrula ve aç**. 10 kurtarma kodu **bir kez** gösterilir; bir yere not edin.
+   `App_Data/eposta/` klasöründe "İki aşamalı doğrulama açıldı" e-postası oluşur. Sayfayı yenileyince kodlar artık
+   görünmez.
+4. Uygulamalarım → **Çıkış yap**. Tekrar **`203011001`** ve şifresiyle giriş yapın: şifreden sonra **kod istenir**.
+   Telefondaki güncel kodu girin. ("Bu cihazı 30 gün hatırla" seçilirse bu tarayıcıda bir sonraki girişte kod
+   sorulmaz.)
+5. Demo OBİS'e girip **Token İnceleme**'de id_token'daki `amr` claim'ini kontrol edin: `["pwd","mfa"]`. 2FA'sı kapalı
+   bir kullanıcıyla (ör. `hoca.test`) `["pwd"]` görünür.
+6. Çıkış yapıp tekrar girin, bu kez kod yerine bir **kurtarma kodu** yazın. Giriş yapılır; "kurtarma koduyla giriş"
+   e-postası oluşur. Aynı kod ikinci kez geçmez.
+7. Hesabım → **Güvenlik geçmişi**: giriş, iki aşamalı doğrulama, kurtarma kodu, onay, uygulamaya giriş ve çıkış
+   olayları zaman, uygulama ve IP ile listelenir.
+8. Test kullanıcısını eski hâline döndürmek için Hesabım → İki aşamalı doğrulama → **Kapat** (mevcut şifre + güncel
+   kod).
+
+Rol bazlı zorunluluğu denemek için `src/Selcuk.Identity/appsettings.Development.json`'a geçici olarak
+`"IkiAdimZorunluRoller": ["akademisyen"]` ekleyip kimlik sunucusunu yeniden başlatın: `hoca.test` girişten sonra
+kurulum sayfasına yönlendirilir ve kurulumu bitirmeden Demo OBİS'e giremez.
+
 ## Testler
 
 ```powershell
@@ -534,9 +698,15 @@ dotnet test
 Testler LocalDB'ye, çalışan bir kimlik sunucusuna ve ağa ihtiyaç duymaz. E-postalar sahte bir göndericiyle bellekte
 yakalanır.
 - **Selcuk.Identity.Tests:** her test, SQLite in-memory üzerinde kendi veritabanıyla ayrı bir uygulama örneği
-  başlatır (`EnsureCreated`, ortam `Testing`, geçici imzalama anahtarları, user-secrets okunmaz). Test kullanıcıları
-  ve istemci secret'ları test içinde, çalışma anında üretilir. İstemciler uygulamanın kendi tanımlarıyla
-  (`Istemciler.*`) kaydedilir. Back-Channel Logout POST'ları sahte bir HTTP handler ile yakalanır.
+  başlatır (`EnsureCreated`, ortam `Testing`, geçici imzalama anahtarları, user-secrets okunmaz). Veritabanı
+  adlandırılmış, paylaşımlı önbellekli bir in-memory veritabanıdır; her DbContext kendi bağlantısını açar, çünkü denetim
+  kaydı arka planda isteklerle eşzamanlı yazılır. Test kullanıcıları ve istemci secret'ları test içinde, çalışma anında
+  üretilir. İstemciler uygulamanın kendi tanımlarıyla (`Istemciler.*`) kaydedilir. Back-Channel Logout POST'ları sahte
+  bir HTTP handler ile yakalanır. TOTP kodları `Totp` yardımcısıyla üretilir: Identity'nin `AuthenticatorTokenProvider`'ının
+  kullandığı `Base32.FromBase32` ve `Rfc6238AuthenticationService.ComputeTotp` fonksiyonlarını çağırır (ikisi de
+  Identity'de `internal` olduğundan yansımayla; HMAC elle yazılmadı). Uygulamaya ayar vermek için fabrikanın `ayarlar`
+  parametresi (ör. `IkiAdimZorunluRoller:0`), proxy testlerinde istemci adresini belirlemek için bir `IStartupFilter`
+  kullanılır.
 - **Selcuk.Istemci.Ortak.Tests:** kimlik sunucusu yerine yerel bir RSA anahtar çifti ile, bu anahtarı yayınlayan
   sahte discovery ve JWKS uç noktaları kullanılır.
 - **Selcuk.Demo.Obis.Tests / Selcuk.Demo.Yemekhane.Tests:** discovery bilgisi sabit verilir. Rol testlerinde gerçek
@@ -580,6 +750,28 @@ yakalanır.
 | `Sifre_degistirme_ve_hesabim_giris_gerektiriyor` | Girişsiz → giriş sayfası |
 | `Giris_POST_siniri_asilinca_429` | 10 POST'tan sonra 429, `Retry-After`, Türkçe sayfa; GET sınırlanmaz |
 | `Olmayan_kullanici_ve_yanlis_sifre_ayni_mesaji_donuyor` | Durum kodu ve sayfa (yazılan kullanıcı adı ve antiforgery token'ı dışında) aynı |
+| `Iki_adim_ve_sifre_degistirme_POST_siniri_asilinca_429_ve_denetim_kaydi` (×3) | `/Account/IkiAdim`, `/Account/IkiAdimDogrulama`, `/Account/SifreDegistir`: 11. POST 429, denetim kaydında `HizSiniriAsildi` |
+| `Yanlis_mevcut_sifre_hatali_deneme_sayacini_artiriyor_kilitliyken_degisiklik_yapilmiyor` | Yanlış mevcut şifre sayacı 1 artırır; 5'te kilit, kilitliyken doğru şifreyle de değişmez; denetim kayıtları |
+| `Discovery_claims_supported_amr_iceriyor` | `claims_supported` içinde `amr` |
+| `Totp_yardimcisi_Identity_dogrulayicisinin_kabul_ettigi_kodu_uretiyor` | Test yardımcısının kodu Identity'nin `VerifyTwoFactorTokenAsync`'i ile geçer, "geçersiz" kod geçmez |
+| `Kurulum_gecerli_kod_olmadan_acilmiyor_gecerli_kodla_aciliyor_10_kurtarma_kodu_donuyor` | Anahtar 4'lü gruplar + SVG QR (data URI, script yok, CSP aynı), otpauth issuer `Selcuk SSO (Test)`; boş/yanlış kodla açılmaz; doğru kodla açılır, 10 farklı kod, `no-store`, e-posta; kodlar ikinci kez gösterilmez |
+| `Kurtarma_kodlari_veritabaninda_duz_metin_olarak_bulunmuyor` | `AspNetUserTokens`/`AspNetUsers`'ta hiçbir kod (tireli/tiresiz) yok; Identity'nin `RecoveryCodes` kaydı yok, 10 PBKDF2 özeti var; küçük harf/tiresiz kod kullanılabilir ve tek kullanımlık |
+| `IkiAdim_acik_kullanici_sifreyle_girince_ikinci_adima_yonleniyor_kod_olmadan_token_alamiyor` | Şifreden sonra `/Account/IkiAdim`, oturum çerezi yok; authorize girişe yönlendirir, kod yok |
+| `Dogru_TOTP_ile_giris_tamamlaniyor_amr_mfa_iceriyor_sadece_sifreyle_amr_pwd` | TOTP ile id_token `amr` = `["pwd","mfa"]`, yalnızca şifreyle `["pwd"]` (ikisi de JSON dizisi); access token'da `amr` yok; `IkiAdimBasarili` ve `client_id`'li `TokenVerildi` kayıtları |
+| `Kurtarma_koduyla_giris_calisiyor_ayni_kod_ikinci_kez_reddediliyor` | Kurtarma koduyla giriş, kalan 9 kodlu e-posta; aynı kod reddedilir ve sayaç 1 artar; başka kod küçük harf/boşlukla geçer |
+| `Bes_hatali_TOTP_denemesinde_hesap_kilitleniyor` | 5 yanlış TOTP → kilit; kilitliyken doğru kod da reddedilir; `IkiAdimBasarisiz` ×6 ve `HesapKilitlendi` kayıtları |
+| `Zorunlu_rol_kullanicisi_kuruluma_zorlaniyor_kurulumdan_once_token_alamiyor` | `IkiAdimZorunluRoller` = akademisyen: girişten sonra kurulum sayfası; authorize kurulum sayfasına yönlendirir; onay formu doğrudan gönderilse de `access_denied`, kod yok; öğrenci zorlanmaz; kurulumdan sonra token (`amr` ⊇ `mfa`); zorunlu rolde 2FA kapatılamaz |
+| `Kurulum_zorunlulugundan_once_alinan_kod_token_ucunda_reddediliyor` | Kod alındıktan sonra 2FA zorunlu rol verilen kullanıcı: token uç noktası `invalid_grant` |
+| `IkiAdim_kapatma_yanlis_sifre_veya_yanlis_kodla_reddediliyor` | Yanlış şifre veya yanlış kodla kapatma/kod yenileme reddedilir, sayaç 3; doğru ikisiyle kapanır, kodlar silinir, anahtar değişir, e-posta, giriş tek adımlı |
+| `Kurtarma_kodlari_yenilenince_eskiler_gecersiz_diger_oturum_kapaniyor` | Yeni 10 kod, eskilerle kesişmez; e-posta; bu oturum açık, diğer oturum kapalı; eski kod geçmez, yeni geçer |
+| `Iki_adim_sayfalari_giris_gerektiriyor_ikinci_adim_sifre_adimi_olmadan_acilmiyor` | Kurulum ve güvenlik geçmişi girişsiz → giriş sayfası; ikinci adım şifre adımı olmadan → giriş |
+| `Basarili_ve_basarisiz_giriste_kayit_olusuyor_olmayan_kullanici_adi_yalnizca_ozetle_saklaniyor` | Başarılı/başarısız giriş kayıtları (kullanıcı, sonuç, ayrıntı, user agent, 200 karaktere kısaltma); olmayan kullanıcı adı hiçbir sütunda yok, SHA-256 özeti var |
+| `Denetim_tablosunun_hicbir_sutununda_sifre_kod_veya_token_bulunmuyor` | Uçtan uca senaryo (kullanıcı adı alanına şifre, 2FA açma, TOTP ve kurtarma koduyla giriş, OIDC, çıkış, şifre sıfırlama) sonrası tablonun tüm sütunlarında şifreler, anahtar, TOTP/kurtarma kodları, kod, verifier, secret, token'lar, logout_token, çerez ve sıfırlama kodu yok |
+| `Saklama_suresini_asan_kayitlar_temizlik_isiyle_siliniyor` | Varsayılan 180 gün; `DenetimKaydiSaklamaGun` = 7 iken 30 ve 8 günlük kayıtlar silinir, 6 günlük ve yeni kalır |
+| `Guvenlik_gecmisi_yalnizca_kullanicinin_kendi_son_20_kaydini_gosteriyor` | Başka kullanıcının uygulama ve IP'si görünmez; 25 kayıttan 20'si; uygulamanın görünen adı ve IP |
+| `GuvenilenProxyler_bosken_X_Forwarded_For_dikkate_alinmiyor` | Liste boş: kayıtta proxy IP'si; farklı `X-Forwarded-For`'lu iki istemci aynı sınıra takılır |
+| `GuvenilenProxyler_doluyken_listedeki_proxyden_gelen_baslik_dikkate_aliniyor` | Liste = proxy: kayıtta gerçek istemci IP'si; iki istemcinin sınırı ayrı |
+| `Listede_olmayan_adresten_gelen_baslik_dikkate_alinmiyor` | Liste başka ağ (CIDR) ve adres: başlık yok sayılır |
 | **Selcuk.Istemci.Ortak.Tests** | |
 | `Gecerli_logout_token_oturumu_sonlandiriyor` | 200 (`no-store`); o sid'li oturum sonraki istekte authorize'a yönlenir |
 | `Imzasi_gecersiz_token_reddediliyor` | 400, oturum etkilenmez |
@@ -599,11 +791,19 @@ yakalanır.
 | `Ogrenci_Notlarim_acilir_Ders_Yonetimi_reddedilir` | ogrenci: Notlarım 200, Ders Yönetimi → Erişim reddedildi |
 | `Akademisyen_Ders_Yonetimi_acilir_Notlarim_reddedilir` | akademisyen: Ders Yönetimi 200, Notlarım → Erişim reddedildi |
 | `Token_Inceleme_Development_disinda_kapali` | Development dışında 404 |
+| `Giris_yapmis_kullanici_eslestirme_cerezi_olmadan_donuste_ana_sayfaya_yonlendiriliyor` | Geri tuşu (`/signin-oidc`, eşleştirme çerezi yok), giriş yapmış: 302 → `/` |
+| `Giris_yapmis_kullanici_gecerli_state_ile_correlation_hatasinda_donus_adresine_yonlendiriliyor` | Geçerli state, eşleştirme çerezi yok, giriş yapmış: state'teki yerel dönüş adresine (`/Notlarim`) |
+| `Girissiz_kullanici_eslestirme_cerezi_olmadan_donuste_GirisHatasi_sayfasina_yonlendiriliyor` | Giriş yapmamış: `/GirisHatasi?neden=oturum-suresi`, yalnızca `neden` parametresi; sayfada "Tekrar giriş yap" |
+| `Onay_reddedilince_GirisHatasi_sayfasina_erisim_reddedildi_nedeniyle_yonlendiriliyor` | `error=access_denied`: `/GirisHatasi?neden=erisim-reddedildi` |
+| `Onay_reddedilince_gecerli_state_ile_de_erisim_reddedildi_nedeniyle_yonlendiriliyor` | Geçerli state ile `access_denied` de aynı sayfaya |
+| `Dis_donus_adresine_yonlendirilmiyor` (×3) | State'te `https://evil.example`, `//evil.example`, `/\evil.example`: yönlendirme `/`'a |
 | **Selcuk.Demo.Yemekhane.Tests** | |
 | `Haftalik_menu_herkese_acik` | Girişsiz 200, başlıkta "Demo Yemekhane — test uygulaması" |
 | `Girissiz_kullanici_Rezervasyonlarim_icin_kimlik_sunucusuna_yonlendiriliyor` | 302 → authorize, `client_id=demo-yemekhane`, `code_challenge` + `S256` |
 | `Ogrenci_Yemekhane_Yonetimi_erisim_reddedildi` | ogrenci: Yönetim → Erişim reddedildi; Rezervasyonlarım 200 |
 | `Personel_Yemekhane_Yonetimi_aciliyor` | personel: Yönetim 200 |
+| `Giris_yapmis_kullanici_eslestirme_cerezi_olmadan_donuste_ana_sayfaya_yonlendiriliyor` | Yemekhane'de geri tuşu, giriş yapmış: 302 → `/` |
+| `Girissiz_kullanici_eslestirme_cerezi_olmadan_donuste_GirisHatasi_sayfasina_yonlendiriliyor` | Yemekhane'de giriş yapmamış: `/GirisHatasi?neden=oturum-suresi` |
 
 ## Sürümler
 
@@ -613,6 +813,7 @@ yakalanır.
 | **OpenIddict** (`OpenIddict.AspNetCore`, `OpenIddict.EntityFrameworkCore`) | **7.7.2** (NuGet'teki en güncel kararlı sürüm) |
 | Microsoft.AspNetCore.Identity.EntityFrameworkCore | 10.0.13 |
 | Microsoft.EntityFrameworkCore.SqlServer / .Design | 10.0.13 |
+| QRCoder (2FA QR kodu, SVG; MIT lisanslı) | 1.8.1 |
 | Microsoft.AspNetCore.Authentication.OpenIdConnect (Selcuk.Istemci.Ortak) | 10.0.13 |
 | System.Security.Cryptography.Pkcs (açık kapatmak için sabitlendi; Identity + Identity.Tests) | 10.0.13 |
 | System.Security.Cryptography.Xml (açık kapatmak için sabitlendi; Identity.Tests) | 10.0.13 |
@@ -629,8 +830,10 @@ yakalanır.
       çıkış. Front-channel logout eklenmedi.
 - [x] **Şifre sıfırlama** (e-posta ile 30 dakikalık, tek kullanımlık bağlantı), **şifre değiştirme**, istek sınırı ve
       kullanıcı adı tahmini koruması
-- [ ] **2FA** (TOTP doğrulayıcı uygulama)
-- [ ] **Denetim kaydı** (giriş, başarısız deneme, kilitleme, onay, çıkış olayları)
+- [x] **2FA** (TOTP doğrulayıcı uygulama): QR ile kurulum, özetlenerek saklanan kurtarma kodları, "bu cihazı
+      hatırla", rol bazlı zorunluluk, id_token'da `amr`
+- [x] **Denetim kaydı** (giriş, başarısız deneme, kilitleme, 2FA, şifre, onay, token, çıkış, back-channel logout ve
+      istek sınırı olayları), kullanıcının güvenlik geçmişi sayfası, KVKK saklama süresi
 - [ ] **Yönetim paneli** (kullanıcı, rol ve istemci uygulama yönetimi)
 - [ ] **Token iptali** (revocation uç noktası, oturum/yetkilendirme iptali)
 - [ ] **Production sertifika yönetimi**: şu an yalnızca Development sertifikaları (`AddDevelopmentSigningCertificate`,

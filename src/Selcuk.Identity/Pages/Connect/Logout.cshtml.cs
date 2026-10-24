@@ -4,14 +4,17 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using OpenIddict.Server.AspNetCore;
 using Selcuk.Identity.Data;
+using Selcuk.Identity.Denetim;
 using Selcuk.Identity.Oidc;
+using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Selcuk.Identity.Pages.Connect;
 
 /// <summary>OIDC end-session uç noktası ve çıkış sayfası.</summary>
 public class LogoutModel(
     SignInManager<ApplicationUser> signInManager,
-    BackChannelLogoutGonderici backChannelLogout) : PageModel
+    BackChannelLogoutGonderici backChannelLogout,
+    DenetimKaydedici denetim) : PageModel
 {
     public void OnGet()
     {
@@ -20,6 +23,11 @@ public class LogoutModel(
     public async Task<IActionResult> OnPostAsync()
     {
         var sid = User.FindFirst(OidcKimlik.SidClaim)?.Value;
+        if (User.FindFirst(Claims.Subject)?.Value is { } kullaniciId)
+        {
+            denetim.Ekle(DenetimOlayi.Cikis, DenetimSonucu.Basarili, kullaniciId);
+        }
+
         await signInManager.SignOutAsync();
 
         // Tek çıkış: bu oturumda giriş yapılmış tüm istemcilere Back-Channel Logout bildirimi.

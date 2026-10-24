@@ -8,6 +8,10 @@ public static class EpostaSablonlari
     public const string Baslik = "Selçuk Üniversitesi (Test) — Tek Şifre Giriş Sistemi";
     public const string SifreSifirlamaKonusu = "Şifre sıfırlama";
     public const string SifreDegistirildiKonusu = "Şifreniz değiştirildi";
+    public const string IkiAdimAcildiKonusu = "İki aşamalı doğrulama açıldı";
+    public const string IkiAdimKapatildiKonusu = "İki aşamalı doğrulama kapatıldı";
+    public const string KurtarmaKodlariYenilendiKonusu = "Kurtarma kodlarınız yenilendi";
+    public const string KurtarmaKoduKullanildiKonusu = "Hesabınıza kurtarma koduyla giriş yapıldı";
 
     private static readonly CultureInfo Turkce = CultureInfo.GetCultureInfo("tr-TR");
 
@@ -27,6 +31,38 @@ public static class EpostaSablonlari
             "Bu değişikliği siz yapmadıysanız giriş sayfasındaki \"Şifremi unuttum\" bağlantısıyla hemen yeni bir",
             "şifre belirleyin ve sistem yöneticisine başvurun."));
 
+    public static EpostaMesaji IkiAdimAcildi(string alici, string adSoyad, DateTimeOffset zaman) =>
+        new(alici, IkiAdimAcildiKonusu, Govde(adSoyad,
+            $"Hesabınızda {Bicimle(zaman)} tarihinde iki aşamalı doğrulama açıldı. Bundan sonra girişte şifrenizle",
+            "birlikte doğrulayıcı uygulamadaki 6 haneli kod istenecek. Diğer açık oturumlarınız kapatıldı.",
+            "",
+            BenYapmadimSatiri));
+
+    public static EpostaMesaji IkiAdimKapatildi(string alici, string adSoyad, DateTimeOffset zaman) =>
+        new(alici, IkiAdimKapatildiKonusu, Govde(adSoyad,
+            $"Hesabınızda {Bicimle(zaman)} tarihinde iki aşamalı doğrulama kapatıldı. Kurtarma kodlarınız ve",
+            "hatırlanan cihazlarınız geçersiz oldu. Diğer açık oturumlarınız kapatıldı.",
+            "",
+            BenYapmadimSatiri));
+
+    public static EpostaMesaji KurtarmaKodlariYenilendi(string alici, string adSoyad, DateTimeOffset zaman) =>
+        new(alici, KurtarmaKodlariYenilendiKonusu, Govde(adSoyad,
+            $"Hesabınızın kurtarma kodları {Bicimle(zaman)} tarihinde yenilendi; eski kodlar artık geçmez.",
+            "Diğer açık oturumlarınız kapatıldı.",
+            "",
+            BenYapmadimSatiri));
+
+    public static EpostaMesaji KurtarmaKoduKullanildi(string alici, string adSoyad, DateTimeOffset zaman, int kalan) =>
+        new(alici, KurtarmaKoduKullanildiKonusu, Govde(adSoyad,
+            $"Hesabınıza {Bicimle(zaman)} tarihinde bir kurtarma koduyla giriş yapıldı. Kullanılan kod artık geçmez.",
+            $"Kalan kurtarma kodu sayısı: {kalan}. Kodlarınız azaldıysa Hesabım > İki aşamalı doğrulama sayfasından",
+            "yenileyebilirsiniz.",
+            "",
+            BenYapmadimSatiri));
+
+    private const string BenYapmadimSatiri =
+        "Bu işlemi siz yapmadıysanız hemen şifrenizi değiştirin ve sistem yöneticisine başvurun.";
+
     private static string Govde(string adSoyad, params string[] satirlar) => string.Join("\r\n",
     [
         Baslik,
@@ -40,7 +76,8 @@ public static class EpostaSablonlari
         "",
     ]);
 
-    private static string Bicimle(DateTimeOffset zaman) =>
+    /// <summary>Türkiye saatiyle "gg.aa.yyyy SS:dd (TSİ)"; güvenlik geçmişi sayfası da kullanır.</summary>
+    internal static string Bicimle(DateTimeOffset zaman) =>
         TimeZoneInfo.TryFindSystemTimeZoneById("Europe/Istanbul", out var tsi)
             ? TimeZoneInfo.ConvertTime(zaman, tsi).ToString("dd.MM.yyyy HH:mm", Turkce) + " (TSİ)"
             : zaman.UtcDateTime.ToString("dd.MM.yyyy HH:mm", Turkce) + " (UTC)";

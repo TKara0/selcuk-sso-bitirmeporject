@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Selcuk.Identity.Data;
 using Selcuk.Identity.Eposta;
+using Selcuk.Identity.Pages.Account;
 
 namespace Selcuk.Identity.Tests;
 
@@ -86,6 +87,44 @@ public sealed class SifreDegistirmeTests : IDisposable
         var bilgi = await _factory.Eposta.SiradakiAsync();
         Assert.Equal(EpostaSablonlari.SifreDegistirildiKonusu, bilgi.Konu);
         Assert.Equal($"{kullaniciAdi}@test.local", bilgi.Alici);
+    }
+
+    [Fact]
+    public async Task Yanlis_mevcut_sifre_hatali_deneme_sayacini_artiriyor_kilitliyken_degisiklik_yapilmiyor()
+    {
+        var (kullaniciAdi, sifre) = await _factory.KullaniciOlusturAsync();
+        var client = _factory.HttpsIstemcisi();
+        await SelcukIdentityFactory.GirisYapAsync(client, kullaniciAdi, sifre);
+
+        async Task<int> SayacAsync()
+        {
+            await using var scope = _factory.Services.CreateAsyncScope();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            return await userManager.GetAccessFailedCountAsync((await userManager.FindByNameAsync(kullaniciAdi))!);
+        }
+
+        Assert.Equal(0, await SayacAsync());
+        var yanlis = await DegistirAsync(client, "YanlisSifre123", $"Cc3{Guid.NewGuid():N}");
+        Assert.Contains("Mevcut şifre yanlış.", WebUtility.HtmlDecode(await yanlis.Content.ReadAsStringAsync()));
+        Assert.Equal(1, await SayacAsync());
+
+        // 5. yanlış denemede hesap kilitlenir; kilitliyken doğru mevcut şifreyle de değişiklik yapılmaz.
+        for (var i = 2; i <= 5; i++)
+        {
+            await DegistirAsync(client, $"YanlisSifre12{i}", $"Cc3{Guid.NewGuid():N}");
+        }
+
+        var kilitli = await DegistirAsync(client, sifre, $"Cc3{Guid.NewGuid():N}");
+        Assert.Equal(HttpStatusCode.OK, kilitli.StatusCode);
+        Assert.Contains(SifreDegistirModel.KilitliMesaji,
+            WebUtility.HtmlDecode(await kilitli.Content.ReadAsStringAsync()));
+        Assert.True(await SifreDogruMuAsync(kullaniciAdi, sifre));
+
+        var kullaniciId = (await _factory.KullaniciAsync(kullaniciAdi)).Id;
+        await _factory.DenetimKayitlariAsync(k =>
+            k.Count(x => x.OlayTuru == DenetimOlayi.SifreDegisti && x.Sonuc == DenetimSonucu.Basarisiz
+                && x.KullaniciId == kullaniciId) == 6 &&
+            k.Any(x => x.OlayTuru == DenetimOlayi.HesapKilitlendi && x.KullaniciId == kullaniciId));
     }
 
     [Fact]

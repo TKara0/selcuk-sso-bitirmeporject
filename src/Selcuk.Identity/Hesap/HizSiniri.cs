@@ -1,13 +1,17 @@
 using System.Globalization;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
+using Selcuk.Identity.Data;
+using Selcuk.Identity.Denetim;
 
 namespace Selcuk.Identity.Hesap;
 
 /// <summary>
-/// Kaba kuvvet ve tahmin denemelerine karşı IP başına istek sınırı (ASP.NET Core rate limiter). Giriş, şifremi unuttum
-/// ve şifre sıfırlama sayfaları <c>[EnableRateLimiting(HassasForm)]</c> ile işaretlidir; yalnızca POST sayılır, her
-/// sayfanın ayrı sayacı vardır. Sınır aşılınca 429 ve Türkçe hata sayfası döner.
+/// Kaba kuvvet ve tahmin denemelerine karşı IP başına istek sınırı (ASP.NET Core rate limiter). Giriş, iki aşamalı
+/// doğrulama (giriş ikinci adımı ve kurulum/yönetim), şifremi unuttum, şifre sıfırlama ve şifre değiştirme sayfaları
+/// <c>[EnableRateLimiting(HassasForm)]</c> ile işaretlidir; yalnızca POST sayılır, her sayfanın ayrı sayacı vardır.
+/// IP, güvenilen proxy arkasında gerçek istemci adresidir (<see cref="GuvenilenProxyler"/>). Sınır aşılınca 429,
+/// Türkçe hata sayfası ve denetim kaydı.
 /// </summary>
 public static class HizSiniri
 {
@@ -39,8 +43,12 @@ public static class HizSiniri
     private static async ValueTask ReddedildiAsync(OnRejectedContext context, CancellationToken cancellationToken)
     {
         var http = context.HttpContext;
+        var sayfa = http.GetEndpoint()?.DisplayName;
         http.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger(typeof(HizSiniri))
-            .LogWarning("İstek sınırı aşıldı: {Sayfa}", http.GetEndpoint()?.DisplayName);
+            .LogWarning("İstek sınırı aşıldı: {Sayfa}", sayfa);
+        // İstek sınırı kimlik doğrulamadan önce çalışır; kayıtta kullanıcı yok, IP ve sayfa var.
+        http.RequestServices.GetRequiredService<DenetimKaydedici>().Ekle(DenetimOlayi.HizSiniriAsildi,
+            DenetimSonucu.Basarisiz, ayrinti: $"sayfa={sayfa}");
 
         if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var bekleme))
         {

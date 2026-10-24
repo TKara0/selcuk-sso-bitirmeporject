@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
 using Selcuk.Identity.Data;
+using Selcuk.Identity.Denetim;
+using Selcuk.Identity.Hesap;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Selcuk.Identity.Oidc;
@@ -27,6 +29,8 @@ public static class OidcUcNoktalari
         HttpContext context,
         UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager,
+        IkiAdimIslemleri ikiAdim,
+        DenetimKaydedici denetim,
         ApplicationDbContext db,
         TimeProvider zaman)
     {
@@ -48,11 +52,24 @@ public static class OidcUcNoktalari
             return Reddet(Errors.InvalidGrant, "Token artık geçerli değil.");
         }
 
+        // Rolü iki aşamalı doğrulama gerektiren kullanıcı kurulumu bitirmeden hiçbir istemciye token alamaz
+        // (kod veya refresh token kurulum zorunluluğundan önce verilmiş olsa bile).
+        if (await ikiAdim.KurulumGerekliAsync(user))
+        {
+            return Reddet(Errors.InvalidGrant, "İki aşamalı doğrulama kurulumu gerekli.");
+        }
+
         // Kapsamlar, yetkilendirme kimliği gibi OpenIddict claim'leri korunur; kullanıcı bilgileri tazelenir.
         var identity = new ClaimsIdentity(result.Principal!.Claims,
             authenticationType: result.Principal.Identity?.AuthenticationType,
             nameType: Claims.Name, roleType: Claims.Role);
         await OidcKimlik.KullaniciClaimleriniEkleAsync(identity, user, userManager);
+        // amr koddan okunurken dizi ayrı claim'lere bölünebilir; id_token'da yine JSON dizisi olsun.
+        if (OidcKimlik.AmrOku(identity).ToList() is { Count: > 0 } amr)
+        {
+            OidcKimlik.AmrAyarla(identity, amr);
+        }
+
         identity.SetDestinations(OidcKimlik.Hedefler);
 
         // Bu oturumda bu istemciye token verildiği kaydedilir; çıkışta Back-Channel Logout bildirimi gider.
@@ -62,6 +79,9 @@ public static class OidcUcNoktalari
         {
             await IstemciOturumuKaydetAsync(db, zaman, sid, user.Id, clientId);
         }
+
+        denetim.Ekle(DenetimOlayi.TokenVerildi, DenetimSonucu.Basarili, user.Id, clientId,
+            $"grant_type={request.GrantType}");
 
         return Results.SignIn(new ClaimsPrincipal(identity),
             authenticationScheme: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);

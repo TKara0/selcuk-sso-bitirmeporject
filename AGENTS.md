@@ -24,10 +24,11 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
     zorunlu, explicit onay) Development'ta açılışta oluşturulur veya güncellenir; secret'lar user-secrets'tan
     okunur. Özel ayarlar (`backchannel_logout_uri`, `client_uri`, `initiate_login_uri`, `aciklama`) OpenIddict
     `Properties` alanında.
-  - **EF Core + SQL Server** (geliştirmede LocalDB, veritabanı `SelcukSSO`). Identity, OpenIddict ve
-    `IstemciOturumlari` tabloları aynı `ApplicationDbContext` içinde.
-  - **Razor Pages** (Türkçe arayüz): Uygulamalarım (ana sayfa; kartlar `initiate_login_uri?iss=…`), Giriş, Şifremi
-    unuttum, Şifre sıfırlama, Hesabım, Şifre değiştir, Onay, Çıkış, Erişim reddedildi. Tüm yanıtlarda güvenlik
+  - **EF Core + SQL Server** (geliştirmede LocalDB, veritabanı `SelcukSSO`). Identity, OpenIddict,
+    `IstemciOturumlari` ve `DenetimKayitlari` tabloları aynı `ApplicationDbContext` içinde.
+  - **Razor Pages** (Türkçe arayüz): Uygulamalarım (ana sayfa; kartlar `initiate_login_uri?iss=…`), Giriş, Girişin
+    ikinci adımı (2FA), Şifremi unuttum, Şifre sıfırlama, Hesabım, Şifre değiştir, İki aşamalı doğrulama, Güvenlik
+    geçmişi, Onay, Çıkış, Erişim reddedildi. Tüm yanıtlarda güvenlik
     başlıkları (`GuvenlikBasliklari.cs`: nosniff, no-referrer, X-Frame-Options DENY, CSP).
   - **Şifre sıfırlama ve değiştirme** (`Hesap/`): Identity'nin yerleşik `DataProtectorTokenProvider`'ı ayrı adla
     (`SifreSifirlamaTokenSaglayici`, 30 dk, güvenlik damgasına bağlı, tek kullanımlık). Bağlantı `OpenIddict:Issuer`
@@ -36,9 +37,25 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
     mevcut sid hariç), bilgilendirme e-postası. `OturumDamgasi` kimlik sunucusu çerezinin güvenlik damgasını her
     istekte doğrular (çerezi yenilemeden).
   - **Kaba kuvvet koruması**: `HizSiniri` (ASP.NET Core rate limiter, IP + sayfa başına dakikada 10 POST: giriş,
-    şifremi unuttum, sıfırlama; 429 + Türkçe sayfa). Girişte kullanıcı yoksa veya hesap kilitliyse
-    `SahteSifreDogrulayici` aynı maliyette sahte PBKDF2 doğrulaması yapar; şifremi unuttum her durumda aynı işi yapar.
-    5 deneme / 15 dk kilitleme. Identity'nin şifre hataları Türkçe (`TurkceIdentityHatalari`).
+    girişin ikinci adımı, 2FA kurulum/yönetim, şifremi unuttum, sıfırlama, şifre değiştirme; 429 + Türkçe sayfa +
+    denetim kaydı). Girişte kullanıcı yoksa veya hesap kilitliyse `SahteSifreDogrulayici` aynı maliyette sahte PBKDF2
+    doğrulaması yapar; şifremi unuttum her durumda aynı işi yapar. 5 deneme / 15 dk kilitleme; yanlış TOTP/kurtarma
+    kodu ve şifre değiştirmede yanlış mevcut şifre de sayılır. Identity'nin şifre hataları Türkçe
+    (`TurkceIdentityHatalari`).
+  - **İki aşamalı doğrulama** (`Hesap/IkiAdimIslemleri`, sayfalar `Account/IkiAdim` ve `Account/IkiAdimDogrulama`):
+    Identity'nin `AuthenticatorTokenProvider`'ı (TOTP). Anahtar metin + QR (QRCoder, sunucuda SVG, data URI; CSP
+    değişmedi), kod doğrulanmadan açılmaz, 10 kurtarma kodu bir kez gösterilir. `KurtarmaKoduOzetDeposu`
+    (`UserStore` alt sınıfı) kodları `IPasswordHasher` özetiyle saklar. Açma/kapatma/kod yenilemede damga yenilenir,
+    diğer oturumlara Back-Channel Logout, e-posta. Kapatma ve yenileme şifre + TOTP ister. "Bu cihazı hatırla":
+    Identity `TwoFactorRememberMe` (`IkiAdimCihazHatirlamaGun`, 30). `IkiAdimZorunluRoller`: kurulum bitmeden
+    authorize ve token uç noktası reddeder. id_token'da `amr` JSON dizisi: `["pwd"]` / `["pwd","mfa"]`
+    (`OidcKimlik.AmrDegerleri`); oturum yenilemede `OturumKimligi` korur.
+  - **Denetim kaydı** (`Denetim/`, tablo `DenetimKayitlari`): `DenetimKaydedici` kuyruğa bırakır,
+    `DenetimYazmaHizmeti` arka planda yazar (hata yalnızca loglanır), `DenetimTemizlemeHizmeti` günde bir kez
+    `DenetimKaydiSaklamaGun` (180) günden eskileri siler. Sır (şifre, kod, token, çerez) yazılmaz; olmayan kullanıcı adı
+    yalnızca SHA-256 özetiyle. Hesabım > Güvenlik geçmişi: kullanıcının son 20 olayı.
+  - **İstemci IP'si**: `GuvenilenProxyler` (varsayılan boş) dışındaki adreslerden gelen `X-Forwarded-For` yok sayılır;
+    istek sınırı ve denetim kaydı `RemoteIpAddress`'i kullanır.
   - **E-posta** (`Eposta/`): `IEpostaGonderici`; Development'ta `DosyaEpostaGonderici` (`App_Data/eposta/*.eml`,
     .gitignore'da), diğer ortamlarda `SmtpEpostaGonderici` (`Eposta:Smtp`, şifre user-secrets/ortam değişkeni).
     Sayfalar `EpostaKuyrugu`'na bırakır, `EpostaGonderimHizmeti` arka planda gönderir. Şablonlar düz metin, Türkçe.
@@ -56,9 +73,12 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
 - `src/Selcuk.Demo.Yemekhane` (https://localhost:5102): Haftalık menü (herkese açık), Rezervasyonlarım (bellek içi),
   Yemekhane Yönetimi (personel), Profilim, RP-initiated logout. Veriler uydurmadır.
 - `tests/Selcuk.Identity.Tests`: xUnit + `WebApplicationFactory` entegrasyon, uçtan uca protokol, tek giriş ve tek
-  çıkış, şifre sıfırlama/değiştirme, istek sınırı ve tahmin koruması testleri. Her test SQLite in-memory üzerinde
-  kendi veritabanını kullanır; ortam adı `Testing`. Back-Channel Logout POST'ları sahte HTTP handler ile, e-postalar
-  `SahteEpostaGonderici` ile yakalanır.
+  çıkış, şifre sıfırlama/değiştirme, istek sınırı ve tahmin koruması, 2FA, denetim kaydı ve güvenilen proxy testleri.
+  Her test kendi adlandırılmış, paylaşımlı önbellekli SQLite in-memory veritabanını kullanır (DbContext başına
+  bağlantı); ortam adı `Testing`; fabrikaya `ayarlar` ile appsettings değeri verilir. Back-Channel Logout POST'ları
+  sahte HTTP handler ile, e-postalar `SahteEpostaGonderici` ile yakalanır. TOTP kodlarını `Totp` yardımcısı Identity'nin
+  iç `Rfc6238AuthenticationService`'ini yansımayla çağırarak üretir. Denetim kayıtları arka planda yazıldığı için
+  `DenetimKayitlariAsync` ile beklenir.
 - `tests/Selcuk.Istemci.Ortak.Tests`: Back-Channel Logout alıcısı, çerez süresi, ortak dağıtık önbellek, JWKS hatası
   (503) ve `iss` doğrulaması testleri; yerel RSA anahtarı ve sahte JWKS.
 - `tests/Selcuk.Demo.Obis.Tests`, `tests/Selcuk.Demo.Yemekhane.Tests`: yönlendirme ve rol testleri; gerçek kimlik

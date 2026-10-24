@@ -1,10 +1,14 @@
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.CookiePolicy;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using OpenIddict.Server;
 using Selcuk.Identity;
 using Selcuk.Identity.Data;
+using Selcuk.Identity.Denetim;
 using Selcuk.Identity.Eposta;
 using Selcuk.Identity.Hesap;
 using Selcuk.Identity.Oidc;
@@ -34,6 +38,8 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 
         // Şifre sıfırlama token'ı ayrı sağlayıcıdan: 30 dakika geçerli, güvenlik damgasına bağlı (tek kullanımlık).
         options.Tokens.PasswordResetTokenProvider = SifreSifirlamaTokenSaglayici.Ad;
+        // İki aşamalı doğrulama: Identity'nin TOTP (RFC 6238) sağlayıcısı.
+        options.Tokens.AuthenticatorTokenProvider = TokenOptions.DefaultAuthenticatorProvider;
 
         // Oturum çerezindeki claim adları OIDC adlarıyla aynı olsun.
         options.ClaimsIdentity.UserIdClaimType = Claims.Subject;
@@ -42,8 +48,18 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
         options.ClaimsIdentity.EmailClaimType = Claims.Email;
     })
     .AddEntityFrameworkStores<ApplicationDbContext>()
+    // Kurtarma kodları düz metin değil, IPasswordHasher özetiyle saklanır.
+    .AddUserStore<KurtarmaKoduOzetDeposu>()
     .AddTokenProvider<SifreSifirlamaTokenSaglayici>(SifreSifirlamaTokenSaglayici.Ad)
+    .AddTokenProvider<AuthenticatorTokenProvider<ApplicationUser>>(TokenOptions.DefaultAuthenticatorProvider)
     .AddErrorDescriber<TurkceIdentityHatalari>();
+
+builder.Services.AddOptions<IkiAdimAyarlari>().Configure<IConfiguration>(IkiAdimAyarlari.Oku);
+
+// "Bu cihazı hatırla" çerezi (Identity TwoFactorRememberMe): IkiAdimCihazHatirlamaGun (varsayılan 30) gün.
+builder.Services.AddOptions<CookieAuthenticationOptions>(IdentityConstants.TwoFactorRememberMeScheme)
+    .Configure<IOptions<IkiAdimAyarlari>>((options, ikiAdim) =>
+        options.ExpireTimeSpan = TimeSpan.FromDays(ikiAdim.Value.CihazHatirlamaGun));
 
 // Kimlik sunucusu oturumu ve istemci çerezleri aynı süreyi kullanır (istemcide Kimlik:OturumSuresi).
 var oturumSuresi = builder.Configuration.GetValue<TimeSpan?>("Oturum:Sure") ?? TimeSpan.FromHours(8);
@@ -90,7 +106,18 @@ builder.Services.AddHostedService<EpostaGonderimHizmeti>();
 
 builder.Services.AddScoped<SahteSifreDogrulayici>();
 builder.Services.AddScoped<SifreDegisikligi>();
+builder.Services.AddScoped<IkiAdimIslemleri>();
 builder.Services.AddHizSiniri(builder.Configuration);
+
+// Denetim kaydı: sayfalar kuyruğa bırakır, arka plan hizmeti yazar; eski kayıtlar günde bir kez silinir (KVKK).
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddSingleton<DenetimKaydedici>();
+builder.Services.AddHostedService<DenetimYazmaHizmeti>();
+builder.Services.AddSingleton<DenetimTemizlemeHizmeti>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<DenetimTemizlemeHizmeti>());
+
+// X-Forwarded-For yalnızca GuvenilenProxyler listesindeki adreslerden kabul edilir (liste boşsa hiç).
+builder.Services.AddOptions<ForwardedHeadersOptions>().Configure<IConfiguration>(GuvenilenProxyler.Yapilandir);
 
 builder.Services.AddAntiforgery(options =>
 {
@@ -136,7 +163,7 @@ builder.Services.AddOpenIddict()
 
         options.RegisterScopes(Scopes.OpenId, Scopes.Profile, Scopes.Email, Scopes.Roles);
         options.RegisterClaims(Claims.Subject, Claims.Name, Claims.Email, Claims.Role,
-            OidcKimlik.FakulteClaim, OidcKimlik.BolumClaim, OidcKimlik.SidClaim);
+            OidcKimlik.FakulteClaim, OidcKimlik.BolumClaim, OidcKimlik.SidClaim, Claims.AuthenticationMethodReference);
 
         // OIDC Back-Channel Logout 1.0 desteği discovery'de ilan edilir (gönderim: BackChannelLogoutGonderici).
         options.AddEventHandler<OpenIddictServerEvents.HandleConfigurationRequestContext>(handler =>
@@ -178,6 +205,8 @@ builder.Services.AddHostedService<BaslangicVerisi>();
 
 var app = builder.Build();
 
+// İlk sırada: istek sınırı ve denetim kaydı gerçek istemci IP'sini görsün.
+app.UseForwardedHeaders();
 app.UseGuvenlikBasliklari();
 
 if (!app.Environment.IsDevelopment())

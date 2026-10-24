@@ -1,0 +1,38 @@
+@page
+@model Selcuk.Identity.Pages.Account.GuvenlikGecmisiModel
+@{
+    ViewData["Title"] = "Güvenlik geçmişi";
+}
+<section class="kart">
+    <h1>Güvenlik geçmişi</h1>
+    <p class="aciklama">
+        Hesabınızla ilgili son @GuvenlikGecmisiModel.KayitSayisi güvenlik olayı. Tanımadığınız bir giriş veya değişiklik
+        görürseniz şifrenizi değiştirin ve sistem yöneticisine başvurun.
+    </p>
+
+    @if (Model.Satirlar.Count == 0)
+    {
+        <p>Henüz kayıt yok.</p>
+    }
+    else
+    {
+        <ul class="kapsamlar gecmis">
+            @foreach (var satir in Model.Satirlar)
+            {
+                <li>
+                    <strong>@satir.Olay</strong>
+                    <span>@satir.Zaman</span>
+                    @if (satir.Uygulama is not null)
+                    {
+                        <span>Uygulama: @satir.Uygulama</span>
+                    }
+                    <span>IP: @(satir.IpAdresi ?? "bilinmiyor")</span>
+                </li>
+            }
+        </ul>
+    }
+
+    <div class="dugmeler">
+        <a class="dugme ikincil" asp-page="/Account/Hesabim">Hesabım</a>
+    </div>
+</section>

@@ -35,14 +35,23 @@ public static class OturumKimligi
         return Task.CompletedTask;
     }
 
-    /// <summary>Güvenlik damgası doğrulaması principal'ı yeniden oluşturduğunda sid korunur.</summary>
+    /// <summary>
+    /// Güvenlik damgası doğrulaması principal'ı yeniden oluşturduğunda sid ve kimlik doğrulama yöntemi (amr) korunur;
+    /// Identity bu yenilemede amr'yi kendiliğinden taşımaz.
+    /// </summary>
     public static Task PrincipalYenilenirkenAsync(SecurityStampRefreshingPrincipalContext context)
     {
-        var sid = context.CurrentPrincipal?.FindFirst(OidcKimlik.SidClaim)?.Value;
-        if (sid is not null && context.NewPrincipal?.Identity is ClaimsIdentity identity
-            && !identity.HasClaim(c => c.Type == OidcKimlik.SidClaim))
+        if (context.NewPrincipal?.Identity is not ClaimsIdentity identity || context.CurrentPrincipal is null)
         {
-            identity.AddClaim(new Claim(OidcKimlik.SidClaim, sid));
+            return Task.CompletedTask;
+        }
+
+        foreach (var tur in new[] { OidcKimlik.SidClaim, Claims.AuthenticationMethodReference })
+        {
+            if (context.CurrentPrincipal.FindFirst(tur)?.Value is { } deger && !identity.HasClaim(c => c.Type == tur))
+            {
+                identity.AddClaim(new Claim(tur, deger));
+            }
         }
 
         return Task.CompletedTask;

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
@@ -9,6 +10,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
@@ -24,14 +26,18 @@ namespace Selcuk.Identity.Tests;
 /// Her örnek kendi SQLite in-memory veritabanını kullanır; testler LocalDB'ye ve
 /// birbirlerine bağımlı değildir. "Testing" ortamında geçici (ephemeral) imzalama anahtarları
 /// kullanılır ve Development'a özgü test kullanıcıları seed edilmez. ekHizmetler, uygulamanın servislerini test
-/// için değiştirmeye yarar (ör. token ömrü).
+/// için değiştirmeye yarar (ör. token ömrü); ayarlar, appsettings değerlerini geçersiz kılar.
+/// Veritabanı adlandırılmış, paylaşımlı önbellekli bir in-memory veritabanıdır: her DbContext kendi bağlantısını açar
+/// (arka plandaki denetim kaydı yazıcısı isteklerle eşzamanlı çalışır); açık tutulan _connection veritabanını yaşatır.
 /// </summary>
 public sealed partial class SelcukIdentityFactory : WebApplicationFactory<Program>
 {
     private const string OturumCerezi = "SelcukSSO.Oturum";
 
-    private readonly SqliteConnection _connection = new("DataSource=:memory:");
+    private readonly string _baglantiDizesi = $"Data Source=selcuk-test-{Guid.NewGuid():N};Mode=Memory;Cache=Shared";
+    private readonly SqliteConnection _connection;
     private readonly Action<IServiceCollection>? _ekHizmetler;
+    private readonly IReadOnlyDictionary<string, string?>? _ayarlar;
 
     /// <summary>Back-Channel Logout POST'larını yakalayan sahte HTTP alıcısı (gerçek ağa çıkılmaz).</summary>
     public SahteBackChannelAlicisi BackChannel { get; } = new();
@@ -39,9 +45,12 @@ public sealed partial class SelcukIdentityFactory : WebApplicationFactory<Progra
     /// <summary>Gönderilen e-postaları yakalayan sahte gönderici (dosyaya veya ağa yazılmaz).</summary>
     public SahteEpostaGonderici Eposta { get; } = new();
 
-    public SelcukIdentityFactory(Action<IServiceCollection>? ekHizmetler = null)
+    public SelcukIdentityFactory(Action<IServiceCollection>? ekHizmetler = null,
+        IReadOnlyDictionary<string, string?>? ayarlar = null)
     {
         _ekHizmetler = ekHizmetler;
+        _ayarlar = ayarlar;
+        _connection = new SqliteConnection(_baglantiDizesi);
         _connection.Open();
 
         using var db = new ApplicationDbContext(new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -54,13 +63,18 @@ public sealed partial class SelcukIdentityFactory : WebApplicationFactory<Progra
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
+        if (_ayarlar is not null)
+        {
+            builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(_ayarlar));
+        }
+
         builder.ConfigureTestServices(services =>
         {
             services.RemoveAll<DbContextOptions<ApplicationDbContext>>();
             services.RemoveAll<IDbContextOptionsConfiguration<ApplicationDbContext>>();
             services.AddDbContext<ApplicationDbContext>(options =>
             {
-                options.UseSqlite(_connection);
+                options.UseSqlite(_baglantiDizesi);
                 options.UseOpenIddict();
             });
             services.AddHttpClient(BackChannelLogoutGonderici.HttpIstemciAdi)
@@ -160,16 +174,98 @@ public sealed partial class SelcukIdentityFactory : WebApplicationFactory<Progra
         return bilet.Principal.FindFirst(OidcKimlik.SidClaim)!.Value;
     }
 
-    /// <summary>Sayfayı açar ve formunu antiforgery token'ıyla birlikte gönderir (tarayıcının yapacağı gibi).</summary>
+    /// <summary>
+    /// Sayfayı açar ve formunu antiforgery token'ıyla birlikte gönderir (tarayıcının yapacağı gibi). Formun gönderildiği
+    /// adres sayfadan farklıysa (ör. "?handler=…") postAdresi verilir.
+    /// </summary>
     public static async Task<HttpResponseMessage> FormGonderAsync(
-        HttpClient client, string sayfa, Dictionary<string, string> alanlar)
+        HttpClient client, string sayfa, Dictionary<string, string> alanlar, string? postAdresi = null)
     {
         var form = await client.GetAsync(sayfa);
         Assert.Equal(HttpStatusCode.OK, form.StatusCode);
 
         alanlar["__RequestVerificationToken"] = AntiforgeryTokenAl(await form.Content.ReadAsStringAsync());
-        return await client.PostAsync(sayfa, new FormUrlEncodedContent(alanlar));
+        return await client.PostAsync(postAdresi ?? sayfa, new FormUrlEncodedContent(alanlar));
     }
+
+    /// <summary>
+    /// Kullanıcıda 2FA'yı doğrudan Identity API'siyle açar (kurulum sayfasını test etmeyen testler için) ve paylaşılan
+    /// anahtarı ile 10 kurtarma kodunu döndürür.
+    /// </summary>
+    public async Task<(string Anahtar, IReadOnlyList<string> KurtarmaKodlari)> IkiAdimAcAsync(string kullaniciAdi)
+    {
+        await using var scope = Services.CreateAsyncScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var kullanici = (await userManager.FindByNameAsync(kullaniciAdi))!;
+        await userManager.ResetAuthenticatorKeyAsync(kullanici);
+        var kodlar = (await userManager.GenerateNewTwoFactorRecoveryCodesAsync(kullanici, 10))!.ToList();
+        await userManager.SetTwoFactorEnabledAsync(kullanici, true);
+        return ((await userManager.GetAuthenticatorKeyAsync(kullanici))!, kodlar);
+    }
+
+    /// <summary>Kullanıcının doğrulayıcı uygulama anahtarı (kurulum sayfasında gösterilenin biçimlenmemiş hâli).</summary>
+    public async Task<string?> AnahtarAsync(string kullaniciAdi)
+    {
+        await using var scope = Services.CreateAsyncScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        return await userManager.GetAuthenticatorKeyAsync((await userManager.FindByNameAsync(kullaniciAdi))!);
+    }
+
+    /// <summary>
+    /// Denetim kayıtları arka planda yazıldığı için koşul sağlanana kadar (en fazla 10 sn) bekler ve tüm kayıtları
+    /// döndürür. Koşul sağlanmazsa test başarısız olur.
+    /// </summary>
+    public async Task<List<DenetimKaydi>> DenetimKayitlariAsync(Func<List<DenetimKaydi>, bool> kosul)
+    {
+        var bitis = DateTime.UtcNow.AddSeconds(10);
+        while (true)
+        {
+            await using (var scope = Services.CreateAsyncScope())
+            {
+                var kayitlar = await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>()
+                    .DenetimKayitlari.AsNoTracking().OrderBy(k => k.Id).ToListAsync();
+                if (kosul(kayitlar))
+                {
+                    return kayitlar;
+                }
+
+                Assert.True(DateTime.UtcNow < bitis,
+                    "Beklenen denetim kayıtları oluşmadı. Mevcut: " + string.Join(", ", kayitlar.Select(k => k.OlayTuru)));
+            }
+
+            await Task.Delay(50);
+        }
+    }
+
+    /// <summary>
+    /// Bir tablonun tüm satırlarını, her sütunu metne çevrilmiş olarak EF Core'u atlayarak doğrudan SQL ile okur
+    /// (veritabanında bir değerin hiçbir sütunda bulunmadığını doğrulamak için).
+    /// </summary>
+    public async Task<List<string?[]>> TabloAsync(string tablo)
+    {
+        await using var baglanti = new SqliteConnection(_baglantiDizesi);
+        await baglanti.OpenAsync();
+        await using var komut = baglanti.CreateCommand();
+        komut.CommandText = $"SELECT * FROM \"{tablo}\"";
+        await using var okuyucu = await komut.ExecuteReaderAsync();
+
+        var satirlar = new List<string?[]>();
+        while (await okuyucu.ReadAsync())
+        {
+            satirlar.Add([.. Enumerable.Range(0, okuyucu.FieldCount)
+                .Select(i => okuyucu.IsDBNull(i) ? null : Convert.ToString(okuyucu.GetValue(i), CultureInfo.InvariantCulture))]);
+        }
+
+        return satirlar;
+    }
+
+    /// <summary>Girişin ikinci adımını (TOTP veya kurtarma kodu) gönderir.</summary>
+    public static Task<HttpResponseMessage> IkinciAdimAsync(HttpClient client, string kod, bool cihaziHatirla = false) =>
+        FormGonderAsync(client, "/Account/IkiAdim", new()
+        {
+            ["Input.Kod"] = kod,
+            ["Input.CihaziHatirla"] = cihaziHatirla ? "true" : "false",
+        });
 
     public static string AntiforgeryTokenAl(string html)
     {

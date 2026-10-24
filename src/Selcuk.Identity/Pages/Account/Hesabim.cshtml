@@ -25,10 +25,13 @@
         {
             <li><strong>Bölüm</strong><span>@Model.Kullanici.Bolum</span></li>
         }
+        <li><strong>İki aşamalı doğrulama</strong><span>@(Model.IkiAdimEtkin ? "Açık" : "Kapalı")</span></li>
     </ul>
 
     <div class="dugmeler">
         <a class="dugme birincil" asp-page="/Account/SifreDegistir">Şifre değiştir</a>
+        <a class="dugme ikincil" asp-page="/Account/IkiAdimDogrulama">İki aşamalı doğrulama</a>
+        <a class="dugme ikincil" asp-page="/Account/GuvenlikGecmisi">Güvenlik geçmişi</a>
         <a class="dugme ikincil" asp-page="/Index">Uygulamalarım</a>
     </div>
 </section>
