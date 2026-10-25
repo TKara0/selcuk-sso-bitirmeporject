@@ -19,6 +19,7 @@ namespace Selcuk.Identity.Pages.Connect;
 /// OIDC authorize uç noktası. İsteği OpenIddict doğrular (istemci, redirect_uri, PKCE);
 /// bu sayfa kullanıcı girişini ve ilk girişteki onay ekranını yönetir. Hatalı denemelerden kaynaklanan geçici hesap
 /// kilidi açık oturumu etkilemez: kilit yeni girişleri engeller, bu oturumdan kod alınabilir (token uç noktasıyla aynı kural).
+/// İstemci bazlı erişim izni olmayan kullanıcı istemciye error=access_denied ile döner (<see cref="IstemciErisimi"/>).
 /// </summary>
 public class AuthorizeModel(
     IOpenIddictApplicationManager applicationManager,
@@ -26,8 +27,11 @@ public class AuthorizeModel(
     IOpenIddictScopeManager scopeManager,
     UserManager<ApplicationUser> userManager,
     IkiAdimIslemleri ikiAdim,
+    IstemciErisimi istemciErisimi,
     DenetimKaydedici denetim) : PageModel
 {
+    public const string IzinYokAciklamasi = "Bu uygulamaya erişim izniniz yok.";
+
     public string UygulamaAdi { get; private set; } = string.Empty;
 
     public IReadOnlyList<string> Kapsamlar { get; private set; } = [];
@@ -67,6 +71,13 @@ public class AuthorizeModel(
         var user = await userManager.GetUserAsync(result.Principal)
             ?? throw new InvalidOperationException("Oturumdaki kullanıcı bulunamadı.");
 
+        // İstemci bazlı erişim izni: izinsiz kullanıcı onay ekranı veya 2FA kurulumu görmeden istemciye döner.
+        var application = await UygulamaAsync(request);
+        if (!await istemciErisimi.IzinliMiAsync(application, user, "authorize"))
+        {
+            return Reddet(Errors.AccessDenied, IzinYokAciklamasi);
+        }
+
         // Rolü iki aşamalı doğrulama gerektiren kullanıcı kurulumu bitirmeden kod alamaz; kurulumdan sonra bu isteğe döner.
         if (await ikiAdim.KurulumGerekliAsync(user))
         {
@@ -76,7 +87,6 @@ public class AuthorizeModel(
                     new { returnUrl = Request.PathBase + Request.Path + Request.QueryString });
         }
 
-        var application = await UygulamaAsync(request);
         var authorizations = await YetkilendirmelerAsync(user, application, request);
 
         switch (await applicationManager.GetConsentTypeAsync(application))
@@ -109,6 +119,13 @@ public class AuthorizeModel(
             return Reddet(Errors.LoginRequired, "Kullanıcı oturum açmamış.");
         }
 
+        // Onay formu doğrudan gönderilse de izinsiz kullanıcı kod alamaz.
+        var application = await UygulamaAsync(request);
+        if (!await istemciErisimi.IzinliMiAsync(application, user, "authorize"))
+        {
+            return Reddet(Errors.AccessDenied, IzinYokAciklamasi);
+        }
+
         // Kurulumu bitmemiş zorunlu 2FA kullanıcısı onay formunu doğrudan gönderse de kod alamaz.
         if (await ikiAdim.KurulumGerekliAsync(user))
         {
@@ -121,7 +138,6 @@ public class AuthorizeModel(
             return Reddet(Errors.AccessDenied, "Kullanıcı erişim iznini reddetti.");
         }
 
-        var application = await UygulamaAsync(request);
         var authorizations = await YetkilendirmelerAsync(user, application, request);
 
         if (authorizations.Count is 0 && await applicationManager.HasConsentTypeAsync(application, ConsentTypes.External))

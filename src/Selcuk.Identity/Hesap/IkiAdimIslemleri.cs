@@ -35,7 +35,7 @@ public sealed class IkiAdimAyarlari
 /// damgası yenilenir: bu oturum yeniden imzalanır ve açık kalır, diğer oturumlar kapanır ve istemcilerine Back-Channel
 /// Logout gider (şifre değiştirmedeki mekanizma), kullanıcıya bilgilendirme e-postası gönderilir. Kurulumu başlatmak
 /// (yeni anahtar) da damgayı yeniler; o zaman da diğer oturumlar kapanır ve istemcilerine Back-Channel Logout gider.
-/// Girişte ve onaylarda kabul edilen TOTP kodu 3 dakika içinde tekrar kabul edilmez (<see cref="TekKullanimlikTotpSaglayici"/>).
+/// Kurulumda, girişte ve onaylarda kabul edilen TOTP kodu 3 dakika içinde tekrar kabul edilmez (<see cref="TekKullanimlikTotpSaglayici"/>).
 /// </summary>
 public sealed class IkiAdimIslemleri(
     UserManager<ApplicationUser> userManager,
@@ -82,7 +82,7 @@ public sealed class IkiAdimIslemleri(
 
     /// <summary>
     /// Doğrulayıcı uygulamadaki 6 haneli kodu Identity'nin AuthenticatorTokenProvider'ıyla doğrular; kodu kullanılmış
-    /// saymaz (kurulumda ve şifresi yanlış olan onay denemelerinde).
+    /// saymaz (şifresi yanlış olan onay denemelerinde).
     /// </summary>
     public Task<bool> KodDogruMuAsync(ApplicationUser user, string? kod) =>
         string.IsNullOrWhiteSpace(kod)
@@ -131,14 +131,15 @@ public sealed class IkiAdimIslemleri(
 
     /// <summary>
     /// Kurulumu başlatır: yeni paylaşılan anahtar (Identity ResetAuthenticatorKeyAsync, damga yenilenir). Bu oturum
-    /// açık kalır; diğer oturumlar kapanır ve onlardan giriş yapılmış istemcilere Back-Channel Logout gider.
+    /// açık kalır; diğer oturumlar kapanır ve onlardan giriş yapılmış istemcilere Back-Channel Logout gider; denetim
+    /// kaydı ve bilgilendirme e-postası.
     /// </summary>
     public async Task KurulumuBaslatAsync(ApplicationUser user, string? mevcutSid)
     {
         await userManager.ResetAuthenticatorKeyAsync(user);
         await OturumuYenileAsync(user, cokFaktorlu: false);
-        // Tarayıcı bağlantıyı kapatsa da bildirimler tamamlansın (süre sınırı HttpClient'ta).
-        await backChannelLogout.KullaniciOturumlariniKapatAsync(user.Id, mevcutSid, CancellationToken.None);
+        await DegisiklikSonrasiAsync(user, mevcutSid, DenetimOlayi.IkiAdimKurulumuBaslatildi,
+            EpostaSablonlari.IkiAdimKurulumuBaslatildi);
     }
 
     /// <summary>2FA'yı açar ve kullanıcıya bir kez gösterilecek 10 kurtarma kodunu döndürür.</summary>

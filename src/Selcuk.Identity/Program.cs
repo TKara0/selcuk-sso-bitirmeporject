@@ -89,6 +89,7 @@ builder.Services.TryAddSingleton(TimeProvider.System);
 builder.Services.AddHttpClient(BackChannelLogoutGonderici.HttpIstemciAdi,
     client => client.Timeout = TimeSpan.FromSeconds(5));
 builder.Services.AddScoped<BackChannelLogoutGonderici>();
+builder.Services.AddScoped<IstemciErisimi>();
 
 // E-posta: Development'ta App_Data/eposta/ klasörüne .eml, diğer ortamlarda SMTP. Gönderim arka planda (kuyruk).
 builder.Services.Configure<EpostaAyarlari>(builder.Configuration.GetSection(EpostaAyarlari.Bolum));
@@ -178,6 +179,35 @@ builder.Services.AddOpenIddict()
                 context.Metadata["backchannel_logout_session_supported"] = true;
                 return default;
             }));
+
+        // OpenIddict http adresleri sunucu adına bakmadan kabul eder. http yalnızca 127.0.0.1 loopback'te (RFC 8252,
+        // yerel uygulamalar) kabul edilir; istemci kaydında da denetlenir (Istemciler.AdresleriDogrula). Hata istemciye
+        // yönlendirilmeden döner.
+        options.AddEventHandler<OpenIddictServerEvents.ValidateAuthorizationRequestContext>(handler =>
+            handler.UseInlineHandler(context =>
+            {
+                if (!HttpAdresiUygun(context.Request.RedirectUri))
+                {
+                    context.Reject(Errors.InvalidRequest, "redirect_uri https veya http://127.0.0.1 olmalıdır.");
+                }
+
+                return default;
+            }));
+        options.AddEventHandler<OpenIddictServerEvents.ValidateEndSessionRequestContext>(handler =>
+            handler.UseInlineHandler(context =>
+            {
+                if (!HttpAdresiUygun(context.Request.PostLogoutRedirectUri))
+                {
+                    context.Reject(Errors.InvalidRequest, "post_logout_redirect_uri https veya http://127.0.0.1 olmalıdır.");
+                }
+
+                return default;
+            }));
+
+        static bool HttpAdresiUygun(string? adres) =>
+            !Uri.TryCreate(adres, UriKind.Absolute, out var uri)
+            || uri.Scheme != Uri.UriSchemeHttp
+            || Istemciler.HttpLoopbackMi(uri);
 
         if (builder.Environment.IsDevelopment())
         {

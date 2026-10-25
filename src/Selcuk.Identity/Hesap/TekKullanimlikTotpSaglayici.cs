@@ -13,8 +13,9 @@ namespace Selcuk.Identity.Hesap;
 /// kullanıcı kimliğiyle birlikte anahtarlı özetle (<see cref="AnahtarliOzet"/>, ayrı amaç etiketi) ve kabul zamanıyla
 /// AspNetUserTokens'ta saklanır. Yazım Identity'nin iyimser eşzamanlılık denetiminden (ConcurrencyStamp) geçer: aynı
 /// kodla eşzamanlı iki istekten yalnızca biri kabul edilir.
-/// Girişin ikinci adımı ve 2FA kapatma/kurtarma kodu yenileme onayları <see cref="ValidateAsync"/> (UserManager
-/// üzerinden) ile kodu "kullanır"; kurulumdaki doğrulama <see cref="TuketmedenDogrulaAsync"/> ile kodu kaydetmez.
+/// Kurulumdaki doğrulama ("Doğrula ve aç"), girişin ikinci adımı ve 2FA kapatma/kurtarma kodu yenileme onayları
+/// <see cref="ValidateAsync"/> (UserManager üzerinden) ile kodu "kullanır"; şifresi yanlış olan onay denemeleri
+/// <see cref="TuketmedenDogrulaAsync"/> ile kodu kaydetmez.
 /// </summary>
 public sealed class TekKullanimlikTotpSaglayici(
     AnahtarliOzet ozet,

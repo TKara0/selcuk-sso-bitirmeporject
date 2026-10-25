@@ -172,7 +172,9 @@ public sealed partial class DenetimKaydiTests : IDisposable
             "/Account/IkiAdimDogrulama?handler=Baslat");
         var anahtar = (await _factory.AnahtarAsync(kullaniciAdi))!;
         sirlar.Add(anahtar);
-        var acmaKodu = Totp.Uret(anahtar);
+        // Kurulumdaki kod kullanılmış sayılır: giriş başka bir zaman adımının koduyla yapılır.
+        var kodlar = Totp.Kodlar(anahtar, 0, 1);
+        var acmaKodu = kodlar[0];
         var acma = await SelcukIdentityFactory.FormGonderAsync(client, "/Account/IkiAdimDogrulama",
             new() { ["Etkinlestirme.Kod"] = acmaKodu }, "/Account/IkiAdimDogrulama?handler=Etkinlestir");
         var kurtarmaKodlari = KurtarmaKodu().Matches(await acma.Content.ReadAsStringAsync()).Select(m => m.Groups[1].Value).ToList();
@@ -184,7 +186,7 @@ public sealed partial class DenetimKaydiTests : IDisposable
 
         // Şifre + TOTP ile giriş, OIDC kodu ve token'lar, sonra çıkış (demo-obis'e logout_token gider).
         await SelcukIdentityFactory.GirisYapAsync(client, kullaniciAdi, sifre);
-        var girisKodu = Totp.Uret(anahtar);
+        var girisKodu = kodlar[1];
         var ikinci = await SelcukIdentityFactory.IkinciAdimAsync(client, girisKodu);
         sirlar.Add(girisKodu);
         sirlar.Add(OturumCerezi(ikinci)!);
@@ -226,7 +228,8 @@ public sealed partial class DenetimKaydiTests : IDisposable
         var olaylar = kayitlar.Select(k => k.OlayTuru).ToHashSet();
         Assert.Superset(olaylar, new HashSet<DenetimOlayi>(
         [
-            DenetimOlayi.GirisBasarisiz, DenetimOlayi.GirisBasarili, DenetimOlayi.IkiAdimAcildi, DenetimOlayi.Cikis,
+            DenetimOlayi.GirisBasarisiz, DenetimOlayi.GirisBasarili, DenetimOlayi.IkiAdimKurulumuBaslatildi,
+            DenetimOlayi.IkiAdimAcildi, DenetimOlayi.Cikis,
             DenetimOlayi.IkiAdimBasarili, DenetimOlayi.IkiAdimBasarisiz, DenetimOlayi.KurtarmaKoduKullanildi,
             DenetimOlayi.OnayVerildi, DenetimOlayi.TokenVerildi, DenetimOlayi.BackChannelLogoutGonderildi,
             DenetimOlayi.SifreSifirlamaIstendi, DenetimOlayi.SifreSifirlandi,

@@ -30,6 +30,8 @@ public static class OidcUcNoktalari
         UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager,
         IkiAdimIslemleri ikiAdim,
+        IstemciErisimi istemciErisimi,
+        IOpenIddictApplicationManager applicationManager,
         DenetimKaydedici denetim,
         ApplicationDbContext db,
         TimeProvider zaman)
@@ -55,6 +57,15 @@ public static class OidcUcNoktalari
             return Reddet(Errors.InvalidGrant, "Token artık geçerli değil.");
         }
 
+        // İstemci bazlı erişim izni token anında da kontrol edilir: kod veya refresh token verildikten sonra izin
+        // kaldırıldıysa token verilmez.
+        var clientId = request.ClientId ?? result.Principal!.GetPresenters().FirstOrDefault();
+        if (clientId is null || await applicationManager.FindByClientIdAsync(clientId) is not { } uygulama
+            || !await istemciErisimi.IzinliMiAsync(uygulama, user, "token"))
+        {
+            return Reddet(Errors.InvalidGrant, "Bu uygulamaya erişim izni yok.");
+        }
+
         // Rolü iki aşamalı doğrulama gerektiren kullanıcı kurulumu bitirmeden hiçbir istemciye token alamaz
         // (kod veya refresh token kurulum zorunluluğundan önce verilmiş olsa bile).
         if (await ikiAdim.KurulumGerekliAsync(user))
@@ -76,9 +87,7 @@ public static class OidcUcNoktalari
         identity.SetDestinations(OidcKimlik.Hedefler);
 
         // Bu oturumda bu istemciye token verildiği kaydedilir; çıkışta Back-Channel Logout bildirimi gider.
-        var clientId = request.ClientId ?? result.Principal.GetPresenters().FirstOrDefault();
-        if (request.IsAuthorizationCodeGrantType()
-            && identity.GetClaim(OidcKimlik.SidClaim) is { } sid && clientId is not null)
+        if (request.IsAuthorizationCodeGrantType() && identity.GetClaim(OidcKimlik.SidClaim) is { } sid)
         {
             await IstemciOturumuKaydetAsync(db, zaman, sid, user.Id, clientId);
         }

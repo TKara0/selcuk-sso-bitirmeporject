@@ -22,8 +22,19 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
     gönderir (OIDC Back-Channel Logout 1.0). Discovery'de `backchannel_logout_supported` ilan edilir.
   - **İstemciler**: tanımlar `Data/Istemciler.cs` içinde. `demo-obis` ve `demo-yemekhane` (gizli istemci, PKCE
     zorunlu, explicit onay) Development'ta açılışta oluşturulur veya güncellenir; secret'lar user-secrets'tan
-    okunur. Özel ayarlar (`backchannel_logout_uri`, `client_uri`, `initiate_login_uri`, `aciklama`) OpenIddict
-    `Properties` alanında.
+    okunur. `tek-kapi`: kullanıcının bilgisayarındaki ayrı Node.js köprüsü (bu depoda değil; ESSO geçiş aracı, kimlik
+    sunucusu üniversite şifrelerini görmez); public istemci (secret yok), native, PKCE zorunlu, explicit onay,
+    `openid profile roles`, adresler `http://127.0.0.1:4545/...` (RFC 8252 loopback); izinli kullanıcılar
+    `Istemciler:TekKapi:IzinliKullaniciAdlari` (appsettings.Development.json; boşsa varsayılan `["203011001"]`).
+    Özel ayarlar (`backchannel_logout_uri`, `client_uri`, `initiate_login_uri`, `aciklama`, `izinliRoller`,
+    `izinliKullaniciAdlari`) OpenIddict `Properties` alanında. Adres kuralı: https veya yalnızca `http://127.0.0.1`
+    (kayıtta `Istemciler.AdresleriDogrula`; authorize `redirect_uri` ve end-session `post_logout_redirect_uri` için
+    OpenIddict doğrulama işleyicisi, `Program.cs`). Back-Channel Logout da yalnızca https veya `http://127.0.0.1`'e
+    gönderilir.
+  - **Uygulama bazlı erişim izni** (`Oidc/IstemciErisimi`): `izinliRoller` ve `izinliKullaniciAdlari` boşsa herkes,
+    doluysa en az birine uyan kullanıcı (harf duyarsız; dizi olmayan ayar kimseye izin vermez). Authorize'da izinsiz
+    kullanıcı istemciye `error=access_denied` ile döner, token uç noktası `invalid_grant` verir, Uygulamalarım kartı
+    gizler; her ret `IstemciErisimiReddedildi` denetim kaydı (`client_id`, `uc=authorize|token`).
   - **EF Core + SQL Server** (geliştirmede LocalDB, veritabanı `SelcukSSO`). Identity, OpenIddict,
     `IstemciOturumlari` ve `DenetimKayitlari` tabloları aynı `ApplicationDbContext` içinde.
   - **Razor Pages** (Türkçe arayüz): Uygulamalarım (ana sayfa; kartlar `initiate_login_uri?iss=…`), Giriş, Girişin
@@ -48,8 +59,9 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
     değişmedi), kod doğrulanmadan açılmaz, 10 kurtarma kodu bir kez gösterilir. `KurtarmaKoduOzetDeposu`
     (`UserStore` alt sınıfı) kodları `IPasswordHasher` özetiyle saklar. Açma/kapatma/kod yenilemede damga yenilenir,
     diğer oturumlara Back-Channel Logout, e-posta; "Kurulumu başlat" (anahtar sıfırlama) da diğer oturumlara
-    Back-Channel Logout gönderir. Kapatma ve yenileme şifre + TOTP ister. `TekKullanimlikTotpSaglayici`
-    (`DefaultAuthenticatorProvider`): kabul edilen TOTP kodu 3 dk tekrar kabul edilmez (giriş, kapatma, yenileme);
+    Back-Channel Logout gönderir, `IkiAdimKurulumuBaslatildi` denetim kaydı ve e-posta. Kapatma ve yenileme şifre +
+    TOTP ister. `TekKullanimlikTotpSaglayici` (`DefaultAuthenticatorProvider`): kabul edilen TOTP kodu 3 dk tekrar
+    kabul edilmez (kurulumdaki doğrulama, giriş, kapatma, yenileme);
     kodun HMAC'i ve kabul zamanı `AspNetUserTokens`'ta (`[SelcukSSO]`/`KullanilanTotpKodlari`). "Bu cihazı hatırla":
     Identity `TwoFactorRememberMe` (`IkiAdimCihazHatirlamaGun`, 30). `IkiAdimZorunluRoller`: kurulum bitmeden
     authorize ve token uç noktası reddeder. id_token'da `amr` JSON dizisi: `["pwd"]` / `["pwd","mfa"]`
@@ -79,7 +91,9 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   Yemekhane Yönetimi (personel), Profilim, RP-initiated logout. Veriler uydurmadır.
 - `tests/Selcuk.Identity.Tests`: xUnit + `WebApplicationFactory` entegrasyon, uçtan uca protokol, tek giriş ve tek
   çıkış, şifre sıfırlama/değiştirme, istek sınırı ve tahmin koruması, 2FA (TOTP tekrar koruması dahil), kilit
-  tutarlılığı, denetim kaydı (HMAC özeti, eksik anahtarla açılmama) ve güvenilen proxy testleri.
+  tutarlılığı, denetim kaydı (HMAC özeti, eksik anahtarla açılmama), güvenilen proxy, Tek Kapı (public istemci,
+  loopback, back-channel) ve uygulama bazlı erişim izni testleri. `OidcYardimcisi` istemci parametreli (varsayılan
+  demo-obis; public istemci için `PublicTokenIsteAsync`).
   Her test kendi adlandırılmış, paylaşımlı önbellekli SQLite in-memory veritabanını kullanır (DbContext başına
   bağlantı); ortam adı `Testing`; fabrikaya `ayarlar` ile appsettings değeri verilir; her fabrika rastgele bir HMAC
   anahtarı verir (`OzetAnahtari`). Back-Channel Logout POST'ları

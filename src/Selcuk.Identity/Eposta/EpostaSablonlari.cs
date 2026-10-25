@@ -9,6 +9,7 @@ public static class EpostaSablonlari
     public const string SifreSifirlamaKonusu = "Şifre sıfırlama";
     public const string SifreDegistirildiKonusu = "Şifreniz değiştirildi";
     public const string IkiAdimAcildiKonusu = "İki aşamalı doğrulama açıldı";
+    public const string IkiAdimKurulumuBaslatildiKonusu = "İki aşamalı doğrulama kurulumu başlatıldı";
     public const string IkiAdimKapatildiKonusu = "İki aşamalı doğrulama kapatıldı";
     public const string KurtarmaKodlariYenilendiKonusu = "Kurtarma kodlarınız yenilendi";
     public const string KurtarmaKoduKullanildiKonusu = "Hesabınıza kurtarma koduyla giriş yapıldı";
@@ -35,6 +36,13 @@ public static class EpostaSablonlari
         new(alici, IkiAdimAcildiKonusu, Govde(adSoyad,
             $"Hesabınızda {Bicimle(zaman)} tarihinde iki aşamalı doğrulama açıldı. Bundan sonra girişte şifrenizle",
             "birlikte doğrulayıcı uygulamadaki 6 haneli kod istenecek. Diğer açık oturumlarınız kapatıldı.",
+            "",
+            BenYapmadimSatiri));
+
+    public static EpostaMesaji IkiAdimKurulumuBaslatildi(string alici, string adSoyad, DateTimeOffset zaman) =>
+        new(alici, IkiAdimKurulumuBaslatildiKonusu, Govde(adSoyad,
+            $"Hesabınızda {Bicimle(zaman)} tarihinde iki aşamalı doğrulama kurulumu başlatıldı ve yeni bir doğrulayıcı",
+            "anahtarı üretildi. Önceki anahtar artık geçmez. Diğer açık oturumlarınız kapatıldı.",
             "",
             BenYapmadimSatiri));
 

@@ -103,8 +103,9 @@ public class IkiAdimDogrulamaModel(
             return RedirectToPage(new { returnUrl = ReturnUrl });
         }
 
-        // Kod doğrulanmadan 2FA açılmaz: kullanıcı anahtarı uygulamasına doğru eklediğini kanıtlar.
-        if (!await ikiAdim.KodDogruMuAsync(user, etkinlestirme.Kod))
+        // Kod doğrulanmadan 2FA açılmaz: kullanıcı anahtarı uygulamasına doğru eklediğini kanıtlar. Kod kullanılmış
+        // sayılır; 3 dakika içinde girişte veya onaylarda tekrar kabul edilmez.
+        if (!await ikiAdim.KoduKullanAsync(user, etkinlestirme.Kod))
         {
             denetim.Ekle(DenetimOlayi.IkiAdimAcildi, DenetimSonucu.Basarisiz, user.Id, ayrinti: "neden=kod-hatali");
             ModelState.AddModelError(string.Empty, KodHatasiMesaji);

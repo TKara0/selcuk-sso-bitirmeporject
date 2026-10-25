@@ -13,8 +13,9 @@ using static OpenIddict.Abstractions.OpenIddictConstants;
 namespace Selcuk.Identity.Tests;
 
 /// <summary>
-/// 2FA ve denetim kaydı testlerinin ortak OIDC adımları: demo-obis kaydı, authorize (PKCE S256), gerekirse onay,
-/// kod ve token isteği.
+/// 2FA, denetim kaydı ve istemci erişimi testlerinin ortak OIDC adımları: demo-obis kaydı, authorize (PKCE S256),
+/// gerekirse onay, kod ve token isteği. Varsayılan istemci demo-obis'tir; diğer istemciler (ör. public tek-kapi) için
+/// client_id, redirect_uri ve kapsam verilir.
 /// </summary>
 public static partial class OidcYardimcisi
 {
@@ -38,12 +39,15 @@ public static partial class OidcYardimcisi
     }
 
     public static string AuthorizeAdresi(Pkce pkce) =>
+        AuthorizeAdresi(pkce, Istemciler.DemoObisClientId, Istemciler.DemoObisRedirectUri, "openid profile email roles");
+
+    public static string AuthorizeAdresi(Pkce pkce, string clientId, string redirectUri, string scope) =>
         QueryHelpers.AddQueryString("/connect/authorize", new Dictionary<string, string?>
         {
-            [Parameters.ClientId] = Istemciler.DemoObisClientId,
-            [Parameters.RedirectUri] = Istemciler.DemoObisRedirectUri,
+            [Parameters.ClientId] = clientId,
+            [Parameters.RedirectUri] = redirectUri,
             [Parameters.ResponseType] = ResponseTypes.Code,
-            [Parameters.Scope] = "openid profile email roles",
+            [Parameters.Scope] = scope,
             [Parameters.State] = "durum-123",
             [Parameters.Nonce] = "nonce-123",
             [Parameters.CodeChallenge] = pkce.Challenge,
@@ -53,16 +57,26 @@ public static partial class OidcYardimcisi
     /// <summary>Onay ekranındaki formu (OIDC parametreleri + karar) antiforgery token'ıyla birlikte hazırlar.</summary>
     public static List<KeyValuePair<string, string>> OnayFormu(string html, string karar = "kabul") =>
     [
-        .. GizliAlan().Matches(html).Select(m => KeyValuePair.Create(
-            WebUtility.HtmlDecode(m.Groups[1].Value), WebUtility.HtmlDecode(m.Groups[2].Value))),
-        KeyValuePair.Create("__RequestVerificationToken", SelcukIdentityFactory.AntiforgeryTokenAl(html)),
+        .. FormAlanlari(html),
         KeyValuePair.Create("karar", karar),
     ];
 
+    /// <summary>Sayfadaki formun gizli alanları ve antiforgery token'ı (onay ve çıkış formları).</summary>
+    public static List<KeyValuePair<string, string>> FormAlanlari(string html) =>
+    [
+        .. GizliAlan().Matches(html).Select(m => KeyValuePair.Create(
+            WebUtility.HtmlDecode(m.Groups[1].Value), WebUtility.HtmlDecode(m.Groups[2].Value))),
+        KeyValuePair.Create("__RequestVerificationToken", SelcukIdentityFactory.AntiforgeryTokenAl(html)),
+    ];
+
     /// <summary>Authorize isteği gönderir, onay ekranı gelirse "İzin ver"i seçer ve redirect_uri'deki kodu döndürür.</summary>
-    public static async Task<string> KodAlAsync(HttpClient client, Pkce pkce)
+    public static Task<string> KodAlAsync(HttpClient client, Pkce pkce) =>
+        KodAlAsync(client, pkce, Istemciler.DemoObisClientId, Istemciler.DemoObisRedirectUri, "openid profile email roles");
+
+    public static async Task<string> KodAlAsync(HttpClient client, Pkce pkce, string clientId, string redirectUri,
+        string scope)
     {
-        var yanit = await client.GetAsync(AuthorizeAdresi(pkce));
+        var yanit = await client.GetAsync(AuthorizeAdresi(pkce, clientId, redirectUri, scope));
         if (yanit.StatusCode == HttpStatusCode.OK)
         {
             var html = await yanit.Content.ReadAsStringAsync();
@@ -71,7 +85,7 @@ public static partial class OidcYardimcisi
 
         Assert.Equal(HttpStatusCode.Redirect, yanit.StatusCode);
         var konum = yanit.Headers.Location!;
-        Assert.StartsWith(Istemciler.DemoObisRedirectUri + "?", konum.OriginalString);
+        Assert.StartsWith(redirectUri + "?", konum.OriginalString);
         return QueryHelpers.ParseQuery(konum.Query)[Parameters.Code].ToString();
     }
 
@@ -83,6 +97,18 @@ public static partial class OidcYardimcisi
             [Parameters.RedirectUri] = Istemciler.DemoObisRedirectUri,
             [Parameters.ClientId] = Istemciler.DemoObisClientId,
             [Parameters.ClientSecret] = secret,
+            [Parameters.CodeVerifier] = verifier,
+        }));
+
+    /// <summary>Public istemci için token isteği: client_secret yok, istemci yalnızca client_id ve PKCE ile tanınır.</summary>
+    public static Task<HttpResponseMessage> PublicTokenIsteAsync(HttpClient client, string code, string verifier,
+        string clientId, string redirectUri) =>
+        client.PostAsync("/connect/token", new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            [Parameters.GrantType] = GrantTypes.AuthorizationCode,
+            [Parameters.Code] = code,
+            [Parameters.RedirectUri] = redirectUri,
+            [Parameters.ClientId] = clientId,
             [Parameters.CodeVerifier] = verifier,
         }));
 

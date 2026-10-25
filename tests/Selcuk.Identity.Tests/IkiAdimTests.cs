@@ -93,6 +93,7 @@ public sealed partial class IkiAdimTests : IDisposable
 
         Assert.Equal(HttpStatusCode.Redirect, (await KurulumFormuAsync(client, "Baslat")).StatusCode);
         var anahtar = (await KullaniciIleAsync(_factory, kullaniciAdi, (um, k) => um.GetAuthenticatorKeyAsync(k)))!;
+        Assert.Equal(EpostaSablonlari.IkiAdimKurulumuBaslatildiKonusu, (await _factory.Eposta.SiradakiAsync()).Konu);
 
         // Anahtar metin (4'lü gruplar) ve sunucuda üretilmiş SVG QR kod olarak; issuer "Selcuk SSO (Test)".
         var sayfa = await client.GetAsync(Kurulum);
@@ -557,6 +558,71 @@ public sealed partial class IkiAdimTests : IDisposable
         var oturumlar = await _factory.IstemciOturumlariAsync(kullaniciId);
         Assert.All(oturumlar.Where(o => o.Sid == digerSid), o => Assert.NotNull(o.KapanmaZamani));
         Assert.Null(oturumlar.Single(o => o.Sid == buSid).KapanmaZamani);
+    }
+
+    [Fact]
+    public async Task Kurulumdaki_dogrulama_kodu_ikinci_kez_kullanilamiyor()
+    {
+        var (kullaniciAdi, sifre) = await _factory.KullaniciOlusturAsync();
+        var kullaniciId = (await _factory.KullaniciAsync(kullaniciAdi)).Id;
+        var client = _factory.HttpsIstemcisi();
+        await SelcukIdentityFactory.GirisYapAsync(client, kullaniciAdi, sifre);
+        Assert.Equal(HttpStatusCode.Redirect, (await KurulumFormuAsync(client, "Baslat")).StatusCode);
+        var anahtar = (await _factory.AnahtarAsync(kullaniciAdi))!;
+        var kodlar = Totp.Kodlar(anahtar, 0, 1);
+        var (kurulumKodu, baskaKod) = (kodlar[0], kodlar[1]);
+
+        var acma = await KurulumFormuAsync(client, "Etkinlestir", new() { ["Etkinlestirme.Kod"] = kurulumKodu });
+        Assert.Equal(HttpStatusCode.OK, acma.StatusCode);
+        Assert.True(await IkiAdimAcikMiAsync(kullaniciAdi));
+
+        // Kurulumda kullanılan kod başka bir tarayıcıdan girişte tekrar kabul edilmez ve hatalı deneme sayılır.
+        var ikinci = _factory.HttpsIstemcisi();
+        await SelcukIdentityFactory.GirisYapAsync(ikinci, kullaniciAdi, sifre);
+        var tekrar = await SelcukIdentityFactory.IkinciAdimAsync(ikinci, kurulumKodu);
+        Assert.Equal(HttpStatusCode.OK, tekrar.StatusCode);
+        Assert.Contains(IkiAdimModel.HataMesaji, await MetinAsync(tekrar));
+        Assert.False(OturumCereziVar(tekrar));
+        Assert.Equal(1, await HataliDenemeSayisiAsync(kullaniciAdi));
+
+        // Kurulumdaki onaylarda da: aynı kodla kurtarma kodu yenileme reddedilir.
+        var yenile = await KurulumFormuAsync(client, "KodlariYenile", new() { ["Onay.Sifre"] = sifre, ["Onay.Kod"] = kurulumKodu });
+        Assert.Contains(IkiAdimDogrulamaModel.OnayHatasiMesaji, await MetinAsync(yenile));
+
+        // Başka bir zaman adımının kodu kabul edilir.
+        var dogru = await SelcukIdentityFactory.IkinciAdimAsync(ikinci, baskaKod);
+        Assert.Equal(HttpStatusCode.Redirect, dogru.StatusCode);
+        Assert.True(OturumCereziVar(dogru));
+
+        await _factory.DenetimKayitlariAsync(k =>
+            k.Count(x => x.OlayTuru == DenetimOlayi.IkiAdimKoduTekrarKullanildi && x.KullaniciId == kullaniciId) == 2);
+    }
+
+    [Fact]
+    public async Task Kurulumu_baslatma_denetim_kaydi_ve_eposta_olusturuyor()
+    {
+        var (kullaniciAdi, sifre) = await _factory.KullaniciOlusturAsync();
+        var kullanici = await _factory.KullaniciAsync(kullaniciAdi);
+        var client = _factory.HttpsIstemcisi();
+        await SelcukIdentityFactory.GirisYapAsync(client, kullaniciAdi, sifre);
+
+        Assert.Equal(HttpStatusCode.Redirect, (await KurulumFormuAsync(client, "Baslat")).StatusCode);
+
+        var eposta = await _factory.Eposta.SiradakiAsync();
+        Assert.Equal(EpostaSablonlari.IkiAdimKurulumuBaslatildiKonusu, eposta.Konu);
+        Assert.Equal(kullanici.Email, eposta.Alici);
+        Assert.Contains("yeni bir doğrulayıcı", eposta.Govde);
+        Assert.DoesNotContain((await _factory.AnahtarAsync(kullaniciAdi))!, eposta.Govde);
+
+        var kayitlar = await _factory.DenetimKayitlariAsync(k =>
+            k.Any(x => x.OlayTuru == DenetimOlayi.IkiAdimKurulumuBaslatildi && x.KullaniciId == kullanici.Id));
+        Assert.Equal(DenetimSonucu.Basarili, kayitlar.Single(x => x.OlayTuru == DenetimOlayi.IkiAdimKurulumuBaslatildi).Sonuc);
+        Assert.Equal("İki aşamalı doğrulama kurulumu başlatıldı (yeni anahtar)",
+            DenetimOlaylari.Ad(DenetimOlayi.IkiAdimKurulumuBaslatildi, DenetimSonucu.Basarili));
+
+        // Güvenlik geçmişinde görünür.
+        var gecmis = await MetinAsync(await client.GetAsync("/Account/GuvenlikGecmisi"));
+        Assert.Contains("İki aşamalı doğrulama kurulumu başlatıldı (yeni anahtar)", gecmis);
     }
 
     [Fact]

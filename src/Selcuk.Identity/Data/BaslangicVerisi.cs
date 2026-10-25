@@ -5,7 +5,8 @@ namespace Selcuk.Identity.Data;
 
 /// <summary>
 /// Uygulama açılışında rolleri oluşturur. Yalnızca Development ortamında, şifreleri
-/// user-secrets'tan okunan test kullanıcılarını ve demo istemcileri (demo-obis, demo-yemekhane) ekler.
+/// user-secrets'tan okunan test kullanıcılarını, demo istemcileri (demo-obis, demo-yemekhane) ve Tek Kapı'yı (public
+/// istemci, izinli kullanıcılar Istemciler:TekKapi:IzinliKullaniciAdlari ayarından) ekler veya günceller.
 /// </summary>
 public sealed class BaslangicVerisi(
     IServiceProvider services,
@@ -58,6 +59,10 @@ public sealed class BaslangicVerisi(
             var applicationManager = scope.ServiceProvider.GetRequiredService<IOpenIddictApplicationManager>();
             await IstemciKaydetAsync(applicationManager, "Istemciler:DemoObis:ClientSecret", Istemciler.DemoObis);
             await IstemciKaydetAsync(applicationManager, "Istemciler:DemoYemekhane:ClientSecret", Istemciler.DemoYemekhane);
+
+            // Public istemci: secret yok. Liste yoksa veya boşsa varsayılan izinli kullanıcı (herkese açılmaz).
+            var izinliler = configuration.GetSection(Istemciler.TekKapiAyarlari + ":IzinliKullaniciAdlari").Get<string[]>() ?? [];
+            await KaydetVeyaGuncelleAsync(applicationManager, Istemciler.TekKapi(izinliler));
         }
     }
 
@@ -75,7 +80,14 @@ public sealed class BaslangicVerisi(
             return;
         }
 
-        var descriptor = tanim(secret);
+        await KaydetVeyaGuncelleAsync(applicationManager, tanim(secret));
+    }
+
+    private async Task KaydetVeyaGuncelleAsync(
+        IOpenIddictApplicationManager applicationManager, OpenIddictApplicationDescriptor descriptor)
+    {
+        // http yalnızca 127.0.0.1 loopback adreslerinde kabul edilir; aksi hâlde açılış durur.
+        Istemciler.AdresleriDogrula(descriptor);
         var mevcut = await applicationManager.FindByClientIdAsync(descriptor.ClientId!);
         if (mevcut is null)
         {
@@ -84,7 +96,8 @@ public sealed class BaslangicVerisi(
         }
         else
         {
-            // Tanım (izinler, adresler, özel ayarlar, secret) her açılışta user-secrets ve koddaki hâliyle eşitlenir.
+            // Tanım (izinler, adresler, özel ayarlar, secret) her açılışta user-secrets, ayarlar ve koddaki hâliyle
+            // eşitlenir.
             await applicationManager.UpdateAsync(mevcut, descriptor);
             logger.LogInformation("İstemci güncellendi: {ClientId}", descriptor.ClientId);
         }

@@ -87,9 +87,10 @@ public sealed class BackChannelLogoutGonderici(
         }
 
         var ozellikler = await applicationManager.GetPropertiesAsync(uygulama, cancellationToken);
+        // https veya (yerel uygulamalar için, RFC 8252) http://127.0.0.1; başka http adresine gönderilmez.
         return ozellikler.TryGetValue(Istemciler.BackChannelLogoutUriOzelligi, out var deger)
             && Uri.TryCreate(deger.GetString(), UriKind.Absolute, out var adres)
-            && adres.Scheme == Uri.UriSchemeHttps
+            && (adres.Scheme == Uri.UriSchemeHttps || Istemciler.HttpLoopbackMi(adres))
                 ? adres
                 : null;
     }

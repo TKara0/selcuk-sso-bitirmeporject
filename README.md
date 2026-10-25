@@ -10,7 +10,9 @@ Bitirme projesi: fakülte ve bölüm web uygulamaları için merkezi kimlik sunu
 Depoda şu an **kimlik sunucusu**, ona OpenID Connect ile bağlanan iki alt uygulama (**Demo OBİS**, **Demo Yemekhane**)
 ve bu uygulamaların ortak istemci kütüphanesi var. **Tek giriş** (bir kez giriş, diğer uygulamalara şifresiz geçiş),
 OIDC Back-Channel Logout ile **tek çıkış** (bir uygulamadan çıkınca hepsinden çıkış), e-postayla **şifre sıfırlama**,
-**şifre değiştirme**, TOTP tabanlı **iki aşamalı doğrulama** (2FA) ve güvenlik olaylarının **denetim kaydı** çalışıyor.
+**şifre değiştirme**, TOTP tabanlı **iki aşamalı doğrulama** (2FA), güvenlik olaylarının **denetim kaydı** ve
+**uygulama bazlı erişim izni** çalışıyor. Ayrıca yerelde çalışan **Tek Kapı** köprüsü public bir OIDC istemcisi olarak
+kayıtlı ([Tek Kapı köprüsü](#tek-kapı-köprüsü)).
 Alınan önlemler [Güvenlik önlemleri](#güvenlik-önlemleri) bölümünde. Diğer özellikler
 [yol haritasında](#yapılacaklar-yol-haritası).
 
@@ -82,11 +84,91 @@ taşınır. Discovery'deki `claims_supported` listesi: `aud exp iat iss sub name
 | `backchannel_logout_uri` | `https://localhost:5101/signout-backchannel` | `https://localhost:5102/signout-backchannel` |
 | `client_uri` / `initiate_login_uri` | `https://localhost:5101/` / `…/Giris` | `https://localhost:5102/` / `…/Giris` |
 
-Ortak kurallar: gizli (confidential) web istemcisi, `client_secret` user-secrets'ta; izinler authorization, token,
+Demo istemcilerin ortak kuralları: gizli (confidential) web istemcisi, `client_secret` user-secrets'ta; izinler authorization, token,
 end-session uç noktaları, `authorization_code`, `code`, `openid profile email roles`; PKCE zorunlu; onay türü
 `explicit` (her uygulama için ilk girişte onay ekranı). Özel ayarlar (`backchannel_logout_uri`, `client_uri`,
-`initiate_login_uri`, `aciklama`) OpenIddict istemci kaydının `Properties` alanında, OIDC istemci meta verisi
-adlarıyla saklanır.
+`initiate_login_uri`, `aciklama`, ayrıca erişim izni için `izinliRoller` ve `izinliKullaniciAdlari`) OpenIddict istemci
+kaydının `Properties` alanında saklanır. Demo istemcilerde izin listeleri boştur (herkes girebilir). Üçüncü kayıtlı
+istemci **`tek-kapi`** (public, loopback adresli) [Tek Kapı köprüsü](#tek-kapı-köprüsü) bölümünde.
+
+Tüm istemci adresleri https olmalıdır; tek istisna yerel (native) uygulamalar için `http://127.0.0.1` loopback
+adresleridir (RFC 8252). Kural iki yerde uygulanır: kayıtta (`Istemciler.AdresleriDogrula`, açılışta) ve protokol
+düzeyinde (authorize isteğindeki `redirect_uri` ile end-session isteğindeki `post_logout_redirect_uri` için OpenIddict
+doğrulama işleyicisi; ihlalde istemciye yönlendirmeden 400 `invalid_request`). OpenIddict'in kendisi http adreslerini
+sunucu adına bakmadan kabul ettiği için bu kural ayrıca eklendi.
+
+## Uygulama bazlı erişim izni
+
+Her istemcinin kaydında iki isteğe bağlı liste vardır (OpenIddict `Properties`, JSON dizisi):
+
+| Ayar | İçerik |
+|---|---|
+| `izinliRoller` | Rol adları (ör. `["akademisyen"]`) |
+| `izinliKullaniciAdlari` | Kullanıcı adları / öğrenci numaraları (ör. `["203011001"]`) |
+
+İkisi de boş veya yoksa herkes girebilir (önceki davranış; `demo-obis` ve `demo-yemekhane` böyle). Biri doluysa
+kullanıcının rollerinden biri `izinliRoller`'de **veya** kullanıcı adı `izinliKullaniciAdlari`'nda olmalıdır
+(büyük/küçük harf duyarsız). Hatalı biçimli (dizi olmayan) bir ayar istemciyi herkese açmaz, kimse uymaz sayılır.
+Kural `Oidc/IstemciErisimi` sınıfındadır ve üç yerde uygulanır:
+
+- **Authorize** (`/connect/authorize`, GET ve onay POST'u): izinsiz kullanıcı onay ekranı veya 2FA kurulumu görmeden
+  istemcinin `redirect_uri`'sine OIDC standardındaki `error=access_denied` (ve `state`) ile döner; kod verilmez, onay
+  kaydı oluşmaz.
+- **Token** (`/connect/token`): yetkilendirme kodu ve refresh token için yeniden kontrol edilir. Kod alındıktan sonra
+  izin kaldırıldıysa `invalid_grant` döner.
+- **Uygulamalarım**: kullanıcının girmeye izni olmayan uygulamaların kartı gösterilmez.
+
+İzinsiz her deneme denetim kaydına **"İstemciye erişim reddedildi"** (`IstemciErisimiReddedildi`) olarak, `client_id`
+ve `uc=authorize` / `uc=token` ayrıntısıyla yazılır. İzinler şimdilik koddaki istemci tanımında ve (Tek Kapı için)
+ayarlardadır; yönetim paneli yol haritasındadır.
+
+## Tek Kapı köprüsü
+
+**Tek Kapı**, kullanıcının **kendi bilgisayarında** çalışan ayrı bir Node.js uygulamasıdır (bu depoda değil). Amaç,
+henüz OIDC desteklemeyen gerçek üniversite sistemlerine (OBİS, UZEM, e-posta) bu bilgisayardan otomatik giriş yapan
+yerel ve kişisel bir **geçiş dönemi aracı** (ESSO, enterprise single sign-on) sunmaktır. Kullanıcı Tek Kapı'ya Tek
+Şifre Giriş Sistemi ile (OIDC) girer; üniversite sistemlerinin şifrelerini Tek Kapı kendi bilgisayarında, şifreli
+olarak saklar ve kullanır.
+
+- **Kimlik sunucusu üniversite şifrelerini hiçbir zaman görmez ve saklamaz.** Kimlik sunucusu Tek Kapı'ya yalnızca
+  standart OIDC token'ları (id_token, access_token) verir. Gerçek sistemlere bağlantı ve şifre saklama tamamen Tek
+  Kapı'nın, kullanıcının bilgisayarındadır; bu depo gerçek Selçuk sistemlerine bağlanmaz.
+- **Kalıcı çözüm bu değildir.** Ekran/form doldurmaya dayanan ESSO kırılgandır ve şifrelerin bir yerde tutulmasını
+  gerektirir. Gerçek sistemlerin kalıcı çözümü, Demo OBİS ve Demo Yemekhane gibi **OIDC ile doğrudan** kimlik
+  sunucusuna bağlanmalarıdır ([Yeni bir uygulamayı sisteme bağlamak](#yeni-bir-uygulamayı-sisteme-bağlamak)).
+
+**İstemci kaydı** (`Istemciler.TekKapi`, Development'ta açılışta oluşturulur veya güncellenir):
+
+| | `tek-kapi` |
+|---|---|
+| Tür | **Public** (`client_secret` yok), uygulama türü native; PKCE (`S256`) zorunlu |
+| Akış / yanıt türü | `authorization_code` / `code` |
+| Kapsamlar | `openid profile roles` (e-posta yok) |
+| Onay türü | `explicit` |
+| Redirect URI | `http://127.0.0.1:4545/auth/callback` |
+| Post-logout redirect URI | `http://127.0.0.1:4545/` |
+| `backchannel_logout_uri` | `http://127.0.0.1:4545/auth/backchannel-logout` |
+| `client_uri` / `initiate_login_uri` | `http://127.0.0.1:4545/` / `http://127.0.0.1:4545/auth/login` |
+| Görünen ad | Tek Kapı — gerçek Selçuk sistemleri (yerel) |
+| `izinliKullaniciAdlari` | `Istemciler:TekKapi:IzinliKullaniciAdlari` ayarından (`appsettings.Development.json`, varsayılan `["203011001"]`) |
+
+İzin listesi ayarda yoksa veya boşsa Tek Kapı **herkese açılmaz**; varsayılan `["203011001"]` kullanılır. Listeye
+kullanıcı eklemek için `appsettings.Development.json`'daki diziyi değiştirip kimlik sunucusunu yeniden başlatın.
+
+**Neden public ve neden http?** Tek Kapı kullanıcının bilgisayarında çalışan yerel (native) bir uygulamadır; içine
+konan bir `client_secret` o bilgisayardaki herkes tarafından okunabilir, yani gizli tutulamaz (RFC 8252 bölüm 8.5).
+Bu yüzden secret yerine PKCE kullanılır: kodu ele geçiren, `code_verifier`'ı bilmeden token alamaz. Yönlendirme
+adresi `http://127.0.0.1` loopback'tir (RFC 8252 bölüm 7.3): istek bilgisayardan dışarı çıkmaz, TLS sertifikası
+gerekmez; `localhost` adı yerine IP kullanılır (ad çözümlemesi değiştirilemesin, bölüm 8.3). OpenIddict http loopback
+adreslerini **hiçbir güvenlik ayarı gevşetilmeden** kabul eder (adresler birebir karşılaştırılır).
+
+**Back-Channel Logout:** çıkışta Tek Kapı'nın `http://127.0.0.1:4545/auth/backchannel-logout` adresine de imzalı
+`logout_token` gider (gönderici https dışında yalnızca `http://127.0.0.1`'e gönderir). OIDC Back-Channel Logout 1.0
+bölüm 2.2 bu adresin https kullanmasını önerir (SHOULD); http'yi açıkça yalnızca gizli istemciler için anar. Burada
+istisna bilinçlidir: adres loopback olduğu için token makineden çıkmaz, `logout_token` bir erişim yetkisi taşımaz
+(yalnızca oturumu kapattırır) ve alıcının imzayı, `aud`'u ve `jti`'yi doğrulaması gerekir. Tek Kapı çalışmıyorsa
+gönderim hatası loglanır ve denetim kaydına "çıkış bildirimi ulaştırılamadı" yazılır; diğer istemcilere bildirim
+gider, çıkış tamamlanır.
 
 **Güvenlik ayarları:** şifre politikası, kilitleme, istek sınırı, çerezler ve başlıklar
 [Güvenlik önlemleri](#güvenlik-önlemleri) bölümünde.
@@ -232,12 +314,14 @@ API'siyle yapılır; kriptografi elle yazılmadı.
 1. **Kurulumu başlat**: Identity yeni bir paylaşılan anahtar üretir (`ResetAuthenticatorKeyAsync`). Bu, güvenlik
    damgasını da yeniler: bu oturum yeniden imzalanıp açık kalır, kullanıcının diğer oturumları kapanır ve onlardan
    giriş yapılmış istemcilere Back-Channel Logout gider (şifre değiştirmedeki rutin). Önceden diğer oturumlar damga
-   yüzünden kapanıyor ama istemcilere bildirim gitmiyordu.
+   yüzünden kapanıyor ama istemcilere bildirim gitmiyordu. Denetim kaydına "İki aşamalı doğrulama kurulumu başlatıldı
+   (yeni anahtar)" yazılır ve kullanıcıya bilgilendirme e-postası gider (anahtar e-postada yoktur).
 2. Anahtar hem metin olarak (4'lü gruplar) hem QR kod olarak gösterilir. QR kod **QRCoder** ile sunucu tarafında SVG
    olarak üretilir ve `<img src="data:image/svg+xml;base64,…">` ile gösterilir: harici CDN veya JavaScript yok, CSP
    değişmedi (`img-src 'self' data:` zaten vardı). otpauth URI'si:
    `otpauth://totp/Selcuk%20SSO%20%28Test%29:<kullanıcı adı>?secret=<anahtar>&issuer=Selcuk%20SSO%20%28Test%29&digits=6`.
-3. Uygulamadaki 6 haneli kod doğrulanmadan 2FA **açılmaz**.
+3. Uygulamadaki 6 haneli kod doğrulanmadan 2FA **açılmaz**. Bu kod kullanılmış sayılır: 3 dakika içinde girişte veya
+   onaylarda tekrar kabul edilmez.
 4. Açılınca 10 kurtarma kodu üretilir ve **yalnızca o yanıtta bir kez** gösterilir (TempData veya çerezle taşınmaz).
    Anahtar ve kod içeren yanıtlar `Cache-Control: no-store` ile döner.
 5. **Kurtarma kodlarını yenile** ve **2FA'yı kapat**: ikisi de mevcut şifre + geçerli TOTP kodu ister. Biri yanlışsa
@@ -255,7 +339,7 @@ kurtarma kodu yazılır (6 rakamsa TOTP, değilse kurtarma kodu; boşluk ve tire
   için de sayfada kontrol edilir.
 - POST istek sınırına tabidir (dakikada 10).
 - **Tekrar oynatma koruması:** başarıyla kullanılan bir TOTP kodu aynı kullanıcı için **3 dakika** boyunca tekrar
-  kabul edilmez (girişin ikinci adımı, 2FA kapatma ve kurtarma kodu yenileme onayları). Tekrar kullanılan kod hatalı
+  kabul edilmez (kurulumdaki doğrulama, girişin ikinci adımı, 2FA kapatma ve kurtarma kodu yenileme onayları). Tekrar kullanılan kod hatalı
   kod gibi hatalı deneme sayacına eklenir ve denetim kaydına "2FA kodu tekrar kullanıldı" olarak yazılır. Ayrıntı
   aşağıda.
 - Kullanılan kurtarma kodu silinir (tek kullanımlık) ve kullanıcıya kalan kod sayısıyla bilgilendirme e-postası gider.
@@ -281,9 +365,9 @@ kalır, geçerli kod ayrıca kullanıcının son 3 dakikada kabul edilmiş kodla
   edilebilirdi. (2) Kayıt veritabanında olduğu için yeniden başlatmada kaybolmaz ve birden fazla sunucu örneği aynı
   kaydı görür; varsayılan bellek içi önbellekte ikisi de sağlanmazdı. (3) Yeni bir altyapı veya paket gerekmez.
   Bedeli, başarılı her TOTP doğrulamasında tek bir `UPDATE`'tir.
-- **Kapsam:** girişin ikinci adımı (SignInManager → sağlayıcı) ile 2FA kapatma ve kurtarma kodu yenileme onayları.
-  Onaylarda kod yalnızca şifre de doğruysa kullanılmış sayılır (şifresini yanlış yazan kullanıcı aynı kodla tekrar
-  deneyebilir). Kurulumdaki "Doğrula ve aç" kodu kullanılmış saymaz (`TuketmedenDogrulaAsync`).
+- **Kapsam:** kurulumdaki "Doğrula ve aç", girişin ikinci adımı (SignInManager → sağlayıcı) ile 2FA kapatma ve kurtarma
+  kodu yenileme onayları. Onaylarda kod yalnızca şifre de doğruysa kullanılmış sayılır (şifresini yanlış yazan
+  kullanıcı aynı kodla tekrar deneyebilir; `TuketmedenDogrulaAsync`).
 
 **Kurtarma kodlarının saklanması:** Identity varsayılan olarak kurtarma kodlarını `AspNetUserTokens` tablosunda düz
 metin (`;` ile birleşik) tutar. `Hesap/KurtarmaKoduOzetDeposu`, Identity'nin EF Core kullanıcı deposunu
@@ -319,10 +403,11 @@ Güvenlik olayları `DenetimKayitlari` tablosuna yazılır (migration `DenetimKa
 `Ayrinti` (kısa serbest metin, en fazla 500 karakter, ör. `neden=sifre-yanlis`).
 
 **Kaydedilen olaylar:** giriş başarılı/başarısız, hesap kilitlendi, 2FA başarılı/başarısız, 2FA kodu tekrar
-kullanıldı, kurtarma kodu kullanıldı,
+kullanıldı, kurtarma kodu kullanıldı, 2FA kurulumu başlatıldı,
 2FA açıldı/kapatıldı (başarısız denemeler dahil), kurtarma kodları yenilendi, çıkış, şifre sıfırlama istendi, şifre
 sıfırlandı (geçersiz bağlantı dahil), şifre değişti (yanlış mevcut şifre dahil), onay verildi/reddedildi, istemciye
-token verildi (`client_id` ile), back-channel logout gönderildi/başarısız, hız sınırı aşıldı.
+token verildi (`client_id` ile), istemciye erişim reddedildi (`client_id` ile), back-channel logout
+gönderildi/başarısız, hız sınırı aşıldı.
 
 **Asla kaydedilmeyenler:** şifre, TOTP veya kurtarma kodu, paylaşılan anahtar, sıfırlama token'ı, access/id/refresh
 token, yetkilendirme kodu, çerez, logout_token. Var olmayan bir kullanıcı adıyla başarısız girişte (ve şifremi
@@ -484,6 +569,18 @@ yazdığı bir başlıkla HTTP isteğini HTTPS gibi gösteremez.
     özetlenir; anahtar Development dışında yoksa uygulama açılmaz. *Gerekçe:* anahtarsız özet, küçük bir değer
     uzayında (kullanıcı adları, 6 haneli kodlar) deneme yoluyla geri çevrilebilir; eksik yapılandırma sessizce zayıf
     bir moda düşmek yerine açılışta fark edilmeli.
+23. **Public istemci + PKCE + loopback (RFC 8252).** Tek Kapı gibi kullanıcının bilgisayarında çalışan uygulamalar
+    `client_secret`'sız public istemcidir; PKCE (`S256`) zorunludur, adresler yalnızca `http://127.0.0.1`. http başka
+    hiçbir sunucu adı için kabul edilmez (kayıtta ve authorize/end-session isteğinde denetlenir; `localhost` adı da
+    reddedilir). *Gerekçe:* yerel uygulamaya konan secret gizli kalamaz, sahte güvenlik verir; PKCE ele geçirilen kodu
+    işe yaramaz kılar. Loopback trafiği makineden çıkmaz; IP literal'i ad çözümlemesiyle başka arayüze
+    yönlendirilemez. Diğer adreslerde https zorunluluğu korunur.
+24. **Uygulama bazlı erişim izni.** İstemci kaydındaki `izinliRoller` / `izinliKullaniciAdlari` ile bir uygulamaya
+    yalnızca belirli rol veya kullanıcılar girebilir; authorize (`access_denied`), token uç noktası (`invalid_grant`)
+    ve Uygulamalarım aynı kuralı uygular, her ret denetim kaydına yazılır. Hatalı biçimli ayar kimseye izin vermez
+    (fail-closed). *Gerekçe:* kimlik doğrulama herkese açık olsa da her uygulama herkese açık olmamalıdır (en az
+    yetki); kontrolün token anında tekrarlanması, kod veya refresh token verildikten sonra kaldırılan iznin de
+    uygulanmasını sağlar.
 
 ### Yanıt süresi eşitleme (kod incelemesi)
 
@@ -564,6 +661,10 @@ yolun aynı işi yaptığı kodda doğrulandı:
    `AddSelcukSSO` doğrular), `/Cikis` (çerez + OIDC SignOut), `/ErisimReddedildi`, `/GirisHatasi`.
    Rol korumalı sayfalarda `[Authorize(Roles = "...")]` kullanın; rol claim'i `role`, ad claim'i `name`.
 6. Kimlik sunucusunu yeniden başlatın: istemci kaydedilir ve "Uygulamalarım" sayfasında görünür.
+7. İsteğe bağlı: uygulamaya yalnızca belirli rol veya kullanıcılar girebilecekse tanımın `Properties`'ine
+   `izinliRoller` / `izinliKullaniciAdlari` ekleyin ([Uygulama bazlı erişim izni](#uygulama-bazlı-erişim-izni)).
+   Kullanıcının bilgisayarında çalışan bir uygulama için `Istemciler.TekKapi` gibi public istemci ve
+   `http://127.0.0.1` adresleri kullanın.
 
 ## Klasör yapısı
 
@@ -577,7 +678,8 @@ src/Selcuk.Identity/
                                   ForwardedHeaders, discovery ek alanları
   GuvenlikBasliklari.cs           Güvenlik başlıkları ara katmanı
   GuvenilenProxyler.cs            X-Forwarded-For/Proto'ya yalnızca listedeki proxy'lerden güvenilmesi
-  Data/                           ApplicationUser, DbContext, IstemciOturumu, DenetimKaydi, Roller, Istemciler,
+  Data/                           ApplicationUser, DbContext, IstemciOturumu, DenetimKaydi, Roller, Istemciler
+                                  (demo-obis, demo-yemekhane, tek-kapi; adres kuralı),
                                   BaslangicVerisi, Migrations
   Denetim/                        DenetimKaydedici (kuyruk) + yazma hizmeti, saklama süresi temizliği, Türkçe olay adları,
                                   AnahtarliOzet (HMAC-SHA256)
@@ -586,7 +688,7 @@ src/Selcuk.Identity/
                                   şifre değişikliği sonrası işler, Türkçe Identity hataları, IkiAdimIslemleri (2FA),
                                   KurtarmaKoduOzetDeposu, TekKullanimlikTotpSaglayici (TOTP tekrar koruması)
   Oidc/                           Token/UserInfo uç noktaları, claim hedefleri (amr dahil), OturumKimligi (sid),
-                                  BackChannelLogoutGonderici
+                                  BackChannelLogoutGonderici, IstemciErisimi (uygulama bazlı erişim izni)
   Pages/                          Uygulamalarım (Index), Account/Login, IkiAdim, IkiAdimDogrulama, GuvenlikGecmisi,
                                   SifremiUnuttum, SifreSifirla, Hesabim, SifreDegistir, AccessDenied,
                                   Connect/Authorize, Logout
@@ -768,6 +870,15 @@ ekler.
 9. Test kullanıcısını eski hâline döndürmek için Hesabım → İki aşamalı doğrulama → **Kapat** (mevcut şifre + güncel
    kod; girişte kullandığınız kod 3 dakika içinde tekrar kabul edilmez, uygulamada yeni kodun çıkmasını bekleyin).
 
+### Uygulama bazlı erişim izni ve Tek Kapı kartı
+
+1. Kimlik sunucusunu başlatın (açılışta `tek-kapi` kaydedilir; logda "İstemci kaydedildi/güncellendi: tek-kapi").
+2. **`203011001`** ile giriş yapın: Uygulamalarım'da **Tek Kapı — gerçek Selçuk sistemleri (yerel)** kartı görünür.
+   Kart `http://127.0.0.1:4545/auth/login?iss=…` adresine gider; Tek Kapı çalışmıyorsa tarayıcı bağlanamaz (beklenen).
+3. Çıkış yapıp **`hoca.test`** ile girin: Tek Kapı kartı görünmez, Demo OBİS ve Demo Yemekhane görünür.
+4. `hoca.test` oturumu açıkken tarayıcıya Tek Kapı'nın authorize adresini (client_id `tek-kapi`, PKCE ile) elle
+   yazarsanız istemciye `error=access_denied` ile dönülür; Güvenlik geçmişinde "İstemciye erişim reddedildi" görünür.
+
 Rol bazlı zorunluluğu denemek için `src/Selcuk.Identity/appsettings.Development.json`'a geçici olarak
 `"IkiAdimZorunluRoller": ["akademisyen"]` ekleyip kimlik sunucusunu yeniden başlatın: `hoca.test` girişten sonra
 kurulum sayfasına yönlendirilir ve kurulumu bitirmeden Demo OBİS'e giremez.
@@ -841,7 +952,7 @@ yakalanır.
 | `Yanlis_mevcut_sifre_hatali_deneme_sayacini_artiriyor_kilitliyken_degisiklik_yapilmiyor` | Yanlış mevcut şifre sayacı 1 artırır; 5'te kilit, kilitliyken doğru şifreyle de değişmez; denetim kayıtları |
 | `Discovery_claims_supported_amr_iceriyor` | `claims_supported` içinde `amr` |
 | `Totp_yardimcisi_Identity_dogrulayicisinin_kabul_ettigi_kodu_uretiyor` | Test yardımcısının kodu Identity'nin `VerifyTwoFactorTokenAsync`'i ile geçer, "geçersiz" kod geçmez |
-| `Kurulum_gecerli_kod_olmadan_acilmiyor_gecerli_kodla_aciliyor_10_kurtarma_kodu_donuyor` | Anahtar 4'lü gruplar + SVG QR (data URI, script yok, CSP aynı), otpauth issuer `Selcuk SSO (Test)`; boş/yanlış kodla açılmaz; doğru kodla açılır, 10 farklı kod, `no-store`, e-posta; kodlar ikinci kez gösterilmez |
+| `Kurulum_gecerli_kod_olmadan_acilmiyor_gecerli_kodla_aciliyor_10_kurtarma_kodu_donuyor` | "Kurulumu başlat" e-postası; anahtar 4'lü gruplar + SVG QR (data URI, script yok, CSP aynı), otpauth issuer `Selcuk SSO (Test)`; boş/yanlış kodla açılmaz; doğru kodla açılır, 10 farklı kod, `no-store`, e-posta; kodlar ikinci kez gösterilmez |
 | `Kurtarma_kodlari_veritabaninda_duz_metin_olarak_bulunmuyor` | `AspNetUserTokens`/`AspNetUsers`'ta hiçbir kod (tireli/tiresiz) yok; Identity'nin `RecoveryCodes` kaydı yok, 10 PBKDF2 özeti var; küçük harf/tiresiz kod kullanılabilir ve tek kullanımlık |
 | `IkiAdim_acik_kullanici_sifreyle_girince_ikinci_adima_yonleniyor_kod_olmadan_token_alamiyor` | Şifreden sonra `/Account/IkiAdim`, oturum çerezi yok; authorize girişe yönlendirir, kod yok |
 | `Dogru_TOTP_ile_giris_tamamlaniyor_amr_mfa_iceriyor_sadece_sifreyle_amr_pwd` | TOTP ile id_token `amr` = `["pwd","mfa"]`, yalnızca şifreyle `["pwd"]` (ikisi de JSON dizisi); access token'da `amr` yok; `IkiAdimBasarili` ve `client_id`'li `TokenVerildi` kayıtları |
@@ -854,11 +965,13 @@ yakalanır.
 | `Ayni_TOTP_koduyla_ikinci_giris_reddediliyor_hatali_deneme_sayaci_artiyor` | İlk giriş başarılı; aynı kodla ikinci tarayıcıda giriş reddedilir, çerez yok, sayaç 0 → 1; ilk oturum açık; `IkiAdimKoduTekrarKullanildi` ("2FA kodu tekrar kullanıldı") ve `IkiAdimBasarisiz` kayıtları; `AspNetUserTokens`'ta yalnızca `zaman\|h1:<64 hex>` |
 | `Farkli_ve_gecerli_kodla_ikinci_giris_kabul_ediliyor` | Şu anki ve sonraki zaman adımının kodlarıyla iki giriş de başarılı; sayaç 0; iki `IkiAdimBasarili`, tekrar kaydı yok |
 | `Kurulumu_baslatinca_diger_oturumlarin_istemcilerine_back_channel_logout_gidiyor_mevcut_oturum_acik` | "Kurulumu başlat": bu oturum aynı sid'le açık ve anahtarı görüyor; diğer oturum kapanır, yalnızca onun iki istemcisine o sid'li logout_token gider; kayıtlar kapanır |
+| `Kurulumdaki_dogrulama_kodu_ikinci_kez_kullanilamiyor` | Kurulumda kullanılan kod başka tarayıcıda girişte reddedilir (sayaç 1, çerez yok) ve kurtarma kodu yenileme onayında da reddedilir; başka zaman adımının kodu kabul edilir; iki `IkiAdimKoduTekrarKullanildi` kaydı |
+| `Kurulumu_baslatma_denetim_kaydi_ve_eposta_olusturuyor` | "Kurulumu başlat": kullanıcıya "İki aşamalı doğrulama kurulumu başlatıldı" e-postası (anahtar içermez), `IkiAdimKurulumuBaslatildi` (başarılı) kaydı, Güvenlik geçmişinde görünür |
 | `Iki_adim_sayfalari_giris_gerektiriyor_ikinci_adim_sifre_adimi_olmadan_acilmiyor` | Kurulum ve güvenlik geçmişi girişsiz → giriş sayfası; ikinci adım şifre adımı olmadan → giriş |
 | `Basarili_ve_basarisiz_giriste_kayit_olusuyor_olmayan_kullanici_adi_yalnizca_ozetle_saklaniyor` | Başarılı/başarısız giriş kayıtları (kullanıcı, sonuç, ayrıntı, user agent, 200 karaktere kısaltma); olmayan kullanıcı adı hiçbir sütunda yok, `h1:` HMAC özeti var |
 | `Olmayan_kullanici_adi_h1_onekli_HMAC_ile_yaziliyor_ayni_ad_ayni_ozet_farkli_anahtar_farkli_ozet` | Bilinen anahtarla: `kullanici_adi_ozeti=h1:<64 hex>`, bağımsız hesaplanan HMAC-SHA256'ya eşit, düz SHA-256 değil; aynı ad (farklı yazılış) aynı özet; başka anahtarla farklı özet |
 | `Development_disinda_HMAC_anahtari_yoksa_veya_gecersizse_uygulama_baslamiyor` (×3) | `Testing` ortamında anahtar boş, 32 bayttan kısa veya base64 değil: uygulama açılmaz, hata ayar adını içerir |
-| `Denetim_tablosunun_hicbir_sutununda_sifre_kod_veya_token_bulunmuyor` | Uçtan uca senaryo (kullanıcı adı alanına şifre, 2FA açma, TOTP ve kurtarma koduyla giriş, OIDC, çıkış, şifre sıfırlama) sonrası tablonun tüm sütunlarında şifreler, anahtar, TOTP/kurtarma kodları, kod, verifier, secret, token'lar, logout_token, çerez ve sıfırlama kodu yok |
+| `Denetim_tablosunun_hicbir_sutununda_sifre_kod_veya_token_bulunmuyor` | Kaydedilen olay türleri beklenen kümenin içinde; uçtan uca senaryo (kullanıcı adı alanına şifre, 2FA açma (kurulum ve giriş farklı kodlarla), TOTP ve kurtarma koduyla giriş, OIDC, çıkış, şifre sıfırlama) sonrası tablonun tüm sütunlarında şifreler, anahtar, TOTP/kurtarma kodları, kod, verifier, secret, token'lar, logout_token, çerez ve sıfırlama kodu yok |
 | `Saklama_suresini_asan_kayitlar_temizlik_isiyle_siliniyor` | Varsayılan 180 gün; `DenetimKaydiSaklamaGun` = 7 iken 30 ve 8 günlük kayıtlar silinir, 6 günlük ve yeni kalır |
 | `Guvenlik_gecmisi_yalnizca_kullanicinin_kendi_son_20_kaydini_gosteriyor` | Başka kullanıcının uygulama ve IP'si görünmez; 25 kayıttan 20'si; uygulamanın görünen adı ve IP |
 | `GuvenilenProxyler_bosken_X_Forwarded_For_dikkate_alinmiyor` | Liste boş: kayıtta proxy IP'si; farklı `X-Forwarded-For`'lu iki istemci aynı sınıra takılır |
@@ -866,6 +979,16 @@ yakalanır.
 | `Listede_olmayan_adresten_gelen_baslik_dikkate_alinmiyor` | Liste başka ağ (CIDR) ve adres: başlık yok sayılır |
 | `GuvenilenProxyler_doluyken_X_Forwarded_Proto_https_dikkate_aliniyor` | HTTP isteği + `X-Forwarded-Proto: https`, liste = proxy: discovery 200 (OpenIddict HTTPS şartı), girişe yönlendirme `https://` |
 | `GuvenilenProxyler_bosken_X_Forwarded_Proto_dikkate_alinmiyor` | Aynı istek, liste boş: discovery reddedilir, yönlendirme `http://` |
+| `TekKapi_public_istemci_secret_olmadan_PKCE_ile_kod_ve_token_aliyor` | Kayıt: public, explicit, PKCE gereksinimi, tek redirect `http://127.0.0.1:4545/auth/callback`, secret doğrulanmaz; izinli kullanıcı secret'sız token isteğiyle token alır; id_token `aud` = `tek-kapi`, `role` var, `email` yok |
+| `TekKapi_PKCE_olmadan_authorize_reddediliyor` | `code_challenge` yok: 400 `invalid_request`, yönlendirme yok; `plain` ile de kod yok |
+| `Izinsiz_kullanici_TekKapi_authorize_isteginde_access_denied_ile_donuyor_ve_denetim_kaydi_olusuyor` | Akademisyen (listede değil): onay ekranı olmadan `redirect_uri?error=access_denied&state=…`, kod yok; onay formu doğrudan gönderilince de; iki `IstemciErisimiReddedildi` kaydı (`client_id`, `uc=authorize`); onay kaydı yok |
+| `Izinsiz_kullanici_Uygulamalarimda_TekKapi_kartini_gormuyor_izinli_goruyor` | İzinli: Tek Kapı kartı, açıklaması ve `iss`'li `initiate_login_uri`; izinsiz: kart ve `127.0.0.1` yok; ikisi de demo kartlarını görür |
+| `IzinliRoller_ile_kisitli_istemcide_rolu_uymayan_reddediliyor_uyan_kabul_ediliyor` | `izinliRoller` = `["AKADEMISYEN"]`: öğrenci `access_denied` + kayıt; akademisyen (harf duyarsız) kod ve token alır |
+| `Token_ucu_da_izin_kontrol_ediyor_kod_alindiktan_sonra_izin_kaldirilinca_token_reddediliyor` | Kod alındıktan sonra izin listesi değişir: token `invalid_grant`, `uc=token` kaydı, `TokenVerildi` yok |
+| `Cikista_TekKapinin_backchannel_logout_uri_adresine_de_logout_token_gidiyor` | Tek Kapı + Demo OBİS token'ı, RP-initiated logout `http://127.0.0.1:4545/?state=cikis`'e döner; iki `backchannel_logout_uri`'ye form POST; Tek Kapı'nınkinde `aud` = `tek-kapi`, `sub` |
+| `TekKapi_calismiyorsa_cikis_tamamlaniyor_diger_istemciler_yine_bildiriliyor` | Tek Kapı'ya bağlanılamaz: çıkış tamamlanır, Demo OBİS bildirilir, Tek Kapı için `BackChannelLogoutBasarisiz` (`hata=HttpRequestException`), kayıtlar kapanır |
+| `Kayit_kurali_disinda_eklenmis_http_redirect_adresi_authorize_ve_cikista_reddediliyor` | Doğrudan eklenmiş `http://istemci.test.local/…`: authorize ve end-session 400 `invalid_request`, yönlendirme yok |
+| `Istemci_adresleri_https_veya_yalnizca_http_127_0_0_1_olabiliyor` | Üç tanım kurala uyar; `http://localhost`, `http://192.168.1.10`, `http://127.0.0.1.evil.example`, uzak http redirect ve `http://localhost` back-channel reddedilir; boş izin listesi varsayılana döner |
 | **Selcuk.Istemci.Ortak.Tests** | |
 | `Gecerli_logout_token_oturumu_sonlandiriyor` | 200 (`no-store`); o sid'li oturum sonraki istekte authorize'a yönlenir |
 | `Imzasi_gecersiz_token_reddediliyor` | 400, oturum etkilenmez |
@@ -928,7 +1051,9 @@ yakalanır.
       hatırla", rol bazlı zorunluluk, id_token'da `amr`
 - [x] **Denetim kaydı** (giriş, başarısız deneme, kilitleme, 2FA, şifre, onay, token, çıkış, back-channel logout ve
       istek sınırı olayları), kullanıcının güvenlik geçmişi sayfası, KVKK saklama süresi
-- [ ] **Yönetim paneli** (kullanıcı, rol ve istemci uygulama yönetimi)
+- [x] **Uygulama bazlı erişim izni** (`izinliRoller`, `izinliKullaniciAdlari`) ve **Tek Kapı** public istemci kaydı
+      (loopback, PKCE)
+- [ ] **Yönetim paneli** (kullanıcı, rol ve istemci uygulama yönetimi; erişim izinlerinin arayüzden yönetimi)
 - [ ] **Token iptali** (revocation uç noktası, oturum/yetkilendirme iptali)
 - [ ] **Production sertifika yönetimi**: şu an yalnızca Development sertifikaları (`AddDevelopmentSigningCertificate`,
       `AddDevelopmentEncryptionCertificate`) kullanılıyor. Production'da kalıcı X.509 imzalama/şifreleme
