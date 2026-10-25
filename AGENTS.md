@@ -105,7 +105,15 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   (503) ve `iss` doğrulaması testleri; yerel RSA anahtarı ve sahte JWKS.
 - `tests/Selcuk.Demo.Obis.Tests`, `tests/Selcuk.Demo.Yemekhane.Tests`: yönlendirme ve rol testleri; gerçek kimlik
   sunucusu yerine sabit discovery bilgisi ve sahte kimlik doğrulama şeması kullanır.
-- `scripts/run-all.ps1`: üç uygulamayı ayrı pencerelerde başlatır.
+- `araclar/tek-kapi` (http://127.0.0.1:4545): Tek Kapı, kullanıcının kendi bilgisayarında çalışan Node.js portalı
+  (Express + Playwright; kişisel ESSO, gerçek Selçuk sistemlerine form tabanlı otomatik giriş). Kendi kuralları
+  `araclar/tek-kapi/AGENTS.md`'de. Üniversite şifreleri yalnızca yereldeki şifreli kasada (`data/`, git'e girmez).
+  İsteğe bağlı SSO modu (`SSO_ISSUER`): kimlik sunucusuna `tek-kapi` public istemcisi olarak bağlanır (openid-client,
+  PKCE S256), erişim iki katmanlı (SSO oturumu + kasa ana şifresi), Back-Channel Logout gelince kasayı kilitler ve
+  gerçek site oturumlarını kapatır (jose ile logout_token doğrulama). TLS: `node --use-system-ca` (doğrulama
+  kapatılmaz). Testleri (`npm test`: bağımsız mod 33 + SSO 13 kontrol) sahte siteler ve sahte OIDC sağlayıcıyla
+  çalışır.
+- `scripts/run-all.ps1`: üç uygulamayı ayrı pencerelerde başlatır; `-TekKapi` ile Tek Kapı'yı da SSO modunda başlatır.
 
 Ayrıntılar için `README.md` dosyasına bakın.
 
@@ -118,9 +126,11 @@ b) **Şifreler ve sırlar koda, loglara ve repoya girmez.** Geliştirmede `dotne
    değişkenleri veya güvenli bir sır deposu kullanılır. Şifreleri, token'ları veya bağlantı sırlarını loglama, çıktıya
    yazdırma ve commit'leme.
 
-c) **Gerçek Selçuk Üniversitesi sistemlerine veya gerçek hesaplara bağlanılmaz.** Test verileri kurgusaldır, e-posta
-   adresleri `@test.local` uzantılıdır. Gerçek `selcuk.edu.tr` adresleri, gerçek öğrenci numaraları veya kurum
-   sistemleri kullanılmaz.
+c) **Kimlik sunucusu ve demo uygulamalar gerçek Selçuk sistemlerine bağlanmaz.** İstisna: `araclar/tek-kapi`,
+   kullanıcının kendi hesabıyla, kendi bilgisayarında çalışan kişisel ESSO aracıdır. Kuralları
+   `araclar/tek-kapi/AGENTS.md`'dedir. Hiçbir test gerçek Selçuk sistemlerine istek atmaz. Kimlik sunucusu ve demo
+   uygulamaların test verileri kurgusaldır, e-posta adresleri `@test.local` uzantılıdır; gerçek öğrenci numaraları
+   veya hesaplar kullanılmaz.
 
 d) **OIDC/OAuth2 standardından sapılmaz.** PKCE zorunludur. Implicit flow yoktur. Password (ROPC) grant yoktur.
    Yeni akış veya uç nokta eklenecekse ilgili RFC ve OpenID Connect belirtimine uyulur.
@@ -144,6 +154,8 @@ dotnet run --project src/Selcuk.Identity                                   # htt
 dotnet run --project src/Selcuk.Demo.Obis                                  # https://localhost:5101
 dotnet run --project src/Selcuk.Demo.Yemekhane                             # https://localhost:5102
 powershell -ExecutionPolicy Bypass -File scripts\run-all.ps1               # üçü birlikte
+powershell -ExecutionPolicy Bypass -File scripts\run-all.ps1 -TekKapi      # + Tek Kapı (SSO modu, :4545)
+cd araclar\tek-kapi; npm ci; npm test                                       # Tek Kapı testleri
 dotnet tool restore
 dotnet ef migrations add <Ad> --project src/Selcuk.Identity --output-dir Data/Migrations
 dotnet ef database update --project src/Selcuk.Identity

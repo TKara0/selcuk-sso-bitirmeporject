@@ -4,6 +4,7 @@
 //   - Host başlığı denetlenir (DNS rebinding koruması)
 //   - API çağrıları özel bir başlık ister (tarayıcı bunu çapraz sitede preflight'sız gönderemez)
 //   - Oturum çerezi HttpOnly + SameSite=Strict
+// SSO modunda (SSO_ISSUER tanımlıysa, bkz. sso.js) portala önce SSO oturumu, sonra kasa ana şifresiyle girilir.
 
 const fs = require('fs');
 const path = require('path');
@@ -12,6 +13,7 @@ const express = require('express');
 const { Vault } = require('./vault');
 const { SITES } = require('./sites');
 const { BrowserEngine } = require('./browser');
+const { createSso } = require('./sso');
 
 const PORT = Number(process.env.PORT || 4545);
 const HOST = '127.0.0.1';
@@ -73,6 +75,26 @@ const engine = new BrowserEngine({
 
 let sessionToken = null;
 
+// SSO modu (isteğe bağlı). Çıkışta (kullanıcı veya Back-Channel Logout) kasa kilitlenir ve yönetilen tarayıcıdaki
+// tüm site oturumları kapatılır (mevcut "Hepsinden çık").
+let sso;
+try {
+  sso = createSso({
+    dataDir: DATA_DIR,
+    port: PORT,
+    test: TEST,
+    log,
+    kapat: async () => {
+      vault.lock();
+      sessionToken = null;
+      await engine.logoutAll();
+    },
+  });
+} catch (e) {
+  console.error('SSO ayarları geçersiz: ' + e.message);
+  process.exit(1);
+}
+
 const app = express();
 app.disable('x-powered-by');
 app.use(express.json({ limit: '16kb' }));
@@ -93,6 +115,11 @@ app.use('/api', (req, res, next) => {
   if (req.get('x-tek-kapi') !== '1') return res.status(403).json({ error: 'Eksik başlık' });
   next();
 });
+
+// SSO modunda API önce SSO oturumu ister. Durum (arayüz yönlendirmesi), odaklama (ikinci kopya) ve kilitleme serbest.
+const SSO_SERBEST = new Set(['/state', '/focus', '/lock']);
+app.use('/api', (req, res, next) => (SSO_SERBEST.has(req.path) ? next() : sso.gerekli(req, res, next)));
+sso.rotalar(app);
 
 function readCookie(req, name) {
   const m = (req.headers.cookie || '').split(/;\s*/).find((c) => c.startsWith(name + '='));
@@ -116,10 +143,12 @@ const wrap = (fn) => (req, res) => Promise.resolve(fn(req, res)).catch((e) => re
 
 app.get('/api/state', (req, res) => {
   const t = readCookie(req, 'tk_session');
+  const ssoDurum = sso.durum(req);
   res.json({
     vaultExists: vault.exists(),
-    unlocked: vault.isUnlocked() && !!t && t === sessionToken,
+    unlocked: vault.isUnlocked() && !!t && t === sessionToken && (!ssoDurum.etkin || ssoDurum.girisYapildi),
     browserRunning: engine.running(),
+    sso: ssoDurum,
   });
 });
 
@@ -251,12 +280,14 @@ if (TEST) {
 }
 
 // Normal bir bağlantıyla indirilebilsin diye /api dışında; SameSite=Strict oturum çereziyle korunuyor
-app.get('/export/metrics.csv', auth, (req, res) => {
+app.get('/export/metrics.csv', sso.gerekli, auth, (req, res) => {
   res.set({ 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="tek-kapi-olcumler.csv"' });
   if (!fs.existsSync(METRICS_FILE)) return res.send('\ufeff' + METRIC_COLS.join(',') + '\n');
   res.send(fs.readFileSync(METRICS_FILE));
 });
 
+// SSO modunda portal sayfası SSO oturumu olmadan açılmaz (girişe yönlendirilir); stil ve betik dosyaları serbest.
+app.get(['/', '/index.html'], sso.sayfaGeregi);
 app.use(express.static(path.join(__dirname, '..', 'public'), { index: 'index.html' }));
 
 const server = app.listen(PORT, HOST, async () => {

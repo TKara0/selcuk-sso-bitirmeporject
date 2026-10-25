@@ -17,11 +17,18 @@
         <div class="brand-sub">Selçuk otomasyonları, tek şifre</div>
       </div>
     </div>
-    <nav class="top-actions" id="topActions" hidden>
-      <button class="ghost" id="btnLogoutAll" title="Tek Kapı penceresindeki tüm Selçuk oturumlarını kapatır">Hepsinden çık</button>
-      <button class="ghost" id="btnSettings">Ayarlar</button>
-      <button class="ghost" id="btnLock">Kilitle</button>
-    </nav>
+    <div class="top-actions">
+      <nav class="top-actions" id="topActions" hidden>
+        <button class="ghost" id="btnLogoutAll" title="Tek Kapı penceresindeki tüm Selçuk oturumlarını kapatır">Hepsinden çık</button>
+        <button class="ghost" id="btnSettings">Ayarlar</button>
+        <button class="ghost" id="btnLock">Kilitle</button>
+      </nav>
+      <!-- SSO modu: giriş yapan kişi ve kimlik sunucusundan çıkış -->
+      <nav class="top-actions" id="ssoBar" hidden>
+        <span class="sso-who" id="ssoName"></span>
+        <button class="ghost" id="btnSsoLogout" title="Kasayı kilitler, tüm Selçuk oturumlarını kapatır ve Tek Şifre Giriş Sistemi'nden çıkar">SSO'dan çık</button>
+      </nav>
+    </div>
   </header>
 
   <main>

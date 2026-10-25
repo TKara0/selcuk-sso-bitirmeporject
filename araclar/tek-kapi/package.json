@@ -5,12 +5,16 @@
   "main": "src/server.js",
   "type": "commonjs",
   "scripts": {
-    "start": "node src/server.js",
-    "test": "node test/e2e.js"
+    "start": "node --use-system-ca src/server.js",
+    "test": "node test/e2e.js && node test/sso.js"
   },
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
     "express": "^4.21.2",
+    "jose": "6.2.13",
+    "openid-client": "6.8.8",
     "playwright": "1.56.1"
   }
 }

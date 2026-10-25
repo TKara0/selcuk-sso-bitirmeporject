@@ -25,11 +25,25 @@ function show(id) {
   if (f && id !== 'viewHome') f.focus();
 }
 
+const getState = () => fetch('/api/state', { headers: { 'x-tek-kapi': '1' } }).then((r) => r.json());
+
+// SSO modu: oturum yoksa (ör. kimlik sunucusundan çıkış yapıldıysa) SSO girişine dön
+function ssoCheck(st) {
+  const sso = st.sso || {};
+  $('#ssoBar').hidden = !(sso.etkin && sso.girisYapildi);
+  $('#ssoName').textContent = sso.ad || '';
+  if (sso.etkin && !sso.girisYapildi) { window.location.href = '/auth/login'; return false; }
+  return true;
+}
+
 async function route() {
-  const st = await fetch('/api/state', { headers: { 'x-tek-kapi': '1' } }).then((r) => r.json());
+  const st = await getState();
   clearInterval(pollTimer);
-  if (!st.vaultExists) return show('viewSetup');
-  if (!st.unlocked) return show('viewLocked');
+  if (!ssoCheck(st)) return;
+  // Kilit ve kurulum ekranlarında da SSO oturumu yoklanır (Back-Channel Logout sonrası girişe dönmek için)
+  const ssoPoll = () => { if (st.sso && st.sso.etkin) pollTimer = setInterval(async () => { try { ssoCheck(await getState()); } catch {} }, 3000); };
+  if (!st.vaultExists) { show('viewSetup'); return ssoPoll(); }
+  if (!st.unlocked) { show('viewLocked'); return ssoPoll(); }
   await renderHome();
   show('viewHome');
   pollTimer = setInterval(() => { refreshEvents(); }, 2000);
@@ -208,5 +222,13 @@ $('#btnLogoutAll').addEventListener('click', async () => {
   finally { btn.disabled = false; }
 });
 $('#btnLock').addEventListener('click', async () => { await api('/lock', { method: 'POST' }); await route(); });
+$('#btnSsoLogout').addEventListener('click', async () => {
+  const btn = $('#btnSsoLogout');
+  btn.disabled = true;
+  try {
+    const r = await fetch('/auth/logout', { method: 'POST', headers: { 'x-tek-kapi': '1' }, credentials: 'same-origin' }).then((x) => x.json());
+    window.location.href = r.url || '/';
+  } catch (e) { alertInline(e.message); btn.disabled = false; }
+});
 
 route();

@@ -11,8 +11,8 @@ Depoda şu an **kimlik sunucusu**, ona OpenID Connect ile bağlanan iki alt uygu
 ve bu uygulamaların ortak istemci kütüphanesi var. **Tek giriş** (bir kez giriş, diğer uygulamalara şifresiz geçiş),
 OIDC Back-Channel Logout ile **tek çıkış** (bir uygulamadan çıkınca hepsinden çıkış), e-postayla **şifre sıfırlama**,
 **şifre değiştirme**, TOTP tabanlı **iki aşamalı doğrulama** (2FA), güvenlik olaylarının **denetim kaydı** ve
-**uygulama bazlı erişim izni** çalışıyor. Ayrıca yerelde çalışan **Tek Kapı** köprüsü public bir OIDC istemcisi olarak
-kayıtlı ([Tek Kapı köprüsü](#tek-kapı-köprüsü)).
+**uygulama bazlı erişim izni** çalışıyor. Ayrıca yerelde çalışan **Tek Kapı** köprüsü (`araclar/tek-kapi`) public bir
+OIDC istemcisi olarak bağlı ([Tek Kapı köprüsü](#tek-kapı-köprüsü)): SSO ile giriş, Back-Channel Logout ile tek çıkış.
 Alınan önlemler [Güvenlik önlemleri](#güvenlik-önlemleri) bölümünde. Diğer özellikler
 [yol haritasında](#yapılacaklar-yol-haritası).
 
@@ -124,7 +124,8 @@ ayarlardadır; yönetim paneli yol haritasındadır.
 
 ## Tek Kapı köprüsü
 
-**Tek Kapı**, kullanıcının **kendi bilgisayarında** çalışan ayrı bir Node.js uygulamasıdır (bu depoda değil). Amaç,
+**Tek Kapı**, kullanıcının **kendi bilgisayarında** çalışan ayrı bir Node.js uygulamasıdır (`araclar/tek-kapi`;
+kendi README ve AGENTS.md dosyaları orada). Amaç,
 henüz OIDC desteklemeyen gerçek üniversite sistemlerine (OBİS, UZEM, e-posta) bu bilgisayardan otomatik giriş yapan
 yerel ve kişisel bir **geçiş dönemi aracı** (ESSO, enterprise single sign-on) sunmaktır. Kullanıcı Tek Kapı'ya Tek
 Şifre Giriş Sistemi ile (OIDC) girer; üniversite sistemlerinin şifrelerini Tek Kapı kendi bilgisayarında, şifreli
@@ -132,7 +133,9 @@ olarak saklar ve kullanır.
 
 - **Kimlik sunucusu üniversite şifrelerini hiçbir zaman görmez ve saklamaz.** Kimlik sunucusu Tek Kapı'ya yalnızca
   standart OIDC token'ları (id_token, access_token) verir. Gerçek sistemlere bağlantı ve şifre saklama tamamen Tek
-  Kapı'nın, kullanıcının bilgisayarındadır; bu depo gerçek Selçuk sistemlerine bağlanmaz.
+  Kapı'nın, kullanıcının bilgisayarındadır. Kimlik sunucusu ve demo uygulamalar gerçek Selçuk sistemlerine
+  bağlanmaz; tek istisna, kullanıcının kendi hesabıyla kendi bilgisayarında çalıştırdığı `araclar/tek-kapi`'dir.
+  Hiçbir test gerçek Selçuk sistemlerine istek atmaz.
 - **Kalıcı çözüm bu değildir.** Ekran/form doldurmaya dayanan ESSO kırılgandır ve şifrelerin bir yerde tutulmasını
   gerektirir. Gerçek sistemlerin kalıcı çözümü, Demo OBİS ve Demo Yemekhane gibi **OIDC ile doğrudan** kimlik
   sunucusuna bağlanmalarıdır ([Yeni bir uygulamayı sisteme bağlamak](#yeni-bir-uygulamayı-sisteme-bağlamak)).
@@ -169,6 +172,27 @@ istisna bilinçlidir: adres loopback olduğu için token makineden çıkmaz, `lo
 (yalnızca oturumu kapattırır) ve alıcının imzayı, `aud`'u ve `jti`'yi doğrulaması gerekir. Tek Kapı çalışmıyorsa
 gönderim hatası loglanır ve denetim kaydına "çıkış bildirimi ulaştırılamadı" yazılır; diğer istemcilere bildirim
 gider, çıkış tamamlanır.
+
+**Tek Kapı tarafı (SSO modu):** `SSO_ISSUER` tanımlıysa Tek Kapı portala erişimi iki katmanlı yapar: önce kimlik
+sunucusunda SSO oturumu (openid-client; PKCE `S256`, state ve nonce sunucuda tek kullanımlık; id_token imzası, `iss`,
+`aud`, `nonce`, `exp` doğrulanır; yalnızca izinli kullanıcılar), sonra kasa ana şifresi (kasa anahtarı kimlik
+sunucusundan türetilmez). `logout_token` gelince (jose ile imza, `iss`, `aud`, `iat`, `typ`, `events`, `sid`/`sub`,
+`nonce` yokluğu, `jti` tekrarı doğrulanır) kasa kilitlenir, yönetilen penceredeki gerçek site sekmeleri kapanır ve
+çerezleri silinir. Node, kimlik sunucusunun .NET geliştirme sertifikasına `--use-system-ca` ile güvenir; TLS
+doğrulaması kapatılmaz. Ayrıntılar: `araclar/tek-kapi/README.md` > SSO modu.
+
+**Güvenlik notu:** Tek Kapı public istemcidir (RFC 8252): secret yok, PKCE zorunlu, adresler yalnızca 127.0.0.1.
+Üniversite şifreleri yalnızca o bilgisayardaki şifreli kasada durur; kimlik sunucusu onları hiç görmez.
+
+**Çalıştırma:** üç uygulama ve Tek Kapı (SSO modunda, ayrı pencerede) birlikte:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\run-all.ps1 -TekKapi
+```
+
+Ardından https://localhost:5001 → **203011001** ile giriş → Uygulamalarım → **Tek Kapı** kartı → onay → kasa ana şifresi.
+Kimlik sunucusundan veya Demo OBİS'ten çıkış yapınca Tek Kapı kilitlenir ve gerçek site sekmeleri kapanır. Taşıma
+sonrası Tek Kapı kasası yeni konumda yeniden kurulur (`data/` taşınmadı).
 
 **Güvenlik ayarları:** şifre politikası, kilitleme, istek sınırı, çerezler ve başlıklar
 [Güvenlik önlemleri](#güvenlik-önlemleri) bölümünde.
@@ -672,7 +696,8 @@ yolun aynı işi yaptığı kodda doğrulandı:
 SelcukSSO.sln
 dotnet-tools.json                 dotnet-ef yerel aracı
 .gitattributes                    Satır sonu kuralları
-scripts/run-all.ps1               Üç uygulamayı ayrı pencerelerde başlatır
+scripts/run-all.ps1               Üç uygulamayı ayrı pencerelerde başlatır (-TekKapi: Tek Kapı da, SSO modunda)
+araclar/tek-kapi/                 Tek Kapı: yerel kişisel ESSO portalı (Node.js), SSO modu; kendi README ve AGENTS.md'si
 src/Selcuk.Identity/
   Program.cs                      Identity, OpenIddict, çerez/HSTS ayarları, e-posta, istek sınırı, denetim kaydı,
                                   ForwardedHeaders, discovery ek alanları
@@ -782,6 +807,8 @@ powershell -ExecutionPolicy Bypass -File scripts\run-all.ps1
 
 Betik kimlik sunucusunu (5001), Demo OBİS'i (5101) ve Demo Yemekhane'yi (5102) ayrı PowerShell pencerelerinde
 başlatır, hepsi hazır olunca tarayıcıda https://localhost:5001 adresini açar. Durdurmak için pencerelerde `Ctrl+C`.
+`-TekKapi` verilirse Tek Kapı da (`araclar/tek-kapi`, http://127.0.0.1:4545) SSO modunda ayrı bir pencerede başlar
+(bkz. [Tek Kapı köprüsü](#tek-kapı-köprüsü)).
 
 Tek tek:
 

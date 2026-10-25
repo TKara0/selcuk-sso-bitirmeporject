@@ -18,5 +18,6 @@ if not exist node_modules (
 )
 
 echo Tek Kapi baslatiliyor. Bu pencereyi kapatirsan portal da kapanir.
-node src\server.js
+rem --use-system-ca: kimlik sunucusunun .NET gelistirme sertifikasina Windows sertifika deposu uzerinden guvenilir (SSO modu)
+node --use-system-ca src\server.js
 if errorlevel 1 pause

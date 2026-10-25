@@ -40,6 +40,7 @@ function ok(name) { passed++; console.log('  ✓ ' + name); }
     env: {
       ...process.env, PORT: String(PORT), HEADLESS: '1', PORTAL_TEST: '1', PORTAL_DATA_DIR: DATA,
       SITE_ORIGIN_OVERRIDES: JSON.stringify(mock.URLS),
+      SSO_ISSUER: '', // bağımsız mod (kabukta SSO ayarı olsa bile)
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
