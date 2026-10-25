@@ -17,6 +17,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using OpenIddict.Abstractions;
 using Selcuk.Identity.Data;
+using Selcuk.Identity.Denetim;
 using Selcuk.Identity.Eposta;
 using Selcuk.Identity.Oidc;
 
@@ -26,7 +27,8 @@ namespace Selcuk.Identity.Tests;
 /// Her örnek kendi SQLite in-memory veritabanını kullanır; testler LocalDB'ye ve
 /// birbirlerine bağımlı değildir. "Testing" ortamında geçici (ephemeral) imzalama anahtarları
 /// kullanılır ve Development'a özgü test kullanıcıları seed edilmez. ekHizmetler, uygulamanın servislerini test
-/// için değiştirmeye yarar (ör. token ömrü); ayarlar, appsettings değerlerini geçersiz kılar.
+/// için değiştirmeye yarar (ör. token ömrü); ayarlar, appsettings değerlerini geçersiz kılar. Her örnek kendi rastgele
+/// anahtarlı özet anahtarını (Denetim:KullaniciAdiOzetAnahtari) verir; ayarlar ile değiştirilebilir veya boşaltılabilir.
 /// Veritabanı adlandırılmış, paylaşımlı önbellekli bir in-memory veritabanıdır: her DbContext kendi bağlantısını açar
 /// (arka plandaki denetim kaydı yazıcısı isteklerle eşzamanlı çalışır); açık tutulan _connection veritabanını yaşatır.
 /// </summary>
@@ -41,6 +43,9 @@ public sealed partial class SelcukIdentityFactory : WebApplicationFactory<Progra
 
     /// <summary>Back-Channel Logout POST'larını yakalayan sahte HTTP alıcısı (gerçek ağa çıkılmaz).</summary>
     public SahteBackChannelAlicisi BackChannel { get; } = new();
+
+    /// <summary>Bu örneğin varsayılan HMAC anahtarı (ayarlar ile geçersiz kılınmadıysa uygulamanın kullandığı).</summary>
+    public byte[] OzetAnahtari { get; } = RandomNumberGenerator.GetBytes(32);
 
     /// <summary>Gönderilen e-postaları yakalayan sahte gönderici (dosyaya veya ağa yazılmaz).</summary>
     public SahteEpostaGonderici Eposta { get; } = new();
@@ -63,10 +68,17 @@ public sealed partial class SelcukIdentityFactory : WebApplicationFactory<Progra
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
-        if (_ayarlar is not null)
+        builder.ConfigureAppConfiguration((_, config) =>
         {
-            builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(_ayarlar));
-        }
+            config.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                [AnahtarliOzet.AyarAdi] = Convert.ToBase64String(OzetAnahtari),
+            });
+            if (_ayarlar is not null)
+            {
+                config.AddInMemoryCollection(_ayarlar);
+            }
+        });
 
         builder.ConfigureTestServices(services =>
         {

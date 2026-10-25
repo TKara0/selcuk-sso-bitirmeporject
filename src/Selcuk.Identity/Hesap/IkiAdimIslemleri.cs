@@ -33,11 +33,14 @@ public sealed class IkiAdimAyarlari
 /// yerleşik authenticator altyapısıyla yapılır (AuthenticatorTokenProvider, UserManager); kurtarma kodları
 /// <see cref="KurtarmaKoduOzetDeposu"/> ile özetlenerek saklanır. Açma, kapatma ve kurtarma kodu yenilemede güvenlik
 /// damgası yenilenir: bu oturum yeniden imzalanır ve açık kalır, diğer oturumlar kapanır ve istemcilerine Back-Channel
-/// Logout gider (şifre değiştirmedeki mekanizma), kullanıcıya bilgilendirme e-postası gönderilir.
+/// Logout gider (şifre değiştirmedeki mekanizma), kullanıcıya bilgilendirme e-postası gönderilir. Kurulumu başlatmak
+/// (yeni anahtar) da damgayı yeniler; o zaman da diğer oturumlar kapanır ve istemcilerine Back-Channel Logout gider.
+/// Girişte ve onaylarda kabul edilen TOTP kodu 3 dakika içinde tekrar kabul edilmez (<see cref="TekKullanimlikTotpSaglayici"/>).
 /// </summary>
 public sealed class IkiAdimIslemleri(
     UserManager<ApplicationUser> userManager,
     SignInManager<ApplicationUser> signInManager,
+    TekKullanimlikTotpSaglayici totp,
     IOptions<IkiAdimAyarlari> ayarlar,
     BackChannelLogoutGonderici backChannelLogout,
     EpostaKuyrugu eposta,
@@ -77,8 +80,17 @@ public sealed class IkiAdimIslemleri(
             && (await userManager.GetRolesAsync(user)).Any(rol => zorunlu.Contains(rol, StringComparer.OrdinalIgnoreCase));
     }
 
-    /// <summary>Doğrulayıcı uygulamadaki 6 haneli kodu Identity'nin AuthenticatorTokenProvider'ıyla doğrular.</summary>
+    /// <summary>
+    /// Doğrulayıcı uygulamadaki 6 haneli kodu Identity'nin AuthenticatorTokenProvider'ıyla doğrular; kodu kullanılmış
+    /// saymaz (kurulumda ve şifresi yanlış olan onay denemelerinde).
+    /// </summary>
     public Task<bool> KodDogruMuAsync(ApplicationUser user, string? kod) =>
+        string.IsNullOrWhiteSpace(kod)
+            ? Task.FromResult(false)
+            : totp.TuketmedenDogrulaAsync(KodNormallestir(kod), userManager, user);
+
+    /// <summary>Kodu doğrular ve kullanılmış sayar: aynı kod 3 dakika içinde tekrar kabul edilmez.</summary>
+    public Task<bool> KoduKullanAsync(ApplicationUser user, string? kod) =>
         string.IsNullOrWhiteSpace(kod)
             ? Task.FromResult(false)
             : userManager.VerifyTwoFactorTokenAsync(user, userManager.Options.Tokens.AuthenticatorTokenProvider,
@@ -86,7 +98,8 @@ public sealed class IkiAdimIslemleri(
 
     /// <summary>
     /// Kurtarma kodlarını yenileme ve 2FA'yı kapatma için mevcut şifre + geçerli TOTP kodu. İkisi de her zaman kontrol
-    /// edilir; biri yanlışsa hatalı deneme sayacı artar (5 denemede hesap kilitlenir).
+    /// edilir; biri yanlışsa hatalı deneme sayacı artar (5 denemede hesap kilitlenir). Kod yalnızca şifre doğruysa
+    /// kullanılmış sayılır; daha önce kullanılmış (tekrar oynatılan) kod hatalı kod gibi sayılır.
     /// </summary>
     public async Task<DogrulamaSonucu> SifreVeKodDogrulaAsync(ApplicationUser user, string? sifre, string? kod)
     {
@@ -96,7 +109,7 @@ public sealed class IkiAdimIslemleri(
         }
 
         var sifreDogru = !string.IsNullOrEmpty(sifre) && await userManager.CheckPasswordAsync(user, sifre);
-        var kodDogru = await KodDogruMuAsync(user, kod);
+        var kodDogru = sifreDogru ? await KoduKullanAsync(user, kod) : await KodDogruMuAsync(user, kod);
         if (sifreDogru && kodDogru)
         {
             return DogrulamaSonucu.Gecerli;
@@ -116,11 +129,16 @@ public sealed class IkiAdimIslemleri(
         }
     }
 
-    /// <summary>Kurulumu başlatır: yeni paylaşılan anahtar (Identity ResetAuthenticatorKeyAsync, damga yenilenir).</summary>
-    public async Task KurulumuBaslatAsync(ApplicationUser user)
+    /// <summary>
+    /// Kurulumu başlatır: yeni paylaşılan anahtar (Identity ResetAuthenticatorKeyAsync, damga yenilenir). Bu oturum
+    /// açık kalır; diğer oturumlar kapanır ve onlardan giriş yapılmış istemcilere Back-Channel Logout gider.
+    /// </summary>
+    public async Task KurulumuBaslatAsync(ApplicationUser user, string? mevcutSid)
     {
         await userManager.ResetAuthenticatorKeyAsync(user);
         await OturumuYenileAsync(user, cokFaktorlu: false);
+        // Tarayıcı bağlantıyı kapatsa da bildirimler tamamlansın (süre sınırı HttpClient'ta).
+        await backChannelLogout.KullaniciOturumlariniKapatAsync(user.Id, mevcutSid, CancellationToken.None);
     }
 
     /// <summary>2FA'yı açar ve kullanıcıya bir kez gösterilecek 10 kurtarma kodunu döndürür.</summary>

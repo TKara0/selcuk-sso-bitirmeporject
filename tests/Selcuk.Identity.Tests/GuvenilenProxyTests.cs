@@ -1,6 +1,7 @@
 using System.Net;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Selcuk.Identity.Data;
 using Selcuk.Identity.Hesap;
@@ -85,6 +86,48 @@ public sealed class GuvenilenProxyTests
         Assert.Equal(IstemciAdresi, await KaydedilenIpAsync(factory));
         // Gerçek istemci IP'leri ayrı: ikinci istemci sınıra takılmaz.
         Assert.Equal(HttpStatusCode.OK, await IkinciIstemcininDurumuAsync(factory));
+    }
+
+    /// <summary>
+    /// TLS'i proxy sonlandırmış gibi: istek uygulamaya HTTP ile ve X-Forwarded-Proto: https başlığıyla gelir. Discovery
+    /// (OpenIddict HTTPS dışı isteği reddeder) ve girişe yönlendirmenin şeması (istek şemasından üretilir) döndürülür.
+    /// </summary>
+    private static async Task<(HttpStatusCode Discovery, string GirisYonlendirmesi)> HttpUzerindenAsync(
+        SelcukIdentityFactory factory)
+    {
+        var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            BaseAddress = new Uri("http://localhost"),
+            AllowAutoRedirect = false,
+        });
+        client.DefaultRequestHeaders.Add("X-Forwarded-Proto", "https");
+
+        var discovery = await client.GetAsync("/.well-known/openid-configuration");
+        var hesabim = await client.GetAsync("/Account/Hesabim");
+        Assert.Equal(HttpStatusCode.Redirect, hesabim.StatusCode);
+        return (discovery.StatusCode, hesabim.Headers.Location!.ToString());
+    }
+
+    [Fact]
+    public async Task GuvenilenProxyler_doluyken_X_Forwarded_Proto_https_dikkate_aliniyor()
+    {
+        using var factory = Factory(ProxyAdresi.ToString());
+
+        var (discovery, yonlendirme) = await HttpUzerindenAsync(factory);
+
+        Assert.Equal(HttpStatusCode.OK, discovery);
+        Assert.StartsWith("https://localhost/Account/Login", yonlendirme);
+    }
+
+    [Fact]
+    public async Task GuvenilenProxyler_bosken_X_Forwarded_Proto_dikkate_alinmiyor()
+    {
+        using var factory = Factory();
+
+        var (discovery, yonlendirme) = await HttpUzerindenAsync(factory);
+
+        Assert.NotEqual(HttpStatusCode.OK, discovery);
+        Assert.StartsWith("http://localhost/Account/Login", yonlendirme);
     }
 
     [Fact]

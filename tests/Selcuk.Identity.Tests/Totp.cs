@@ -18,13 +18,23 @@ public static class Totp
     private static readonly MethodInfo FromBase32 = IcMetot("Base32", "FromBase32");
 
     /// <summary>Paylaşılan anahtar için şu anki (adimFarki = 0) veya komşu zaman adımındaki 6 haneli kod.</summary>
-    public static string Uret(string anahtar, int adimFarki = 0)
+    public static string Uret(string anahtar, int adimFarki = 0) => Kodlar(anahtar, adimFarki)[0];
+
+    /// <summary>
+    /// Tek bir zaman ölçümünden hesaplanan, verilen adım farklarındaki kodlar. Tekrar oynatma testlerinde farklı zaman
+    /// adımlarına ait kodlar gerekir; ayrı ayrı <see cref="Uret"/> çağrıları arasında 30 saniyelik sınır geçilirse iki
+    /// "farklı" kod aynı adıma düşebilir, burada düşmez.
+    /// </summary>
+    public static string[] Kodlar(string anahtar, params int[] adimFarklari)
     {
         var anahtarBaytlari = (byte[])FromBase32.Invoke(null, [anahtar])!;
         var unixSaniye = Convert.ToInt64(Math.Round((DateTime.UtcNow - DateTime.UnixEpoch).TotalSeconds));
-        var adim = (ulong)(unixSaniye / 30 + adimFarki);
-        var kod = (int)ComputeTotp.Invoke(null, [anahtarBaytlari, adim, null])!;
-        return kod.ToString("D6", CultureInfo.InvariantCulture);
+        return [.. adimFarklari.Select(fark =>
+        {
+            var adim = (ulong)(unixSaniye / 30 + fark);
+            var kod = (int)ComputeTotp.Invoke(null, [anahtarBaytlari, adim, null])!;
+            return kod.ToString("D6", CultureInfo.InvariantCulture);
+        })];
     }
 
     /// <summary>

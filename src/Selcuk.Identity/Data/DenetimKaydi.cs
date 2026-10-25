@@ -5,7 +5,7 @@ namespace Selcuk.Identity.Data;
 /// <summary>
 /// Güvenlik olaylarının denetim kaydı. Şifre, TOTP veya kurtarma kodu, sıfırlama token'ı, access/id/refresh token,
 /// çerez ve logout_token hiçbir alana yazılmaz. Var olmayan kullanıcıyla başarısız girişte yazılan kullanıcı adı değil,
-/// normalize edilmiş hâlinin SHA-256 özeti tutulur. Kayıtlar DenetimKaydiSaklamaGun (varsayılan 180) gün sonra silinir.
+/// normalize edilmiş hâlinin anahtarlı özeti ("h1:" + HMAC-SHA256) tutulur (eski kayıtlarda anahtarsız SHA-256). Kayıtlar DenetimKaydiSaklamaGun (varsayılan 180) gün sonra silinir.
 /// </summary>
 public class DenetimKaydi
 {
@@ -44,6 +44,7 @@ public enum DenetimOlayi
     IkiAdimBasarili,
     IkiAdimBasarisiz,
     KurtarmaKoduKullanildi,
+    IkiAdimKoduTekrarKullanildi,
     IkiAdimAcildi,
     IkiAdimKapatildi,
     KurtarmaKodlariYenilendi,

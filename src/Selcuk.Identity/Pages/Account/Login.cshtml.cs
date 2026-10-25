@@ -101,7 +101,7 @@ public class LoginModel(
         {
             // Yazılan kullanıcı adı saklanmaz (bazen şifre bu alana yazılır); normalize hâlinin özeti saklanır.
             denetim.Ekle(DenetimOlayi.GirisBasarisiz, DenetimSonucu.Basarisiz, ayrinti:
-                "neden=kullanici-yok; " + DenetimKaydedici.KullaniciAdiOzeti(userManager.NormalizeName(girilen)));
+                "neden=kullanici-yok; " + denetim.KullaniciAdiOzeti(userManager.NormalizeName(girilen)));
             return;
         }
 

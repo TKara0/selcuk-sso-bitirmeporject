@@ -109,7 +109,8 @@ public class IkiAdimModel(
             ayrinti: totp ? "yontem=totp" : "yontem=kurtarma-kodu");
         if (totp)
         {
-            // Identity hatalı TOTP'yi sayaca kendisi ekler ve gerekirse hesabı kilitler.
+            // Identity hatalı TOTP'yi (tekrar kullanılan kod dahil, TekKullanimlikTotpSaglayici) sayaca kendisi ekler ve
+            // gerekirse hesabı kilitler.
             if (sonuc.IsLockedOut || await userManager.IsLockedOutAsync(user))
             {
                 denetim.Ekle(DenetimOlayi.HesapKilitlendi, DenetimSonucu.Basarisiz, user.Id, ayrinti: "neden=hatali-kod");

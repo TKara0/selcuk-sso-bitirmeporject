@@ -75,7 +75,7 @@ public class SifremiUnuttumModel(
 
         // Hesap bulunamadıysa yazılan metin saklanmaz; normalize hâlinin özeti saklanır (girişteki gibi).
         denetim.Ekle(DenetimOlayi.SifreSifirlamaIstendi, DenetimSonucu.Basarili, kullanici?.Id,
-            ayrinti: kullanici is null ? "hesap=bulunamadi; " + DenetimKaydedici.KullaniciAdiOzeti(userManager.NormalizeName(girdi))
+            ayrinti: kullanici is null ? "hesap=bulunamadi; " + denetim.KullaniciAdiOzeti(userManager.NormalizeName(girdi))
                 : gonderilecek ? "eposta=gonderildi" : "eposta=gonderilmedi; neden=eposta-dogrulanmamis");
 
         Gonderildi = true;

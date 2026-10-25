@@ -40,22 +40,27 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
     girişin ikinci adımı, 2FA kurulum/yönetim, şifremi unuttum, sıfırlama, şifre değiştirme; 429 + Türkçe sayfa +
     denetim kaydı). Girişte kullanıcı yoksa veya hesap kilitliyse `SahteSifreDogrulayici` aynı maliyette sahte PBKDF2
     doğrulaması yapar; şifremi unuttum her durumda aynı işi yapar. 5 deneme / 15 dk kilitleme; yanlış TOTP/kurtarma
-    kodu ve şifre değiştirmede yanlış mevcut şifre de sayılır. Identity'nin şifre hataları Türkçe
+    kodu ve şifre değiştirmede yanlış mevcut şifre de sayılır. Kilit yalnızca yeni girişleri engeller: authorize ve
+    token uç noktası kilidi kontrol etmez, kilitten önce açılmış oturum token almaya devam eder (hizmet engellemeye karşı). Identity'nin şifre hataları Türkçe
     (`TurkceIdentityHatalari`).
   - **İki aşamalı doğrulama** (`Hesap/IkiAdimIslemleri`, sayfalar `Account/IkiAdim` ve `Account/IkiAdimDogrulama`):
     Identity'nin `AuthenticatorTokenProvider`'ı (TOTP). Anahtar metin + QR (QRCoder, sunucuda SVG, data URI; CSP
     değişmedi), kod doğrulanmadan açılmaz, 10 kurtarma kodu bir kez gösterilir. `KurtarmaKoduOzetDeposu`
     (`UserStore` alt sınıfı) kodları `IPasswordHasher` özetiyle saklar. Açma/kapatma/kod yenilemede damga yenilenir,
-    diğer oturumlara Back-Channel Logout, e-posta. Kapatma ve yenileme şifre + TOTP ister. "Bu cihazı hatırla":
+    diğer oturumlara Back-Channel Logout, e-posta; "Kurulumu başlat" (anahtar sıfırlama) da diğer oturumlara
+    Back-Channel Logout gönderir. Kapatma ve yenileme şifre + TOTP ister. `TekKullanimlikTotpSaglayici`
+    (`DefaultAuthenticatorProvider`): kabul edilen TOTP kodu 3 dk tekrar kabul edilmez (giriş, kapatma, yenileme);
+    kodun HMAC'i ve kabul zamanı `AspNetUserTokens`'ta (`[SelcukSSO]`/`KullanilanTotpKodlari`). "Bu cihazı hatırla":
     Identity `TwoFactorRememberMe` (`IkiAdimCihazHatirlamaGun`, 30). `IkiAdimZorunluRoller`: kurulum bitmeden
     authorize ve token uç noktası reddeder. id_token'da `amr` JSON dizisi: `["pwd"]` / `["pwd","mfa"]`
     (`OidcKimlik.AmrDegerleri`); oturum yenilemede `OturumKimligi` korur.
   - **Denetim kaydı** (`Denetim/`, tablo `DenetimKayitlari`): `DenetimKaydedici` kuyruğa bırakır,
     `DenetimYazmaHizmeti` arka planda yazar (hata yalnızca loglanır), `DenetimTemizlemeHizmeti` günde bir kez
     `DenetimKaydiSaklamaGun` (180) günden eskileri siler. Sır (şifre, kod, token, çerez) yazılmaz; olmayan kullanıcı adı
-    yalnızca SHA-256 özetiyle. Hesabım > Güvenlik geçmişi: kullanıcının son 20 olayı.
-  - **İstemci IP'si**: `GuvenilenProxyler` (varsayılan boş) dışındaki adreslerden gelen `X-Forwarded-For` yok sayılır;
-    istek sınırı ve denetim kaydı `RemoteIpAddress`'i kullanır.
+    yalnızca `AnahtarliOzet` ile (`h1:` + HMAC-SHA256; anahtar `Denetim:KullaniciAdiOzetAnahtari`, user-secrets;
+    Development dışında yoksa uygulama açılmaz; eski kayıtlarda `kullanici_adi_sha256=`). Hesabım > Güvenlik geçmişi: kullanıcının son 20 olayı.
+  - **İstemci IP'si ve şema**: `GuvenilenProxyler` (varsayılan boş) dışındaki adreslerden gelen `X-Forwarded-For` ve
+    `X-Forwarded-Proto` yok sayılır; istek sınırı ve denetim kaydı `RemoteIpAddress`'i kullanır.
   - **E-posta** (`Eposta/`): `IEpostaGonderici`; Development'ta `DosyaEpostaGonderici` (`App_Data/eposta/*.eml`,
     .gitignore'da), diğer ortamlarda `SmtpEpostaGonderici` (`Eposta:Smtp`, şifre user-secrets/ortam değişkeni).
     Sayfalar `EpostaKuyrugu`'na bırakır, `EpostaGonderimHizmeti` arka planda gönderir. Şablonlar düz metin, Türkçe.
@@ -73,11 +78,14 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
 - `src/Selcuk.Demo.Yemekhane` (https://localhost:5102): Haftalık menü (herkese açık), Rezervasyonlarım (bellek içi),
   Yemekhane Yönetimi (personel), Profilim, RP-initiated logout. Veriler uydurmadır.
 - `tests/Selcuk.Identity.Tests`: xUnit + `WebApplicationFactory` entegrasyon, uçtan uca protokol, tek giriş ve tek
-  çıkış, şifre sıfırlama/değiştirme, istek sınırı ve tahmin koruması, 2FA, denetim kaydı ve güvenilen proxy testleri.
+  çıkış, şifre sıfırlama/değiştirme, istek sınırı ve tahmin koruması, 2FA (TOTP tekrar koruması dahil), kilit
+  tutarlılığı, denetim kaydı (HMAC özeti, eksik anahtarla açılmama) ve güvenilen proxy testleri.
   Her test kendi adlandırılmış, paylaşımlı önbellekli SQLite in-memory veritabanını kullanır (DbContext başına
-  bağlantı); ortam adı `Testing`; fabrikaya `ayarlar` ile appsettings değeri verilir. Back-Channel Logout POST'ları
+  bağlantı); ortam adı `Testing`; fabrikaya `ayarlar` ile appsettings değeri verilir; her fabrika rastgele bir HMAC
+  anahtarı verir (`OzetAnahtari`). Back-Channel Logout POST'ları
   sahte HTTP handler ile, e-postalar `SahteEpostaGonderici` ile yakalanır. TOTP kodlarını `Totp` yardımcısı Identity'nin
-  iç `Rfc6238AuthenticationService`'ini yansımayla çağırarak üretir. Denetim kayıtları arka planda yazıldığı için
+  iç `Rfc6238AuthenticationService`'ini yansımayla çağırarak üretir; `Totp.Kodlar` farklı zaman adımlarının kodlarını
+  tek bir zaman ölçümünden üretir. Denetim kayıtları arka planda yazıldığı için
   `DenetimKayitlariAsync` ile beklenir.
 - `tests/Selcuk.Istemci.Ortak.Tests`: Back-Channel Logout alıcısı, çerez süresi, ortak dağıtık önbellek, JWKS hatası
   (503) ve `iss` doğrulaması testleri; yerel RSA anahtarı ve sahte JWKS.

@@ -16,6 +16,7 @@ public static class DenetimOlaylari
             DenetimOlayi.IkiAdimBasarili => "İki aşamalı doğrulama başarılı",
             DenetimOlayi.IkiAdimBasarisiz => "Hatalı doğrulama kodu",
             DenetimOlayi.KurtarmaKoduKullanildi => "Kurtarma kodu kullanıldı",
+            DenetimOlayi.IkiAdimKoduTekrarKullanildi => "2FA kodu tekrar kullanıldı",
             DenetimOlayi.IkiAdimAcildi => basarili
                 ? "İki aşamalı doğrulama açıldı" : "İki aşamalı doğrulama açılamadı (hatalı kod)",
             DenetimOlayi.IkiAdimKapatildi => basarili

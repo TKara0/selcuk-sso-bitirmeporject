@@ -17,7 +17,8 @@ namespace Selcuk.Identity.Pages.Connect;
 
 /// <summary>
 /// OIDC authorize uç noktası. İsteği OpenIddict doğrular (istemci, redirect_uri, PKCE);
-/// bu sayfa kullanıcı girişini ve ilk girişteki onay ekranını yönetir.
+/// bu sayfa kullanıcı girişini ve ilk girişteki onay ekranını yönetir. Hatalı denemelerden kaynaklanan geçici hesap
+/// kilidi açık oturumu etkilemez: kilit yeni girişleri engeller, bu oturumdan kod alınabilir (token uç noktasıyla aynı kural).
 /// </summary>
 public class AuthorizeModel(
     IOpenIddictApplicationManager applicationManager,

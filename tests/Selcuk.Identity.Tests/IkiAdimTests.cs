@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.DependencyInjection;
 using Selcuk.Identity.Data;
+using Selcuk.Identity.Denetim;
 using Selcuk.Identity.Eposta;
 using Selcuk.Identity.Hesap;
 using Selcuk.Identity.Pages.Account;
@@ -367,15 +368,20 @@ public sealed partial class IkiAdimTests : IDisposable
     {
         var (kullaniciAdi, sifre) = await _factory.KullaniciOlusturAsync();
         var (anahtar, _) = await _factory.IkiAdimAcAsync(kullaniciAdi);
+        // Girişte kullanılan kod ve başka bir zaman adımının (geçerli) kodu.
+        var kodlar = Totp.Kodlar(anahtar, 0, -1);
+        var (girisKodu, onayKodu) = (kodlar[0], kodlar[1]);
         var client = _factory.HttpsIstemcisi();
         await SelcukIdentityFactory.GirisYapAsync(client, kullaniciAdi, sifre);
-        Assert.Equal(HttpStatusCode.Redirect, (await SelcukIdentityFactory.IkinciAdimAsync(client, Totp.Uret(anahtar))).StatusCode);
+        Assert.Equal(HttpStatusCode.Redirect, (await SelcukIdentityFactory.IkinciAdimAsync(client, girisKodu)).StatusCode);
 
         var denemeler = new[]
         {
-            ("Kapat", "YanlisSifre123", Totp.Uret(anahtar)),
+            ("Kapat", "YanlisSifre123", onayKodu),
             ("Kapat", sifre, Totp.Gecersiz(anahtar)),
             ("KodlariYenile", sifre, Totp.Gecersiz(anahtar)),
+            // Girişte kullanılmış kod 3 dakika içinde tekrar kabul edilmez.
+            ("Kapat", sifre, girisKodu),
         };
         foreach (var (handler, denemeSifresi, kod) in denemeler)
         {
@@ -385,10 +391,14 @@ public sealed partial class IkiAdimTests : IDisposable
             Assert.True(await IkiAdimAcikMiAsync(kullaniciAdi));
         }
 
-        Assert.Equal(3, await HataliDenemeSayisiAsync(kullaniciAdi));
+        Assert.Equal(4, await HataliDenemeSayisiAsync(kullaniciAdi));
         Assert.Empty(_factory.Eposta.Gonderilenler);
+        var kullaniciId = (await _factory.KullaniciAsync(kullaniciAdi)).Id;
+        await _factory.DenetimKayitlariAsync(k =>
+            k.Count(x => x.OlayTuru == DenetimOlayi.IkiAdimKoduTekrarKullanildi && x.KullaniciId == kullaniciId) == 1);
 
-        var kapat = await KurulumFormuAsync(client, "Kapat", new() { ["Onay.Sifre"] = sifre, ["Onay.Kod"] = Totp.Uret(anahtar) });
+        // Şifresi yanlış olan denemedeki kod kullanılmış sayılmadı: doğru şifreyle kabul edilir.
+        var kapat = await KurulumFormuAsync(client, "Kapat", new() { ["Onay.Sifre"] = sifre, ["Onay.Kod"] = onayKodu });
         Assert.Equal(HttpStatusCode.Redirect, kapat.StatusCode);
         Assert.False(await IkiAdimAcikMiAsync(kullaniciAdi));
         Assert.Equal(0, await KullaniciIleAsync(_factory, kullaniciAdi, (um, k) => um.CountRecoveryCodesAsync(k)));
@@ -406,16 +416,18 @@ public sealed partial class IkiAdimTests : IDisposable
     {
         var (kullaniciAdi, sifre) = await _factory.KullaniciOlusturAsync();
         var (anahtar, eskiKodlar) = await _factory.IkiAdimAcAsync(kullaniciAdi);
+        // Her kod bir kez kullanılabildiği için iki giriş ve onay farklı zaman adımlarının kodlarıyla yapılır.
+        var totpKodlari = Totp.Kodlar(anahtar, 0, 1, -1);
 
         var bu = _factory.HttpsIstemcisi();
         await SelcukIdentityFactory.GirisYapAsync(bu, kullaniciAdi, sifre);
-        await SelcukIdentityFactory.IkinciAdimAsync(bu, Totp.Uret(anahtar));
+        await SelcukIdentityFactory.IkinciAdimAsync(bu, totpKodlari[0]);
         var diger = _factory.HttpsIstemcisi();
         await SelcukIdentityFactory.GirisYapAsync(diger, kullaniciAdi, sifre);
-        await SelcukIdentityFactory.IkinciAdimAsync(diger, Totp.Uret(anahtar));
+        await SelcukIdentityFactory.IkinciAdimAsync(diger, totpKodlari[1]);
         Assert.Equal(HttpStatusCode.OK, (await diger.GetAsync("/")).StatusCode);
 
-        var yanit = await KurulumFormuAsync(bu, "KodlariYenile", new() { ["Onay.Sifre"] = sifre, ["Onay.Kod"] = Totp.Uret(anahtar) });
+        var yanit = await KurulumFormuAsync(bu, "KodlariYenile", new() { ["Onay.Sifre"] = sifre, ["Onay.Kod"] = totpKodlari[2] });
         Assert.Equal(HttpStatusCode.OK, yanit.StatusCode);
         var yeniKodlar = KurtarmaKodlari(await yanit.Content.ReadAsStringAsync());
         Assert.Equal(10, yeniKodlar.Count);
@@ -429,6 +441,122 @@ public sealed partial class IkiAdimTests : IDisposable
             (um, k) => um.RedeemTwoFactorRecoveryCodeAsync(k, eskiKodlar[0]))).Succeeded);
         Assert.True((await KullaniciIleAsync(_factory, kullaniciAdi,
             (um, k) => um.RedeemTwoFactorRecoveryCodeAsync(k, yeniKodlar[0]))).Succeeded);
+    }
+
+    [Fact]
+    public async Task Ayni_TOTP_koduyla_ikinci_giris_reddediliyor_hatali_deneme_sayaci_artiyor()
+    {
+        var (kullaniciAdi, sifre) = await _factory.KullaniciOlusturAsync();
+        var (anahtar, _) = await _factory.IkiAdimAcAsync(kullaniciAdi);
+        var kullaniciId = (await _factory.KullaniciAsync(kullaniciAdi)).Id;
+        var kod = Totp.Uret(anahtar);
+
+        var ilk = _factory.HttpsIstemcisi();
+        await SelcukIdentityFactory.GirisYapAsync(ilk, kullaniciAdi, sifre);
+        var ilkDogrulama = await SelcukIdentityFactory.IkinciAdimAsync(ilk, kod);
+        Assert.Equal(HttpStatusCode.Redirect, ilkDogrulama.StatusCode);
+        Assert.True(OturumCereziVar(ilkDogrulama));
+        Assert.Equal(0, await HataliDenemeSayisiAsync(kullaniciAdi));
+
+        // Aynı kod başka bir tarayıcıda (ör. omuz üstünden görülmüş): şifre adımı geçse de kod reddedilir.
+        var ikinci = _factory.HttpsIstemcisi();
+        var sifreAdimi = await SelcukIdentityFactory.GirisYapAsync(ikinci, kullaniciAdi, sifre);
+        Assert.StartsWith("/Account/IkiAdim?", sifreAdimi.Headers.Location!.OriginalString);
+        var tekrar = await SelcukIdentityFactory.IkinciAdimAsync(ikinci, kod);
+        Assert.Equal(HttpStatusCode.OK, tekrar.StatusCode);
+        Assert.Contains(IkiAdimModel.HataMesaji, await MetinAsync(tekrar));
+        Assert.False(OturumCereziVar(tekrar));
+        Assert.Equal(1, await HataliDenemeSayisiAsync(kullaniciAdi));
+
+        // İlk oturum etkilenmez.
+        Assert.Equal(HttpStatusCode.OK, (await ilk.GetAsync("/")).StatusCode);
+
+        var kayitlar = await _factory.DenetimKayitlariAsync(k =>
+            k.Any(x => x.OlayTuru == DenetimOlayi.IkiAdimKoduTekrarKullanildi && x.KullaniciId == kullaniciId) &&
+            k.Any(x => x.OlayTuru == DenetimOlayi.IkiAdimBasarisiz && x.KullaniciId == kullaniciId));
+        Assert.Equal(DenetimSonucu.Basarisiz,
+            kayitlar.Single(x => x.OlayTuru == DenetimOlayi.IkiAdimKoduTekrarKullanildi).Sonuc);
+        Assert.Equal("2FA kodu tekrar kullanıldı",
+            DenetimOlaylari.Ad(DenetimOlayi.IkiAdimKoduTekrarKullanildi, DenetimSonucu.Basarisiz));
+
+        // Kullanılan kod düz metin değil, anahtarlı özet ("h1:" + HMAC-SHA256) ve kabul zamanıyla saklanır.
+        var kayit = (await _factory.TabloAsync("AspNetUserTokens"))
+            .Single(satir => satir.Contains(TekKullanimlikTotpSaglayici.Ad)).Last()!;
+        var parcalar = kayit.Split('|');
+        Assert.Equal(2, parcalar.Length);
+        Assert.InRange(DateTimeOffset.FromUnixTimeSeconds(long.Parse(parcalar[0])),
+            DateTimeOffset.UtcNow.AddMinutes(-1), DateTimeOffset.UtcNow.AddSeconds(1));
+        Assert.Matches("^h1:[0-9a-f]{64}$", parcalar[1]);
+    }
+
+    [Fact]
+    public async Task Farkli_ve_gecerli_kodla_ikinci_giris_kabul_ediliyor()
+    {
+        var (kullaniciAdi, sifre) = await _factory.KullaniciOlusturAsync();
+        var (anahtar, _) = await _factory.IkiAdimAcAsync(kullaniciAdi);
+        // Şu anki ve bir sonraki zaman adımının kodu (doğrulayıcının kabul penceresi içinde).
+        var kodlar = Totp.Kodlar(anahtar, 0, 1);
+        Assert.NotEqual(kodlar[0], kodlar[1]);
+
+        foreach (var kod in kodlar)
+        {
+            var client = _factory.HttpsIstemcisi();
+            await SelcukIdentityFactory.GirisYapAsync(client, kullaniciAdi, sifre);
+            var dogrulama = await SelcukIdentityFactory.IkinciAdimAsync(client, kod);
+            Assert.Equal(HttpStatusCode.Redirect, dogrulama.StatusCode);
+            Assert.Equal("/", dogrulama.Headers.Location!.OriginalString);
+            Assert.True(OturumCereziVar(dogrulama));
+            Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/")).StatusCode);
+        }
+
+        Assert.Equal(0, await HataliDenemeSayisiAsync(kullaniciAdi));
+        var kullaniciId = (await _factory.KullaniciAsync(kullaniciAdi)).Id;
+        var kayitlar = await _factory.DenetimKayitlariAsync(k =>
+            k.Count(x => x.OlayTuru == DenetimOlayi.IkiAdimBasarili && x.KullaniciId == kullaniciId) == 2);
+        Assert.DoesNotContain(kayitlar, x => x.OlayTuru == DenetimOlayi.IkiAdimKoduTekrarKullanildi);
+    }
+
+    [Fact]
+    public async Task Kurulumu_baslatinca_diger_oturumlarin_istemcilerine_back_channel_logout_gidiyor_mevcut_oturum_acik()
+    {
+        var (kullaniciAdi, sifre) = await _factory.KullaniciOlusturAsync();
+        var kullaniciId = (await _factory.KullaniciAsync(kullaniciAdi)).Id;
+        await _factory.IstemcileriKaydetAsync();
+
+        // Aynı kullanıcı iki tarayıcıda: "bu" kurulumu başlatacak, "diger" kapanmalı.
+        var bu = _factory.HttpsIstemcisi();
+        var buSid = _factory.OturumSid(await SelcukIdentityFactory.GirisYapAsync(bu, kullaniciAdi, sifre));
+        var diger = _factory.HttpsIstemcisi();
+        var digerSid = _factory.OturumSid(await SelcukIdentityFactory.GirisYapAsync(diger, kullaniciAdi, sifre));
+        await _factory.IstemciOturumuEkleAsync(buSid, kullaniciId, Istemciler.DemoObisClientId);
+        await _factory.IstemciOturumuEkleAsync(digerSid, kullaniciId, Istemciler.DemoObisClientId);
+        await _factory.IstemciOturumuEkleAsync(digerSid, kullaniciId, Istemciler.DemoYemekhaneClientId);
+
+        var baslat = await KurulumFormuAsync(bu, "Baslat");
+        Assert.Equal(HttpStatusCode.Redirect, baslat.StatusCode);
+
+        // Mevcut oturum açık: çerez yeni damgayla aynı sid'le yeniden yazıldı, anahtar gösteriliyor.
+        Assert.Equal(buSid, _factory.OturumSid(baslat));
+        var anahtar = (await _factory.AnahtarAsync(kullaniciAdi))!;
+        var sayfa = await bu.GetAsync(Kurulum);
+        Assert.Equal(HttpStatusCode.OK, sayfa.StatusCode);
+        Assert.Contains(IkiAdimIslemleri.AnahtarBicimle(anahtar), await MetinAsync(sayfa));
+
+        // Diğer oturum kapandı ve onun istemcilerine (yalnızca onlara) Back-Channel Logout gitti.
+        var digerSonra = await diger.GetAsync("/");
+        Assert.Equal(HttpStatusCode.Redirect, digerSonra.StatusCode);
+        Assert.StartsWith("https://localhost/Account/Login", digerSonra.Headers.Location!.ToString());
+
+        var bildirimler = _factory.BackChannel.Istekler.ToList();
+        Assert.Equal(
+            [Istemciler.DemoObisBackChannelLogoutUri, Istemciler.DemoYemekhaneBackChannelLogoutUri],
+            bildirimler.Select(i => i.Adres.AbsoluteUri).Order());
+        Assert.All(bildirimler, b => Assert.Equal(digerSid,
+            OidcYardimcisi.JwtGovdesi(b.Form["logout_token"]).GetProperty("sid").GetString()));
+
+        var oturumlar = await _factory.IstemciOturumlariAsync(kullaniciId);
+        Assert.All(oturumlar.Where(o => o.Sid == digerSid), o => Assert.NotNull(o.KapanmaZamani));
+        Assert.Null(oturumlar.Single(o => o.Sid == buSid).KapanmaZamani);
     }
 
     [Fact]

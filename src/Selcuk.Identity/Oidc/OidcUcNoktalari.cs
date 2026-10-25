@@ -47,7 +47,10 @@ public static class OidcUcNoktalari
         var subject = result.Principal?.GetClaim(Claims.Subject);
         var user = subject is null ? null : await userManager.FindByIdAsync(subject);
 
-        if (user is null || !await signInManager.CanSignInAsync(user) || await userManager.IsLockedOutAsync(user))
+        // Hatalı denemelerden kaynaklanan geçici kilit (Lockout) burada bilerek kontrol edilmez: kilit yeni girişleri
+        // engeller, kilitten önce açılmış oturumu ve o oturumdan token alınmasını engellemez (authorize ile tutarlı).
+        // Aksi hâlde yanlış şifre deneyen biri gerçek kullanıcının açık oturumlarını düşürebilirdi (README > Güvenlik).
+        if (user is null || !await signInManager.CanSignInAsync(user))
         {
             return Reddet(Errors.InvalidGrant, "Token artık geçerli değil.");
         }

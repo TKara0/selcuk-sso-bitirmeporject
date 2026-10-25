@@ -1,6 +1,4 @@
 using System.Net;
-using System.Security.Cryptography;
-using System.Text;
 using System.Threading.Channels;
 using Selcuk.Identity.Data;
 
@@ -14,6 +12,7 @@ namespace Selcuk.Identity.Denetim;
 /// </summary>
 public sealed class DenetimKaydedici(
     IHttpContextAccessor httpContextAccessor,
+    AnahtarliOzet ozet,
     TimeProvider zaman,
     ILogger<DenetimKaydedici> logger)
 {
@@ -47,10 +46,12 @@ public sealed class DenetimKaydedici(
 
     /// <summary>
     /// Var olmayan bir kullanıcı adıyla yapılan denemede yazılan metin saklanmaz (kullanıcılar bazen şifrelerini bu alana
-    /// yazar). Normalize edilmiş hâlinin SHA-256 özeti saklanır; aynı hedefe yapılan denemeler bununla gruplanabilir.
+    /// yazar). Normalize edilmiş hâlinin anahtarlı özeti ("h1:" + HMAC-SHA256, <see cref="AnahtarliOzet"/>) saklanır;
+    /// aynı hedefe yapılan denemeler bununla gruplanabilir. Bu sürümden önceki kayıtlarda alan
+    /// "kullanici_adi_sha256=" (anahtarsız SHA-256) olarak kalır.
     /// </summary>
-    public static string KullaniciAdiOzeti(string normalizeAd) =>
-        "kullanici_adi_sha256=" + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(normalizeAd)));
+    public string KullaniciAdiOzeti(string normalizeAd) =>
+        "kullanici_adi_ozeti=" + ozet.Hesapla(AnahtarliOzet.KullaniciAdiAmaci, normalizeAd);
 
     internal ChannelReader<DenetimKaydi> Okuyucu => _kanal.Reader;
 

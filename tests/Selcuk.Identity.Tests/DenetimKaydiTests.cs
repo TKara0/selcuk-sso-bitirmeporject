@@ -21,8 +21,27 @@ public sealed partial class DenetimKaydiTests : IDisposable
 
     public void Dispose() => _factory.Dispose();
 
-    private static string Ozet(string metin) =>
-        "kullanici_adi_sha256=" + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(metin)));
+    private string Ozet(string metin) => BeklenenOzet(_factory.OzetAnahtari, metin);
+
+    /// <summary>Uygulamadan bağımsız hesaplanan beklenen değer: "h1:" + HMAC-SHA256(anahtar, amaç ‖ 0x00 ‖ ad).</summary>
+    private static string BeklenenOzet(byte[] anahtar, string normalizeAd) =>
+        "kullanici_adi_ozeti=h1:" + Convert.ToHexStringLower(HMACSHA256.HashData(anahtar,
+            Encoding.UTF8.GetBytes(AnahtarliOzet.KullaniciAdiAmaci + "\0" + normalizeAd)));
+
+    private static IEnumerable<Exception> Zincir(Exception? hata)
+    {
+        for (; hata is not null; hata = hata.InnerException)
+        {
+            yield return hata;
+            if (hata is AggregateException toplu)
+            {
+                foreach (var ic in toplu.InnerExceptions.SelectMany(Zincir))
+                {
+                    yield return ic;
+                }
+            }
+        }
+    }
 
     private async Task KayitEkleAsync(params DenetimKaydi[] kayitlar)
     {
@@ -78,6 +97,60 @@ public sealed partial class DenetimKaydiTests : IDisposable
         var tablo = await _factory.TabloAsync("DenetimKayitlari");
         Assert.DoesNotContain(tablo.SelectMany(s => s).OfType<string>(),
             d => d.Contains(olmayan, StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task Olmayan_kullanici_adi_h1_onekli_HMAC_ile_yaziliyor_ayni_ad_ayni_ozet_farkli_anahtar_farkli_ozet()
+    {
+        const string olmayan = "hayalet.kullanici";
+        var anahtar1 = RandomNumberGenerator.GetBytes(32);
+        var anahtar2 = RandomNumberGenerator.GetBytes(32);
+
+        async Task<List<string>> OzetlerAsync(byte[] anahtar)
+        {
+            using var factory = new SelcukIdentityFactory(ayarlar: new Dictionary<string, string?>
+            {
+                [AnahtarliOzet.AyarAdi] = Convert.ToBase64String(anahtar),
+            });
+            var client = factory.HttpsIstemcisi();
+            await SelcukIdentityFactory.GirisYapAsync(client, olmayan, "YanlisSifre123");
+            // Aynı ad farklı yazılışla (normalize edilince aynı).
+            await SelcukIdentityFactory.GirisYapAsync(client, " Hayalet.KULLANICI ", "YanlisSifre123");
+            var kayitlar = await factory.DenetimKayitlariAsync(k => k.Count(x => x.OlayTuru == DenetimOlayi.GirisBasarisiz) == 2);
+            return [.. kayitlar.Where(k => k.OlayTuru == DenetimOlayi.GirisBasarisiz)
+                .Select(k => KullaniciAdiOzeti().Match(k.Ayrinti!).Value)];
+        }
+
+        var ozetler1 = await OzetlerAsync(anahtar1);
+        Assert.All(ozetler1, o => Assert.Matches("^kullanici_adi_ozeti=h1:[0-9a-f]{64}$", o));
+        Assert.Equal(ozetler1[0], ozetler1[1]);
+        Assert.Equal(BeklenenOzet(anahtar1, olmayan.ToUpperInvariant()), ozetler1[0]);
+        // Anahtarsız SHA-256 değil.
+        Assert.DoesNotContain(Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(olmayan.ToUpperInvariant()))),
+            ozetler1[0]);
+
+        var ozetler2 = await OzetlerAsync(anahtar2);
+        Assert.Equal(ozetler2[0], ozetler2[1]);
+        Assert.Equal(BeklenenOzet(anahtar2, olmayan.ToUpperInvariant()), ozetler2[0]);
+        Assert.NotEqual(ozetler1[0], ozetler2[0]);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("bm90LWVub3VnaA==")]
+    [InlineData("base64-degil!")]
+    public void Development_disinda_HMAC_anahtari_yoksa_veya_gecersizse_uygulama_baslamiyor(string anahtar)
+    {
+        // Fabrika "Testing" ortamında çalışır (Development değil); anahtar boş, 32 bayttan kısa veya base64 değil.
+        using var factory = new SelcukIdentityFactory(ayarlar: new Dictionary<string, string?>
+        {
+            [AnahtarliOzet.AyarAdi] = anahtar,
+        });
+
+        var hata = Record.Exception(() => factory.CreateClient());
+
+        Assert.NotNull(hata);
+        Assert.Contains(Zincir(hata), e => e is InvalidOperationException && e.Message.Contains(AnahtarliOzet.AyarAdi));
     }
 
     [Fact]
@@ -258,4 +331,7 @@ public sealed partial class DenetimKaydiTests : IDisposable
 
     [GeneratedRegex("<li>")]
     private static partial Regex Satir();
+
+    [GeneratedRegex(@"kullanici_adi_ozeti=\S+")]
+    private static partial Regex KullaniciAdiOzeti();
 }

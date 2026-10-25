@@ -4,10 +4,11 @@ using Microsoft.AspNetCore.HttpOverrides;
 namespace Selcuk.Identity;
 
 /// <summary>
-/// X-Forwarded-For başlığına yalnızca "GuvenilenProxyler" ayarındaki adreslerden (IP veya CIDR ağı) gelen isteklerde
-/// güvenilir. Liste boşsa (varsayılan) başlık hiç işlenmez; ASP.NET Core'un loopback'e güvenen varsayılanı da temizlenir.
-/// Böylece istek sınırı ve denetim kaydı, istemcinin kendi yazdığı bir başlıkla kandırılamaz; proxy arkasında ise
-/// proxy'nin değil gerçek istemcinin IP'sini kullanır.
+/// X-Forwarded-For ve X-Forwarded-Proto başlıklarına yalnızca "GuvenilenProxyler" ayarındaki adreslerden (IP veya CIDR
+/// ağı) gelen isteklerde güvenilir. Liste boşsa (varsayılan) başlıklar hiç işlenmez; ASP.NET Core'un loopback'e güvenen
+/// varsayılanı da temizlenir. Böylece istek sınırı ve denetim kaydı, istemcinin kendi yazdığı bir başlıkla kandırılamaz;
+/// proxy arkasında ise proxy'nin değil gerçek istemcinin IP'sini kullanır. TLS'i proxy sonlandırıyorsa
+/// X-Forwarded-Proto: https sayesinde istek HTTPS sayılır (OpenIddict'in HTTPS zorunluluğu, yönlendirmeler, çerezler).
 /// </summary>
 public static class GuvenilenProxyler
 {
@@ -25,7 +26,7 @@ public static class GuvenilenProxyler
             return;
         }
 
-        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor;
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
         foreach (var adres in adresler)
         {
             if (adres.Contains('/') && System.Net.IPNetwork.TryParse(adres, out var ag))

@@ -38,7 +38,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 
         // Şifre sıfırlama token'ı ayrı sağlayıcıdan: 30 dakika geçerli, güvenlik damgasına bağlı (tek kullanımlık).
         options.Tokens.PasswordResetTokenProvider = SifreSifirlamaTokenSaglayici.Ad;
-        // İki aşamalı doğrulama: Identity'nin TOTP (RFC 6238) sağlayıcısı.
+        // İki aşamalı doğrulama: Identity'nin TOTP (RFC 6238) sağlayıcısı, tekrar oynatma korumasıyla.
         options.Tokens.AuthenticatorTokenProvider = TokenOptions.DefaultAuthenticatorProvider;
 
         // Oturum çerezindeki claim adları OIDC adlarıyla aynı olsun.
@@ -51,7 +51,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     // Kurtarma kodları düz metin değil, IPasswordHasher özetiyle saklanır.
     .AddUserStore<KurtarmaKoduOzetDeposu>()
     .AddTokenProvider<SifreSifirlamaTokenSaglayici>(SifreSifirlamaTokenSaglayici.Ad)
-    .AddTokenProvider<AuthenticatorTokenProvider<ApplicationUser>>(TokenOptions.DefaultAuthenticatorProvider)
+    .AddTokenProvider<TekKullanimlikTotpSaglayici>(TokenOptions.DefaultAuthenticatorProvider)
     .AddErrorDescriber<TurkceIdentityHatalari>();
 
 builder.Services.AddOptions<IkiAdimAyarlari>().Configure<IConfiguration>(IkiAdimAyarlari.Oku);
@@ -109,6 +109,11 @@ builder.Services.AddScoped<SifreDegisikligi>();
 builder.Services.AddScoped<IkiAdimIslemleri>();
 builder.Services.AddHizSiniri(builder.Configuration);
 
+// Var olmayan kullanıcı adı ve kullanılmış TOTP kodları için anahtarlı özet (HMAC-SHA256). Anahtar Development dışında
+// zorunludur; yoksa uygulama açılmaz (aşağıda, Build'den hemen sonra çözümlenir).
+builder.Services.AddSingleton(sp => AnahtarliOzet.Olustur(sp.GetRequiredService<IConfiguration>(),
+    sp.GetRequiredService<IHostEnvironment>(), sp.GetRequiredService<ILogger<AnahtarliOzet>>()));
+
 // Denetim kaydı: sayfalar kuyruğa bırakır, arka plan hizmeti yazar; eski kayıtlar günde bir kez silinir (KVKK).
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<DenetimKaydedici>();
@@ -116,7 +121,7 @@ builder.Services.AddHostedService<DenetimYazmaHizmeti>();
 builder.Services.AddSingleton<DenetimTemizlemeHizmeti>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<DenetimTemizlemeHizmeti>());
 
-// X-Forwarded-For yalnızca GuvenilenProxyler listesindeki adreslerden kabul edilir (liste boşsa hiç).
+// X-Forwarded-For ve X-Forwarded-Proto yalnızca GuvenilenProxyler listesindeki adreslerden kabul edilir (boşsa hiç).
 builder.Services.AddOptions<ForwardedHeadersOptions>().Configure<IConfiguration>(GuvenilenProxyler.Yapilandir);
 
 builder.Services.AddAntiforgery(options =>
@@ -204,6 +209,9 @@ builder.Services.AddRazorPages();
 builder.Services.AddHostedService<BaslangicVerisi>();
 
 var app = builder.Build();
+
+// Fail fast: HMAC anahtarı eksik veya geçersizse ilk istekte değil, açılışta dur.
+app.Services.GetRequiredService<AnahtarliOzet>();
 
 // İlk sırada: istek sınırı ve denetim kaydı gerçek istemci IP'sini görsün.
 app.UseForwardedHeaders();

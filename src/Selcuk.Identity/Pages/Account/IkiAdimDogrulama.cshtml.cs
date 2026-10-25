@@ -89,7 +89,7 @@ public class IkiAdimDogrulamaModel(
         var user = await KullaniciAsync();
         if (!await userManager.GetTwoFactorEnabledAsync(user))
         {
-            await ikiAdim.KurulumuBaslatAsync(user);
+            await ikiAdim.KurulumuBaslatAsync(user, MevcutSid);
         }
 
         return RedirectToPage(new { returnUrl = ReturnUrl });
