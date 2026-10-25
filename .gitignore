@@ -491,3 +491,7 @@ secrets.json
 
 # Development e-postaları (DosyaEpostaGonderici): şifre sıfırlama bağlantıları içerir
 **/App_Data/eposta/
+
+# Tek Kapı (araclar/tek-kapi): kasa, tarayıcı profili, ölçümler ve SSO ayarları repoya girmez
+araclar/tek-kapi/data/
+araclar/tek-kapi/node_modules/

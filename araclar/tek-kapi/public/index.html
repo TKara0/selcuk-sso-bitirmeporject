@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tek Kapı</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <span class="mark" aria-hidden="true">TK</span>
+      <div>
+        <div class="brand-name">Tek Kapı</div>
+        <div class="brand-sub">Selçuk otomasyonları, tek şifre</div>
+      </div>
+    </div>
+    <nav class="top-actions" id="topActions" hidden>
+      <button class="ghost" id="btnLogoutAll" title="Tek Kapı penceresindeki tüm Selçuk oturumlarını kapatır">Hepsinden çık</button>
+      <button class="ghost" id="btnSettings">Ayarlar</button>
+      <button class="ghost" id="btnLock">Kilitle</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- İlk kurulum -->
+    <section class="auth" id="viewSetup" hidden>
+      <h1>Kasanı oluştur</h1>
+      <p class="lead">Bir ana şifre belirle. Site şifrelerin bununla şifrelenip yalnızca bu bilgisayarda saklanır. Ana şifreyi unutursan kasa açılamaz.</p>
+      <form id="formSetup" class="stack">
+        <label>Ana şifre <input type="password" name="master" autocomplete="new-password" minlength="6" required></label>
+        <label>Ana şifre (tekrar) <input type="password" name="master2" autocomplete="new-password" minlength="6" required></label>
+        <button class="primary" type="submit">Kasayı oluştur</button>
+        <p class="error" role="alert"></p>
+      </form>
+    </section>
+
+    <!-- Kilit ekranı -->
+    <section class="auth" id="viewLocked" hidden>
+      <h1>Kilidi aç</h1>
+      <p class="lead">Tüm sistemlere girmek için tek şifre.</p>
+      <form id="formUnlock" class="stack">
+        <label>Ana şifre <input type="password" name="master" autocomplete="current-password" required autofocus></label>
+        <button class="primary" type="submit">Aç</button>
+        <p class="error" role="alert"></p>
+      </form>
+    </section>
+
+    <!-- Ana ekran -->
+    <section id="viewHome" hidden>
+      <div class="home-head">
+        <h1>Nereye gidiyoruz?</h1>
+        <p class="lead">Karta tıkla, site Tek Kapı penceresinde açılıp kendiliğinden giriş yapsın.</p>
+      </div>
+      <div class="notice" id="setupNotice" hidden>
+        Bazı sistemler için bilgilerin eksik. <button class="link" id="btnNoticeSettings">Ayarlar'dan ekle</button>
+      </div>
+      <p class="error" id="homeError" role="alert"></p>
+      <p class="info" id="homeInfo" role="status"></p>
+      <div class="grid" id="tiles"></div>
+
+      <section class="activity">
+        <h2>Son işlemler</h2>
+        <ol id="events"></ol>
+      </section>
+
+      <section class="metrics">
+        <div class="metrics-head">
+          <h2>Ölçümler</h2>
+          <a class="ghost small" id="lnkCsv" href="/export/metrics.csv" download>CSV indir</a>
+        </div>
+        <p class="hint">Karta tıkladığın andan sitenin içine girene kadar geçen süre. Yarı otomatik sitelerde senin harcadığın süre ayrıca gösterilir. Şifre veya kullanıcı adı kaydedilmez.</p>
+        <div class="table-wrap">
+          <table id="metricsTable">
+            <thead><tr><th>Sistem</th><th>Giriş</th><th>Ort. giriş süresi</th><th>Bunun senin payın</th><th>Oturum hatırlandı</th><th>Başarısız</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <!-- Ayarlar -->
+    <section id="viewSettings" hidden>
+      <div class="home-head">
+        <h1>Hesap bilgileri</h1>
+        <p class="lead">Şifre alanlarını boş bırakırsan kayıtlı olan korunur. Kayıtlı şifreler bu ekranda bile gösterilmez.</p>
+      </div>
+      <form id="formCreds" class="settings">
+        <fieldset>
+          <legend>OBİS ve UZEM</legend>
+          <label>Öğrenci numarası <input name="ogrNo" inputmode="numeric" autocomplete="off"></label>
+          <label>Öğrenci not sistemi (OBİS) şifresi <input type="password" name="obisPass" autocomplete="off" placeholder="değiştirmek için yaz"></label>
+          <p class="hint" data-has="obisPass"></p>
+        </fieldset>
+        <fieldset>
+          <legend>E-posta ve Selçuk SSO</legend>
+          <label>Öğrenci e-postası <input type="email" name="ogrMail" autocomplete="off" placeholder="ornek@ogr.selcuk.edu.tr"></label>
+          <label>E-posta şifresi <input type="password" name="mailPass" autocomplete="off" placeholder="değiştirmek için yaz"></label>
+          <p class="hint" data-has="mailPass"></p>
+          <label>SSO şifresi (yalnızca e-posta şifrenden farklıysa) <input type="password" name="ssoPass" autocomplete="off" placeholder="boş: e-posta şifresi kullanılır"></label>
+          <p class="hint" data-has="ssoPass"></p>
+        </fieldset>
+        <div class="row">
+          <button class="primary" type="submit">Kaydet</button>
+          <button class="ghost" type="button" id="btnBack">Geri dön</button>
+        </div>
+        <p class="error" role="alert"></p>
+      </form>
+    </section>
+  </main>
+
+  <footer class="foot">Şifreler bu bilgisayarda AES-256-GCM ile şifreli durur, hiçbir sunucuya gönderilmez. CAPTCHA ve iki aşamalı doğrulama her zaman sende kalır.</footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
