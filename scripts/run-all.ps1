@@ -1,12 +1,14 @@
-# Kimlik sunucusunu (https://localhost:5001), Demo OBİS'i (https://localhost:5101) ve Demo Yemekhane'yi
-# (https://localhost:5102) ayrı PowerShell pencerelerinde başlatır, ardından tarayıcıda kimlik sunucusunun
-# "Uygulamalarım" sayfasını açar.
+# Kimlik sunucusunu (https://localhost:5001), Demo OBİS'i (https://localhost:5101), Demo Yemekhane'yi
+# (https://localhost:5102) ve Demo API'yi (https://localhost:5201) ayrı PowerShell pencerelerinde başlatır, ardından
+# tarayıcıda kimlik sunucusunun "Uygulamalarım" sayfasını açar.
 # Kullanım (proje kökünden):  powershell -ExecutionPolicy Bypass -File scripts\run-all.ps1
 # -TekKapi verilirse Tek Kapı da (araclar/tek-kapi, http://127.0.0.1:4545) SSO modunda ayrı bir pencerede başlar:
 #   powershell -ExecutionPolicy Bypass -File scripts\run-all.ps1 -TekKapi
+# -TarayiciAcma verilirse sonda varsayılan tarayıcı açılmaz (ör. otomatik denemelerde).
 
 param(
-    [switch] $TekKapi
+    [switch] $TekKapi,
+    [switch] $TarayiciAcma
 )
 
 $ErrorActionPreference = 'Stop'
@@ -15,7 +17,8 @@ $kok = Split-Path -Parent $PSScriptRoot
 $uygulamalar = @(
     @{ Baslik = 'Selcuk.Identity :5001';        Proje = 'src/Selcuk.Identity';        Port = 5001 },
     @{ Baslik = 'Selcuk.Demo.Obis :5101';       Proje = 'src/Selcuk.Demo.Obis';       Port = 5101 },
-    @{ Baslik = 'Selcuk.Demo.Yemekhane :5102';  Proje = 'src/Selcuk.Demo.Yemekhane';  Port = 5102 }
+    @{ Baslik = 'Selcuk.Demo.Yemekhane :5102';  Proje = 'src/Selcuk.Demo.Yemekhane';  Port = 5102 },
+    @{ Baslik = 'Selcuk.Demo.Api :5201';        Proje = 'src/Selcuk.Demo.Api';        Port = 5201 }
 )
 
 # Uygulamalar önceden derlenmiş çıktıdan başlar (--no-build): üç pencerenin aynı anda derlemesi ortak projelerin
@@ -76,7 +79,9 @@ foreach ($u in $uygulamalar) {
     }
 }
 
-if ($hazir) {
+if ($hazir -and -not $TarayiciAcma) {
     Write-Host 'Uygulamalar hazır. Tarayıcı açılıyor.'
     Start-Process 'https://localhost:5001'
+} elseif ($hazir) {
+    Write-Host 'Uygulamalar hazır (-TarayiciAcma: tarayıcı açılmadı).'
 }

@@ -15,7 +15,10 @@ namespace Selcuk.Istemci.Ortak;
 /// <summary>
 /// Alt uygulamaları merkezi kimlik sunucusuna bağlayan ortak yapılandırma.
 /// Ayarlar "Kimlik" bölümünden okunur: Authority, ClientId, ClientSecret (user-secrets) ve isteğe bağlı CerezAdi,
-/// GirisHatasiYolu (varsayılan /GirisHatasi) ile OturumSuresi (varsayılan 8 saat, kimlik sunucusuyla aynı).
+/// GirisHatasiYolu (varsayılan /GirisHatasi), OturumSuresi (varsayılan 8 saat, kimlik sunucusuyla aynı), EkKapsamlar
+/// (ör. offline_access, notlar.oku) ve YenilemeTokeniSuresi (varsayılan 8 saat). offline_access istenirse access token
+/// süresi dolmak üzereyken istek sırasında sessizce yenilenir ve çıkışta refresh token iptal edilir
+/// (<see cref="TokenYenileyici"/>).
 /// </summary>
 public static class SelcukSsoUzantilari
 {
@@ -33,6 +36,7 @@ public static class SelcukSsoUzantilari
         services.AddDistributedMemoryCache();
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton<OturumIptalDeposu>();
+        services.TryAddSingleton<TokenYenileyici>();
         services.AddAuthorization();
 
         services.AddAuthentication(options =>
@@ -54,8 +58,16 @@ public static class SelcukSsoUzantilari
                 // Kimlik sunucusu oturumuyla aynı süre, kayan: kullanıcı süre boyunca işlem yapmazsa oturum kapanır.
                 options.ExpireTimeSpan = oturumSuresi;
                 options.SlidingExpiration = true;
-                // Back-Channel Logout ile iptal edilen oturumlar her istekte reddedilir.
-                options.Events.OnValidatePrincipal = OturumIptalDeposu.CerezDogrulaAsync;
+                // Back-Channel Logout ile iptal edilen oturumlar her istekte reddedilir; geçerli oturumda access token
+                // süresi dolmak üzereyse refresh token ile yenilenir.
+                options.Events.OnValidatePrincipal = async context =>
+                {
+                    await OturumIptalDeposu.CerezDogrulaAsync(context);
+                    if (context.Principal is not null)
+                    {
+                        await TokenYenileyici.GerekirseYenileAsync(context);
+                    }
+                };
             })
             .AddOpenIdConnect(options =>
             {
@@ -77,6 +89,11 @@ public static class SelcukSsoUzantilari
                 options.Scope.Add("profile");
                 options.Scope.Add("email");
                 options.Scope.Add("roles");
+                // Uygulamaya özel kapsamlar: offline_access (refresh token), kaynak sunucusu kapsamları (notlar.oku).
+                foreach (var kapsam in kimlik.GetSection("EkKapsamlar").Get<string[]>() ?? [])
+                {
+                    options.Scope.Add(kapsam);
+                }
 
                 // Claim adları kimlik sunucusunun verdiği OIDC adlarıyla kalsın (name, role, fakulte, bolum, sid).
                 options.MapInboundClaims = false;
@@ -96,6 +113,10 @@ public static class SelcukSsoUzantilari
                 options.Events.OnRemoteFailure = context => GirisDonusHatasi.IsleAsync(context, girisHatasiYolu);
                 // initiate_login_uri'ye kimlik sunucusundan gelen iss parametresi doğrulanır.
                 options.Events.OnRedirectToIdentityProvider = UcuncuTarafGiris.IssDogrulaAsync;
+                // Refresh token'ın son kullanma zamanı çereze yazılır (Token İnceleme gibi sayfalar için).
+                options.Events.OnTicketReceived = TokenYenileyici.GiristeKaydetAsync;
+                // RP-initiated logout: önce refresh token iptal edilir (RFC 7009), sonra end-session'a gidilir.
+                options.Events.OnRedirectToIdentityProviderForSignOut = TokenYenileyici.CikistaIptalEtAsync;
             });
 
         return services;

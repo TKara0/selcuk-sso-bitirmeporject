@@ -42,7 +42,8 @@ public sealed class YetkilendirmeTests
         Assert.Equal("code", sorgu["response_type"].ToString());
         Assert.False(string.IsNullOrEmpty(sorgu["code_challenge"].ToString()), "code_challenge parametresi yok.");
         Assert.Equal("S256", sorgu["code_challenge_method"].ToString());
-        Assert.Equal(["openid", "profile", "email", "roles"], sorgu["scope"].ToString().Split(' '));
+        // offline_access (refresh token) ve notlar.oku (Demo API) da istenir.
+        Assert.Equal(["openid", "profile", "email", "roles", "offline_access", "notlar.oku"], sorgu["scope"].ToString().Split(' '));
         Assert.Equal("https://localhost/signin-oidc", sorgu["redirect_uri"].ToString());
     }
 

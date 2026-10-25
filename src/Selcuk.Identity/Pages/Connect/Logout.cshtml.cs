@@ -14,6 +14,7 @@ namespace Selcuk.Identity.Pages.Connect;
 public class LogoutModel(
     SignInManager<ApplicationUser> signInManager,
     BackChannelLogoutGonderici backChannelLogout,
+    TokenIptali tokenIptali,
     DenetimKaydedici denetim) : PageModel
 {
     public void OnGet()
@@ -23,12 +24,19 @@ public class LogoutModel(
     public async Task<IActionResult> OnPostAsync()
     {
         var sid = User.FindFirst(OidcKimlik.SidClaim)?.Value;
-        if (User.FindFirst(Claims.Subject)?.Value is { } kullaniciId)
+        var kullaniciId = User.FindFirst(Claims.Subject)?.Value;
+        if (kullaniciId is not null)
         {
             denetim.Ekle(DenetimOlayi.Cikis, DenetimSonucu.Basarili, kullaniciId);
         }
 
         await signInManager.SignOutAsync();
+
+        // Bu oturumdan alınmış tüm token'lar (refresh token'lar dahil) iptal edilir.
+        if (sid is not null && kullaniciId is not null)
+        {
+            await tokenIptali.OturumuIptalEtAsync(kullaniciId, sid, CancellationToken.None);
+        }
 
         // Tek çıkış: bu oturumda giriş yapılmış tüm istemcilere Back-Channel Logout bildirimi.
         // Tarayıcı bağlantıyı kapatsa da bildirimler tamamlansın (süre sınırı HttpClient'ta).

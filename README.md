@@ -7,11 +7,12 @@ Bitirme projesi: fakülte ve bölüm web uygulamaları için merkezi kimlik sunu
 > kullanıcı adı ve şifre ile güvenli bir şekilde tüm alt uygulamalara giriş yapabilir. Token tabanlı (JWT vb.) oturum
 > yönetimini, şifre sıfırlama vb. özelliklere sahiptir."
 
-Depoda şu an **kimlik sunucusu**, ona OpenID Connect ile bağlanan iki alt uygulama (**Demo OBİS**, **Demo Yemekhane**)
-ve bu uygulamaların ortak istemci kütüphanesi var. **Tek giriş** (bir kez giriş, diğer uygulamalara şifresiz geçiş),
+Depoda şu an **kimlik sunucusu**, ona OpenID Connect ile bağlanan iki alt uygulama (**Demo OBİS**, **Demo Yemekhane**),
+bu uygulamaların ortak istemci kütüphanesi ve access token'ı doğrulayan bir kaynak sunucusu (**Demo API**) var. **Tek giriş** (bir kez giriş, diğer uygulamalara şifresiz geçiş),
 OIDC Back-Channel Logout ile **tek çıkış** (bir uygulamadan çıkınca hepsinden çıkış), e-postayla **şifre sıfırlama**,
 **şifre değiştirme**, TOTP tabanlı **iki aşamalı doğrulama** (2FA), güvenlik olaylarının **denetim kaydı** ve
-**uygulama bazlı erişim izni** çalışıyor. Ayrıca yerelde çalışan **Tek Kapı** köprüsü (`araclar/tek-kapi`) public bir
+**uygulama bazlı erişim izni** ve **token yaşam döngüsü** (kısa ömürlü access token, kayan refresh token, iptal)
+çalışıyor. Ayrıca yerelde çalışan **Tek Kapı** köprüsü (`araclar/tek-kapi`) public bir
 OIDC istemcisi olarak bağlı ([Tek Kapı köprüsü](#tek-kapı-köprüsü)): SSO ile giriş, Back-Channel Logout ile tek çıkış.
 Alınan önlemler [Güvenlik önlemleri](#güvenlik-önlemleri) bölümünde. Diğer özellikler
 [yol haritasında](#yapılacaklar-yol-haritası).
@@ -34,7 +35,10 @@ Alınan önlemler [Güvenlik önlemleri](#güvenlik-önlemleri) bölümünde. Di
             └─────────────┬──────────────┘    └─────────────┬──────────────┘
                           └───────── Selcuk.Istemci.Ortak ──┘
                      AddSelcukSSO: Cookie + OIDC, güvenlik başlıkları,
-                     /signout-backchannel alıcısı
+                     /signout-backchannel alıcısı, token yenileme/iptal
+
+     Selcuk.Demo.Obis ── Authorization: Bearer <access token> ──► Selcuk.Demo.Api :5201
+                                                                   GET /api/notlar (JWKS ile doğrulama)
 ```
 
 | Uç nokta | Adres | Açıklama |
@@ -43,6 +47,7 @@ Alınan önlemler [Güvenlik önlemleri](#güvenlik-önlemleri) bölümünde. Di
 | JWKS | `/.well-known/jwks` | İmza doğrulama anahtarları |
 | Authorize | `/connect/authorize` | Giriş ve onay ekranı (Razor Page) |
 | Token | `/connect/token` | `authorization_code` ve `refresh_token` grant'leri |
+| Revocation | `/connect/revoke` | RFC 7009: gizli istemciler refresh token'ı iptal eder (çıkışta) |
 | UserInfo | `/connect/userinfo` | Kapsama göre kullanıcı bilgisi |
 | End-session | `/connect/logout` | Çıkış sayfası; Back-Channel Logout bildirimlerini gönderir, `post_logout_redirect_uri` ile istemciye döner |
 | Uygulamalarım | `/` | Giriş yapmış kullanıcıya kayıtlı uygulamaların kartları; kart `initiate_login_uri?iss=…` adresine gider |
@@ -65,11 +70,14 @@ Alınan önlemler [Güvenlik önlemleri](#güvenlik-önlemleri) bölümünde. Di
 | `profile` | `name` (AdSoyad), `preferred_username` (öğrenci no / kullanıcı adı), `fakulte`, `bolum` |
 | `email` | `email` (userinfo'da ayrıca `email_verified`) |
 | `roles` | `role` (`ogrenci`, `akademisyen`, `personel`) |
+| `offline_access` | Claim yok; refresh token verilir (yalnızca `demo-obis`, `demo-yemekhane`) |
+| `notlar.oku` | Claim yok; access token'ın `aud`'u `demo-api` olur (Demo API kaynağı, yalnızca `demo-obis`) |
 
-Claim'ler yalnızca kullanıcı ilgili kapsama onay verdiyse tokenlara yazılır. Access token'lar **imzalı ama şifresiz
-JWT** (`typ: at+jwt`, `DisableAccessTokenEncryption`), içerikleri tezde gösterilebilir. Henüz ayrı bir API (kaynak
-sunucusu) tanımlı olmadığı için access token'da `aud` yoktur; tokenın verildiği istemci `client_id` claim'inde
-taşınır. Discovery'deki `claims_supported` listesi: `aud exp iat iss sub name email role fakulte bolum sid amr`.
+Claim'ler yalnızca kullanıcı ilgili kapsama onay verdiyse tokenlara yazılır. Profil ve e-posta bilgileri yalnızca
+id_token'da ve userinfo'dadır; access token küçültülmüştür ([Token yaşam döngüsü](#token-yaşam-döngüsü)). Access
+token'lar **imzalı ama şifresiz JWT** (`typ: at+jwt`, `DisableAccessTokenEncryption`), içerikleri tezde gösterilebilir.
+Kaynak sunucusu kapsamı (`notlar.oku`) istenmişse `aud` = `demo-api`, istenmemişse `aud` yoktur; token'ın verildiği
+istemci her durumda `client_id` claim'inde taşınır. Discovery'deki `claims_supported` listesi: `aud exp iat iss sub name email role fakulte bolum sid amr`.
 
 **Kullanıcı modeli:** `ApplicationUser : IdentityUser` + `AdSoyad`, `Fakulte`, `Bolum`. Öğrencilerin `UserName`'i
 öğrenci numarası, akademik/idari personelinki kurumsal kullanıcı adıdır.
@@ -86,7 +94,8 @@ taşınır. Discovery'deki `claims_supported` listesi: `aud exp iat iss sub name
 | `client_uri` / `initiate_login_uri` | `https://localhost:5101/` / `…/Giris` | `https://localhost:5102/` / `…/Giris` |
 
 Demo istemcilerin ortak kuralları: gizli (confidential) web istemcisi, `client_secret` user-secrets'ta; izinler authorization, token,
-end-session uç noktaları, `authorization_code`, `code`, `openid profile email roles`; PKCE zorunlu; onay türü
+end-session ve revocation uç noktaları, `authorization_code` ve `refresh_token` grant'leri, `code`,
+`openid profile email roles offline_access` (`demo-obis` ayrıca `notlar.oku`); PKCE zorunlu; onay türü
 `explicit` (her uygulama için ilk girişte onay ekranı). Özel ayarlar (`backchannel_logout_uri`, `client_uri`,
 `initiate_login_uri`, `aciklama`, ayrıca erişim izni için `izinliRoller` ve `izinliKullaniciAdlari`) OpenIddict istemci
 kaydının `Properties` alanında saklanır. Demo istemcilerde izin listeleri boştur (herkes girebilir). Üçüncü kayıtlı
@@ -223,6 +232,89 @@ sonrası Tek Kapı kasası yeni konumda yeniden kurulur (`data/` taşınmadı).
 
 **Güvenlik ayarları:** şifre politikası, kilitleme, istek sınırı, çerezler ve başlıklar
 [Güvenlik önlemleri](#güvenlik-önlemleri) bölümünde.
+
+## Token yaşam döngüsü
+
+| Token | Ne işe yarar | Kime gider | Ömür | Biçim |
+|---|---|---|---|---|
+| **id_token** | Kullanıcının kim olduğunu ve nasıl doğrulandığını istemciye bildirir (giriş kanıtı); profil (`name`, `preferred_username`, `fakulte`, `bolum`, `email`), `sid`, `amr` | İstemci uygulama (OBİS, Yemekhane, Tek Kapı) | OpenIddict varsayılanı (20 dk); yalnızca girişte doğrulanır, oturum çerezi ayrıca tutulur | İmzalı JWT |
+| **access token** | Bir API'yi (kaynak sunucusu) çağırma yetkisi. Veri minimizasyonu (KVKK): yalnızca `iss`, `sub`, `aud`, `exp`, `iat`, `jti`, `client_id`, `scope`, `role`, `sid` ve OpenIddict'in kişisel veri içermeyen iç tanımlayıcıları (`oi_prst`, `oi_au_id`, `oi_tkn_id`); ad, e-posta, fakülte, bölüm **yok** | Kaynak sunucusu (Demo API: `aud` = `demo-api`) ve userinfo | **15 dakika** (`Tokenlar:AccessTokenSuresi`) | İmzalı, şifresiz JWT (`typ: at+jwt`) |
+| **refresh token** | Kullanıcı tekrar giriş yapmadan yeni access token almak | Yalnızca gizli istemci (sunucu tarafında, çerezde); `offline_access` kapsamıyla | **8 saat**, kayan (`Tokenlar:RefreshTokenSuresi`, kimlik sunucusu oturumuyla aynı) | Kimlik sunucusunca şifreli; istemci içeriğini okuyamaz |
+
+`offline_access` yalnızca `demo-obis` ve `demo-yemekhane`'ye izinlidir (`refresh_token` grant izni); `tek-kapi`
+isteyemez (OpenIddict isteği 400 ile reddeder), çünkü yalnızca id_token ile kendi oturumunu kurar. Onay ekranında
+açıklaması: "Uygulama, oturumun açıkken erişimini sen tekrar giriş yapmadan yenileyebilir."
+
+**Kayan (rolling) refresh token ve tekrar kullanım tespiti.** OpenIddict'te kayan refresh token varsayılan olarak
+açıktır: her kullanımda yeni bir refresh token verilir, kullanılan "redeemed" işaretlenir. Kullanılmış bir refresh
+token tekrar gelirse OpenIddict isteği `invalid_grant` ile reddeder ve **aynı yetkilendirmeye bağlı tüm token'ları
+iptal eder** (yeni refresh token dahil). OpenIddict'in varsayılan **30 saniyelik tekrar kullanım payı**
+(`RefreshTokenReuseLeeway`, eşzamanlı istekler için) kapatıldı (`SetRefreshTokenReuseLeeway(null)`): kullanılmış bir
+refresh token hiçbir zaman kabul edilmez. Eşzamanlı istekler istemci tarafında tek uçuşla çözülür. Tekrar kullanım
+denetim kaydına **"Refresh token tekrar kullanıldı"** (`RefreshTokenTekrarKullanildi`, kullanıcı ve `client_id` ile)
+olarak yazılır (`Oidc/RefreshTokenTekrarDenetimi`, OpenIddict'in reddeden işleyicisinden hemen önce).
+
+**Oturuma bağlı yetkilendirme.** Onay ekranının tekrar sorulmaması için kalıcı (permanent) yetkilendirme korunur;
+ama authorize her kod verişinde o kimlik sunucusu oturumuna (`sid`) ait ayrı bir **ad-hoc yetkilendirme** açar
+(`Oidc/TokenIptali`) ve kod ile ondan türeyen tüm token'lar ona bağlanır. Böylece iptal oturum bazında yapılabilir,
+tekrar kullanılan bir refresh token da yalnızca o oturumun zincirini düşürür.
+
+**İstemci tarafında otomatik yenileme** (`Selcuk.Istemci.Ortak/TokenYenileyici`): çerezdeki access token'ın süresi
+**1 dakikadan az** kaldıysa çerez doğrulaması sırasında refresh token ile sessizce yenilenir ve çerez güncellenir.
+Aynı refresh token için eşzamanlı gelen istekler **tek bir** token isteği yapar (tek uçuş; sonuç 1 dakika boyunca, yeni
+çerezi henüz almamış istekler için de paylaşılır). Yenileme `invalid_grant` ile reddedilirse (iptal edilmiş, süresi
+dolmuş veya tekrar kullanılmış) yerel oturum kapanır ve korumalı sayfa kullanıcıyı yeniden kimlik doğrulamaya
+gönderir. Ağ hatasında oturum korunur. Token değerleri loglanmaz. Tek uçuş kaydı uygulama örneğinin belleğindedir;
+birden çok örnekte yapışkan oturum veya dağıtık kilit gerekir.
+
+**İptal anları** (refresh token'lar dahil, oturuma bağlı yetkilendirme ve token'ları):
+
+| Olay | Kapsam |
+|---|---|
+| İstemciden çıkış (RP-initiated logout) | İstemci önce refresh token'ını revocation uç noktasıyla iptal eder (RFC 7009), sonra end-session'a gider |
+| Kimlik sunucusundan çıkış | O `sid`'e bağlı yetkilendirmeler (+ Back-Channel Logout) |
+| Şifre değiştirme | Mevcut oturum hariç tüm oturumlar |
+| Şifre sıfırlama | Tüm oturumlar |
+| 2FA açma, kapatma, kurtarma kodu yenileme, kurulumu başlatma | Mevcut oturum hariç tüm oturumlar |
+| Kullanılmış refresh token'ın tekrar gelmesi | O yetkilendirmenin (oturum + istemci) bütün token'ları (OpenIddict) |
+
+Revocation uç noktası `/connect/revoke` (discovery'de `revocation_endpoint`); gizli istemciler `client_secret` ile
+kullanır.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor K as Kullanıcı (tarayıcı)
+    participant O as Demo OBİS
+    participant I as Kimlik sunucusu
+    participant A as Demo API
+    K->>O: /Notlarim
+    O->>I: authorize (code + PKCE, offline_access notlar.oku)
+    I-->>K: giriş + onay
+    I->>O: kod
+    O->>I: token isteği (kod + code_verifier + client_secret)
+    I-->>O: id_token, access token (15 dk, aud demo-api), refresh token (8 sa)
+    O->>A: GET /api/notlar (Authorization: Bearer access token)
+    A->>A: imza (JWKS), iss, aud, typ, süre, scope notlar.oku, rol ogrenci
+    A-->>O: notlar (yalnızca token'daki sub'ınkiler)
+    Note over O: access token süresine 1 dk'dan az kaldı
+    O->>I: refresh_token grant (tek uçuş)
+    I-->>O: yeni access token + yeni refresh token (eskisi redeemed)
+    K->>O: Çıkış
+    O->>I: revoke (refresh token, RFC 7009)
+    O->>I: end-session (id_token_hint)
+    I->>I: o sid'in yetkilendirmeleri ve token'ları iptal
+    I-->>O: logout_token (Back-Channel Logout)
+```
+
+**Bilinçli sınırlama: JWT access token durumsuzdur.** Kaynak sunucusu (Demo API) access token'ı kendi başına, imza ve
+süre üzerinden doğrular; kimlik sunucusuna sormaz. Bu yüzden iptal edilmiş bir oturumun access token'ı **süresi
+dolana kadar (en çok 15 dakika)** API tarafından kabul edilebilir. Bu pencereyi daraltmak için access token ömrü kısa
+seçildi; refresh token iptal edildiği için yeni access token alınamaz. Alternatif, **token introspection (RFC 7662)**:
+API her istekte (veya kısa önbellekle) token'ı kimlik sunucusuna sorar. *Artısı:* iptal anında geçerli olur, token
+opak (referans) olabilir ve içeriği istemcide görünmez. *Eksisi:* her API isteği kimlik sunucusuna bir ağ isteği
+ekler (gecikme, yük), kimlik sunucusu erişilemezse API de çalışamaz ve API'nin kendi istemci kimlik bilgisi
+gerekir. Bu projede introspection uygulanmadı; yalnızca belgelendi.
 
 ## Tek çıkış nasıl çalışıyor
 
@@ -641,8 +733,29 @@ yazdığı bir başlıkla HTTP isteğini HTTPS gibi gösteremez.
 26. **Giriş gerektiren yanıtlar önbelleğe alınmaz.** Kimlik sunucusunda ve ortak istemci kütüphanesinde (demo
     uygulamalar) `[Authorize]` uç noktaların tüm yanıtları (girişe yönlendirme dahil) `Cache-Control: no-store` ile
     döner; Tek Kapı tüm yanıtlarında zaten `no-store` kullanır. Herkese açık sayfalar (menü, ana sayfa) ve statik
-    dosyalar normal önbelleklenir. *Gerekçe:* çıkıştan sonra geri tuşu veya ortak bilgisayardaki tarayıcı geçmişi,
-    kişisel bir sayfayı (hesap bilgileri, güvenlik geçmişi, notlar) önbellekten göstermemeli.
+    dosyalar normal önbelleklenir. Onay ekranı (`/connect/authorize`) da `no-store` döner. *Gerekçe:* çıkıştan sonra
+    geri tuşu veya ortak bilgisayardaki tarayıcı geçmişi, kişisel bir sayfayı (hesap bilgileri, güvenlik geçmişi,
+    notlar) önbellekten göstermemeli.
+27. **Access token'da veri minimizasyonu.** Access token'da yalnızca yetkilendirme için gerekenler (`sub`, `role`,
+    `scope`, `sid`, `client_id`, `aud`, zaman damgaları) bulunur; ad, kullanıcı adı, e-posta, fakülte ve bölüm yalnızca
+    id_token'da ve userinfo'dadır. Ömür 15 dakika. *Gerekçe (KVKK):* access token istemciden API'lere taşınır ve
+    loglanabilir; amaç için gerekmeyen kişisel veri taşımamalıdır.
+28. **Kayan refresh token ve tekrar kullanım tespiti.** Her yenilemede yeni refresh token; kullanılmış biri tekrar
+    gelirse o oturum zincirinin bütün token'ları iptal edilir ve denetim kaydına yazılır (tekrar kullanım payı
+    kapalı). İstemci eşzamanlı istekleri tek yenilemeyle karşılar. *Gerekçe (RFC 9700 §4.14):* çalınan bir refresh
+    token'ı saldırgan ya da gerçek kullanıcı ikinci kez kullanınca hırsızlık ortaya çıkar ve zincir düşer.
+29. **Token iptali.** Revocation uç noktası (RFC 7009); istemci çıkışında refresh token iptali; kimlik sunucusundan
+    çıkışta, şifre ve 2FA değişikliklerinde oturum bazında yetkilendirme ve token iptali. *Gerekçe:* çıkış veya
+    hesap güvenliği değişikliği, uzun ömürlü refresh token'larla sessizce devam eden erişim bırakmamalı.
+30. **Audience ve kapsam denetimi (Demo API).** API yalnızca kendisi için verilmiş (`aud` = `demo-api`), `at+jwt`
+    türünde, JWKS ile imzası doğrulanan ve süresi dolmamış token'ı kabul eder; ayrıca `notlar.oku` kapsamı ve `ogrenci`
+    rolü ister (eksikse 401/403, hata ayrıntısı dönmez). Öğrenci kimliği yalnızca token'daki `sub`'dan alınır.
+    *Gerekçe:* başka bir istemciye veya API'ye verilmiş bir token (ör. `aud` = `demo-obis`) bu API'de kullanılamamalı
+    (confused deputy); kullanıcı parametreyle başkasının verisini isteyememeli.
+31. **Loglarda PKCE doğrulayıcısı yok.** OpenIddict token isteğini Information düzeyinde loglarken `code`,
+    `client_secret` ve `refresh_token`'ı maskeler ama `code_verifier`'ı maskelemez; bu yüzden
+    `OpenIddict.Server.OpenIddictServerDispatcher` kategorisi Warning düzeyine çekildi (önemli olaylar denetim
+    kaydında). Test, loglarda ve denetim kaydında hiçbir token, kod, doğrulayıcı veya secret olmadığını denetler.
 
 ### Yanıt süresi eşitleme (kod incelemesi)
 
@@ -671,10 +784,10 @@ yolun aynı işi yaptığı kodda doğrulandı:
 | Sayfa | Erişim |
 |---|---|
 | Ana sayfa (`/`) | Herkese açık, "Giriş yap" butonu |
-| Notlarım (`/Notlarim`) | Yalnızca `ogrenci` |
+| Notlarım (`/Notlarim`) | Yalnızca `ogrenci`. Notlar sunucu tarafında **Demo API'den** (`GET /api/notlar`, oturumdaki access token ile) çekilir; API'ye ulaşılamazsa "Not bilgileri şu an alınamıyor" |
 | Ders Yönetimi (`/DersYonetimi`) | Yalnızca `akademisyen` |
 | Profilim (`/Profilim`) | Giriş yapmış herkes: ad soyad, rol, fakülte, bölüm |
-| Token İnceleme (`/TokenInceleme`) | Yalnızca Development: id_token ve access_token'ın header/payload'u (imza hariç), son kullanma zamanı |
+| Token İnceleme (`/TokenInceleme`) | Yalnızca Development: id_token ve access_token'ın header/payload'u (imza hariç), son kullanma zamanı; refresh token'ın yalnızca var olduğu ve (yaklaşık) son kullanma zamanı, değeri gösterilmez |
 | Erişim reddedildi (`/ErisimReddedildi`) | Yetkisiz rol buraya yönlendirilir |
 | Çıkış (`/Cikis`) | Yerel çerezi siler, kimlik sunucusunun end-session uç noktasına gider, dönüşte ana sayfa |
 
@@ -686,6 +799,19 @@ yolun aynı işi yaptığı kodda doğrulandı:
 | Rezervasyonlarım (`/Rezervasyonlarim`) | Giriş yapmış herkes: sonraki 5 iş gününden seçip rezervasyon ekleme ve iptal (bellek içi) |
 | Yemekhane Yönetimi (`/YemekhaneYonetimi`) | Yalnızca `personel`: günlük rezervasyon sayıları |
 | Profilim, Erişim reddedildi, Çıkış | OBİS'teki gibi |
+
+### Demo API (`src/Selcuk.Demo.Api`, https://localhost:5201)
+
+Yalnızca kaynak sunucusu (ASP.NET Core minimal API, kendi istemci kaydı yok). Kimlik sunucusunda `demo-api` kaynağı ve
+`notlar.oku` kapsamı tanımlıdır (açılışta, her ortamda).
+
+| Uç nokta | Kural |
+|---|---|
+| `GET /api/notlar` | JWT Bearer: imza kimlik sunucusunun JWKS'iyle, `iss`, `aud` = `demo-api`, `typ` = `at+jwt`, süre (30 sn tolerans). Yetki: `scope` içinde `notlar.oku` ve rol `ogrenci`. Token yok/geçersiz → 401, kapsam veya rol eksik → 403. Yanıt: token'daki `sub`'ın notları (uydurma, OBİS'teki önceki sabit veri); sorgu parametresiyle başka öğrenci istenemez |
+
+Tüm yanıtlar `Cache-Control: no-store`, `nosniff`, `no-referrer`, `X-Frame-Options: DENY`,
+`Content-Security-Policy: default-src 'none'`. 401/403 gövdesiz ve `WWW-Authenticate`'te hata ayrıntısı yok
+(`IncludeErrorDetails = false`); beklenmeyen hata genel bir 500 yanıtı döner.
 
 ## Yeni bir uygulamayı sisteme bağlamak
 
@@ -756,13 +882,16 @@ src/Selcuk.Identity/
                                   SifremiUnuttum, SifreSifirla, Hesabim, SifreDegistir, AccessDenied,
                                   Connect/Authorize, Logout
 src/Selcuk.Istemci.Ortak/         AddSelcukSSO, güvenlik başlıkları, Back-Channel Logout alıcısı, OturumIptalDeposu
-                                  (IDistributedCache), giriş dönüşü hataları, iss doğrulaması
+                                  (IDistributedCache), giriş dönüşü hataları, iss doğrulaması, TokenYenileyici
+                                  (access token yenileme, çıkışta refresh token iptali)
 src/Selcuk.Demo.Obis/             Notlarım, Ders Yönetimi, Profilim, Token İnceleme …
 src/Selcuk.Demo.Yemekhane/        Haftalık menü, Rezervasyonlarım, Yemekhane Yönetimi …
+src/Selcuk.Demo.Api/              Demo API (kaynak sunucusu): GET /api/notlar, JWT Bearer
 tests/Selcuk.Identity.Tests/      Kimlik sunucusu entegrasyon, protokol, tek giriş/çıkış testleri
 tests/Selcuk.Istemci.Ortak.Tests/ Back-Channel Logout alıcısı testleri (yerel anahtar + sahte JWKS)
 tests/Selcuk.Demo.Obis.Tests/     Demo OBİS yönlendirme ve rol testleri
 tests/Selcuk.Demo.Yemekhane.Tests/ Demo Yemekhane yönlendirme ve rol testleri
+tests/Selcuk.Demo.Api.Tests/      Demo API token doğrulama ve yetkilendirme testleri (yerel anahtar)
 ```
 
 ## Kurulum
@@ -837,15 +966,16 @@ kayıtları); başka bir etkisi yoktur.
 
 ## Çalıştırma
 
-Üçünü birlikte başlatmak için:
+Hepsini birlikte başlatmak için:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\run-all.ps1
 ```
 
 Betik önce çözümü bir kez derler (`dotnet build SelcukSSO.sln`; başarısızsa durur), sonra kimlik sunucusunu
-(5001), Demo OBİS'i (5101) ve Demo Yemekhane'yi (5102) ayrı PowerShell pencerelerinde `dotnet run --no-build` ile
-başlatır, hepsi hazır olunca tarayıcıda https://localhost:5001 adresini açar. Durdurmak için pencerelerde `Ctrl+C`.
+(5001), Demo OBİS'i (5101), Demo Yemekhane'yi (5102) ve Demo API'yi (5201) ayrı PowerShell pencerelerinde
+`dotnet run --no-build` ile başlatır, hepsi hazır olunca tarayıcıda https://localhost:5001 adresini açar
+(`-TarayiciAcma` verilirse açmaz). Durdurmak için pencerelerde `Ctrl+C`.
 Önceden her pencere kendisi derlediği için ortak projelerin (`Selcuk.Istemci.Ortak`) dosyalarında kilit hatası
 oluşabiliyordu.
 `-TekKapi` verilirse Tek Kapı da (`araclar/tek-kapi`, http://127.0.0.1:4545) SSO modunda ayrı bir pencerede başlar
@@ -976,7 +1106,10 @@ yakalanır.
   parametresi (ör. `IkiAdimZorunluRoller:0`), proxy testlerinde istemci adresini belirlemek için bir `IStartupFilter`
   kullanılır.
 - **Selcuk.Istemci.Ortak.Tests:** kimlik sunucusu yerine yerel bir RSA anahtar çifti ile, bu anahtarı yayınlayan
-  sahte discovery ve JWKS uç noktaları kullanılır.
+  sahte discovery ve JWKS uç noktaları kullanılır; token yenileme testlerinde sahte token (gecikme ve invalid_grant
+  ayarlı) ve revocation uç noktaları.
+- **Selcuk.Demo.Api.Tests:** yerel RSA anahtarı ve sabit discovery bilgisi; token'lar kimlik sunucusunun access
+  token'ı gibi üretilir.
 - **Selcuk.Demo.Obis.Tests / Selcuk.Demo.Yemekhane.Tests:** discovery bilgisi sabit verilir. Rol testlerinde gerçek
   kimlik sunucusu yerine sahte bir kimlik doğrulama şeması kullanılır.
 
@@ -992,7 +1125,7 @@ yakalanır.
 | `Kilitli_hesapta_yeni_giris_reddediliyor_kilitten_once_acilan_oturum_kod_ve_token_alabiliyor` | Oturum açıkken başka biri 5 yanlış şifreyle hesabı kilitler: doğru şifreyle yeni giriş reddedilir, yeni tarayıcı authorize'dan girişe yönlenir; kilitten önce açılmış oturum authorize'dan kod, token uç noktasından token alır (iki kez), kilit sürer |
 | `Uc_rol_olusturulmus` | `akademisyen`, `ogrenci`, `personel` |
 | `Pkce_olmadan_authorize_istegi_reddediliyor` | `code_challenge` olmadan istek 400 `invalid_request`; PKCE ile aynı istek girişe yönlenir |
-| `Kod_akisi_PKCE_ile_imzali_JWT_tokenlar_uretiyor` | Giriş → authorize (S256) → onay → kod → token; JWKS ile imza, iss/aud/exp/nonce; sub, name, role, fakulte, bolum; userinfo |
+| `Kod_akisi_PKCE_ile_imzali_JWT_tokenlar_uretiyor` | Giriş → authorize (S256) → onay → kod → token; JWKS ile imza, iss/aud/exp/nonce; iki token'da sub, role; id_token'da name, fakulte, bolum, access token'da yok (15 dk); userinfo |
 | `Ayni_kod_ikinci_kez_kullanilinca_reddediliyor` | İkinci kullanımda `invalid_grant` |
 | `Yanlis_code_verifier_reddediliyor` | `invalid_grant` |
 | `Kayitli_olmayan_redirect_uri_reddediliyor` | 400 `invalid_request`, yönlendirme yok |
@@ -1064,6 +1197,14 @@ yakalanır.
 | `Bu_cihazi_hatirla_ile_acilmis_oturumda_ek_dogrulama_isteniyor` | "Bu cihazı hatırla" sonrası yalnızca şifreyle giriş (`amr=pwd; cihaz-hatirlandi`): authorize ek doğrulamaya; kurtarma koduyla ek doğrulama, token `amr` = `["pwd","mfa"]` |
 | `Token_ucu_amr_mfa_icermeyen_yetkilendirmeyi_MfaZorunlu_istemci_icin_reddediyor` | Kod istemci 2FA istemezken şifreli oturumdan alınır, sonra `mfaZorunlu` açılır: token `invalid_grant`, `uc=token` kaydı, `TokenVerildi` yok |
 | `Giris_gerektiren_hesap_sayfalarinda_no_store_var_herkese_acik_sayfa_ve_statik_dosyada_yok` | Girişsiz `/Account/Hesabim` yönlendirmesi ve girişli Uygulamalarım, Hesabım, 2FA, şifre değiştir, güvenlik geçmişi, ek doğrulama `no-store`; Erişim reddedildi sayfası ve CSS'te yok |
+| `Access_token_kucultuldu_profil_bilgileri_yalnizca_id_tokenda_aud_demo_api` | Access token: sub, role, scope (⊇ notlar.oku), sid, client_id, jti, aud = `demo-api`, 15 dk; name, email, fakulte, bolum, preferred_username, amr yok; yalnızca izinli claim'ler (+ OpenIddict `oi_*`); id_token'da profil bilgileri; userinfo bu token'la 200 |
+| `Offline_access_ile_refresh_token_aliniyor_kayan_yenileme_eski_token_ikinci_kez_reddediliyor` | offline_access yoksa refresh token yok; varsa yenileme yeni access + yeni refresh token verir; eski refresh token ikinci kez `invalid_grant` |
+| `Kullanilmis_refresh_token_tekrar_gelince_yetkilendirmenin_tum_tokenlari_iptal_ve_denetim_kaydi` | Kullanılmış refresh token reddedilir, aynı zincirin yeni refresh token'ı da geçmez; başka oturumun zinciri çalışır; `RefreshTokenTekrarKullanildi` kaydı (kullanıcı, `client_id`) |
+| `TekKapi_offline_access_isteyemiyor` | tek-kapi'nin offline_access isteği 400, kod yok |
+| `Revocation_ucu_refresh_tokeni_iptal_ediyor_discovery_ve_onay_ekrani` | Discovery'de `revocation_endpoint`; onay ekranı `no-store` ve offline_access/notlar.oku Türkçe açıklamaları; revoke 200, sonra refresh `invalid_grant` |
+| `Sifre_degistirmede_diger_oturumlarin_refresh_tokenlari_iptal_mevcut_calisiyor_sifirlamada_hepsi` | Şifre değiştirmede diğer oturumun refresh token'ı reddedilir, mevcut oturumunki çalışır; sıfırlamadan sonra o da reddedilir |
+| `Kimlik_sunucusundan_cikista_o_side_bagli_refresh_tokenlar_iptal` | Çıkan oturumun refresh token'ı reddedilir, diğer oturumunki çalışır |
+| `Loglarda_ve_denetim_kaydinda_token_degeri_yok` | Giriş, yenileme, tekrar kullanım, revoke ve çıkıştan sonra hiçbir log iletisinde ve denetim tablosunda access/id/refresh token, kod, code_verifier, secret veya şifre yok |
 | `Istemci_adresleri_https_veya_yalnizca_http_127_0_0_1_olabiliyor` | Üç tanım kurala uyar; `http://localhost`, `http://192.168.1.10`, `http://127.0.0.1.evil.example`, uzak http redirect ve `http://localhost` back-channel reddedilir; boş izin listesi varsayılana döner |
 | **Selcuk.Istemci.Ortak.Tests** | |
 | `Gecerli_logout_token_oturumu_sonlandiriyor` | 200 (`no-store`); o sid'li oturum sonraki istekte authorize'a yönlenir |
@@ -1079,8 +1220,14 @@ yakalanır.
 | `Jwks_ulasilamazsa_503` | JWKS'e bağlanılamazken 503; oturum etkilenmez |
 | `Yanlis_iss_ile_baslatilan_giris_reddediliyor` | Yabancı, eğik çizgisiz veya boş `iss`: 400, yönlendirme yok |
 | `Dogru_iss_ile_veya_iss_olmadan_giris_kimlik_sunucusuna_gidiyor` | Doğru `iss` veya `iss` yok: authorize'a yönlendirme |
+| `Suresi_dolmak_uzere_olan_access_token_istek_sirasinda_yenileniyor_uzun_sureli_yenilenmiyor` | 10 dk kalan token yenilenmez; 30 sn kalan istek sırasında yenilenir (grant_type, refresh_token, client kimlik bilgileri), çerezde yeni access/refresh token ve ~15 dk son kullanma; sonraki istek yenilemez; loglarda token değeri yok |
+| `Invalid_grant_gelince_yerel_oturum_kapaniyor_ve_kimlik_dogrulamaya_gidiliyor` | invalid_grant: korumalı sayfa authorize'a yönlenir, çerez silinir, refresh token bir daha gönderilmez |
+| `Eszamanli_istekler_ayni_refresh_tokeni_bir_kez_kullaniyor` | Aynı çerezle 5 eşzamanlı istek (sunucu yanıtı gecikmeli): hepsi 200, tek token isteği |
+| `Cikista_once_refresh_token_iptal_ediliyor_sonra_end_sessiona_gidiliyor` | Çıkış: revocation isteği (token, `token_type_hint`, client kimlik bilgileri), sonra end-session'a yönlendirme |
 | **Selcuk.Demo.Obis.Tests** | |
-| `Girissiz_kullanici_Notlarim_icin_kimlik_sunucusuna_yonlendiriliyor` | 302 → `https://localhost:5001/connect/authorize`, `code_challenge` + `S256` |
+| `Girissiz_kullanici_Notlarim_icin_kimlik_sunucusuna_yonlendiriliyor` | 302 → `https://localhost:5001/connect/authorize`, `code_challenge` + `S256`, kapsamlar `openid profile email roles offline_access notlar.oku` |
+| `Notlarim_Demo_APIden_gelen_veriyi_access_token_ile_gosteriyor` | Sahte Demo API: `GET https://localhost:5201/api/notlar`, `Authorization: Bearer <oturumdaki access token>`, sorgu parametresi yok; sayfada API'den gelen satır |
+| `Demo_API_kapaliyken_Turkce_hata_mesaji_gosteriliyor_500_donmuyor` | API'ye bağlanılamaz: 200, "Not bilgileri şu an alınamıyor", tablo yok |
 | `Ogrenci_Notlarim_acilir_Ders_Yonetimi_reddedilir` | ogrenci: Notlarım 200, Ders Yönetimi → Erişim reddedildi |
 | `Akademisyen_Ders_Yonetimi_acilir_Notlarim_reddedilir` | akademisyen: Ders Yönetimi 200, Notlarım → Erişim reddedildi |
 | `Token_Inceleme_Development_disinda_kapali` | Development dışında 404 |
@@ -1097,6 +1244,9 @@ yakalanır.
 | `Ogrenci_Yemekhane_Yonetimi_erisim_reddedildi` | ogrenci: Yönetim → Erişim reddedildi; Rezervasyonlarım 200 |
 | `Personel_Yemekhane_Yonetimi_aciliyor` | personel: Yönetim 200 |
 | `Korumali_sayfalarda_no_store_var_haftalik_menude_yok` | Rezervasyonlarım, Profilim, Yemekhane Yönetimi ve girişsiz yönlendirme `no-store`; haftalık menü ve CSS'te yok |
+| **Selcuk.Demo.Api.Tests** | |
+| `Gecerli_token_200_eksik_veya_hatali_token_401_yetkisiz_kapsam_ve_rol_403` | Geçerli token 200 (`no-store`, `nosniff`); token yok, yanlış imza, `aud` demo-obis, süresi dolmuş, `typ` JWT → 401; `notlar.oku` yok, rol akademisyen → 403; hata gövdesi ve `WWW-Authenticate` ayrıntısı yok |
+| `Yalnizca_tokendaki_subin_notlari_donuyor_parametreyle_baskasi_istenemiyor` | `?sub=` / `?ogrenci=` yok sayılır; A'nın token'ı her zaman A'nın notlarını, B'ninki B'ninkini döndürür |
 | `Giris_yapmis_kullanici_eslestirme_cerezi_olmadan_donuste_ana_sayfaya_yonlendiriliyor` | Yemekhane'de geri tuşu, giriş yapmış: 302 → `/` |
 | `Girissiz_kullanici_eslestirme_cerezi_olmadan_donuste_GirisHatasi_sayfasina_yonlendiriliyor` | Yemekhane'de giriş yapmamış: `/GirisHatasi?neden=oturum-suresi` |
 
@@ -1110,6 +1260,7 @@ yakalanır.
 | Microsoft.EntityFrameworkCore.SqlServer / .Design | 10.0.13 |
 | QRCoder (2FA QR kodu, SVG; MIT lisanslı) | 1.8.1 |
 | Microsoft.AspNetCore.Authentication.OpenIdConnect (Selcuk.Istemci.Ortak) | 10.0.13 |
+| Microsoft.AspNetCore.Authentication.JwtBearer (Selcuk.Demo.Api) | 10.0.13 |
 | System.Security.Cryptography.Pkcs (açık kapatmak için sabitlendi; Identity + Identity.Tests) | 10.0.13 |
 | System.Security.Cryptography.Xml (açık kapatmak için sabitlendi; Identity.Tests) | 10.0.13 |
 | dotnet-ef (yerel araç) | 10.0.13 |
@@ -1132,7 +1283,10 @@ yakalanır.
 - [x] **Uygulama bazlı erişim izni** (`izinliRoller`, `izinliKullaniciAdlari`) ve **Tek Kapı** public istemci kaydı
       (loopback, PKCE)
 - [ ] **Yönetim paneli** (kullanıcı, rol ve istemci uygulama yönetimi; erişim izinlerinin arayüzden yönetimi)
-- [ ] **Token iptali** (revocation uç noktası, oturum/yetkilendirme iptali)
+- [x] **Token yönetimi**: küçültülmüş 15 dk access token, kayan refresh token (offline_access, tekrar kullanım
+      tespiti), istemcide otomatik yenileme, revocation uç noktası, çıkış/şifre/2FA değişikliğinde oturum bazında
+      iptal; access token'ı kullanan Demo API (audience ve kapsam denetimi). Introspection (RFC 7662) bilinçli olarak
+      yalnızca belgelendi.
 - [ ] **Production sertifika yönetimi**: şu an yalnızca Development sertifikaları (`AddDevelopmentSigningCertificate`,
       `AddDevelopmentEncryptionCertificate`) kullanılıyor. Production'da kalıcı X.509 imzalama/şifreleme
       sertifikaları (sertifika deposu veya Key Vault), anahtar rotasyonu ve `OpenIddict:Issuer`'ın gerçek alan adına

@@ -90,6 +90,7 @@ builder.Services.AddHttpClient(BackChannelLogoutGonderici.HttpIstemciAdi,
     client => client.Timeout = TimeSpan.FromSeconds(5));
 builder.Services.AddScoped<BackChannelLogoutGonderici>();
 builder.Services.AddScoped<IstemciErisimi>();
+builder.Services.AddScoped<TokenIptali>();
 
 // E-posta: Development'ta App_Data/eposta/ klasörüne .eml, diğer ortamlarda SMTP. Gönderim arka planda (kuyruk).
 builder.Services.Configure<EpostaAyarlari>(builder.Configuration.GetSection(EpostaAyarlari.Bolum));
@@ -158,7 +159,22 @@ builder.Services.AddOpenIddict()
         options.SetAuthorizationEndpointUris("connect/authorize")
                .SetTokenEndpointUris("connect/token")
                .SetUserInfoEndpointUris("connect/userinfo")
-               .SetEndSessionEndpointUris("connect/logout");
+               .SetEndSessionEndpointUris("connect/logout")
+               // RFC 7009: gizli istemciler çıkışta refresh token'larını iptal eder (OpenIddict işler, passthrough yok).
+               .SetRevocationEndpointUris("connect/revoke");
+
+        // Token ömürleri (Tokenlar bölümü). Access token kısa: JWT durumsuzdur, iptal edilse de süresi dolana kadar
+        // kaynak sunucusunca kabul edilebilir. Refresh token kimlik sunucusu oturumuyla aynı süre (varsayılan 8 saat).
+        options.SetAccessTokenLifetime(
+            builder.Configuration.GetValue<TimeSpan?>("Tokenlar:AccessTokenSuresi") ?? TimeSpan.FromMinutes(15));
+        options.SetRefreshTokenLifetime(
+            builder.Configuration.GetValue<TimeSpan?>("Tokenlar:RefreshTokenSuresi") ?? oturumSuresi);
+        // Kayan (rolling) refresh token OpenIddict'te varsayılan: her kullanımda yenisi verilir, eskisi "redeemed"
+        // işaretlenir. Varsayılan 30 saniyelik tekrar kullanım payı kapatılır: kullanılmış bir refresh token hiçbir
+        // zaman kabul edilmez; gelirse OpenIddict yetkilendirmenin tüm token'larını iptal eder (RefreshTokenTekrarDenetimi
+        // denetim kaydını yazar). Eşzamanlı yenileme istemci tarafında tek uçuşla önlenir (Selcuk.Istemci.Ortak).
+        options.SetRefreshTokenReuseLeeway(null);
+        options.AddEventHandler(RefreshTokenTekrarDenetimi.Descriptor);
 
         // Yalnızca Authorization Code (+ PKCE) ve Refresh Token. Implicit ve password grant kapalı.
         options.AllowAuthorizationCodeFlow()
@@ -167,7 +183,8 @@ builder.Services.AddOpenIddict()
         // Yalnızca S256: "plain" yöntemi code_verifier'ı açıkta taşıdığı için kabul edilmez.
         options.Configure(server => server.CodeChallengeMethods.Remove(CodeChallengeMethods.Plain));
 
-        options.RegisterScopes(Scopes.OpenId, Scopes.Profile, Scopes.Email, Scopes.Roles);
+        options.RegisterScopes(Scopes.OpenId, Scopes.Profile, Scopes.Email, Scopes.Roles, Scopes.OfflineAccess,
+            Istemciler.NotlarOkuKapsami);
         options.RegisterClaims(Claims.Subject, Claims.Name, Claims.Email, Claims.Role,
             OidcKimlik.FakulteClaim, OidcKimlik.BolumClaim, OidcKimlik.SidClaim, Claims.AuthenticationMethodReference);
 

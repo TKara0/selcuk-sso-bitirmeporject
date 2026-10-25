@@ -6,17 +6,24 @@
 <section class="kart genis">
     <h1>Notlarım</h1>
     <p class="aciklama">2026-2027 Güz dönemi (örnek veri)</p>
-    <div class="tablo-kap">
-        <table>
-            <thead>
-                <tr><th>Kod</th><th>Ders</th><th>Vize</th><th>Final</th><th>Harf</th></tr>
-            </thead>
-            <tbody>
-                @foreach (var not in SahteVeri.Notlar)
-                {
-                    <tr><td>@not.Kod</td><td>@not.Ad</td><td>@not.Vize</td><td>@not.Final</td><td><strong>@not.Harf</strong></td></tr>
-                }
-            </tbody>
-        </table>
-    </div>
+    @if (Model.Hata is not null)
+    {
+        <p class="aciklama" role="alert"><strong>@Model.Hata</strong></p>
+    }
+    else
+    {
+        <div class="tablo-kap">
+            <table>
+                <thead>
+                    <tr><th>Kod</th><th>Ders</th><th>Vize</th><th>Final</th><th>Harf</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var not in Model.Notlar)
+                    {
+                        <tr><td>@not.Kod</td><td>@not.Ad</td><td>@not.Vize</td><td>@not.Final</td><td><strong>@not.Harf</strong></td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
 </section>

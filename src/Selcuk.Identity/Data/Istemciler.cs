@@ -23,6 +23,10 @@ public static class Istemciler
     // true ise bu istemciye yalnızca iki aşamalı doğrulanmış (amr "mfa") oturumdan kod ve token verilir.
     public const string MfaZorunluOzelligi = "mfaZorunlu";
 
+    // Demo API (kaynak sunucusu): notlar.oku kapsamıyla verilen access token'ın aud'u demo-api olur.
+    public const string DemoApiKaynagi = "demo-api";
+    public const string NotlarOkuKapsami = "notlar.oku";
+
     public const string DemoObisClientId = "demo-obis";
     private const string DemoObisAdres = "https://localhost:5101";
     public const string DemoObisRedirectUri = DemoObisAdres + "/signin-oidc";
@@ -47,9 +51,22 @@ public static class Istemciler
     /// <summary>Yapılandırmada liste yoksa veya boşsa Tek Kapı'ya yalnızca bu kullanıcı girebilir (herkese açılmaz).</summary>
     public static readonly string[] TekKapiVarsayilanIzinliKullaniciAdlari = ["203011001"];
 
-    public static OpenIddictApplicationDescriptor DemoObis(string clientSecret) => Tanim(
-        DemoObisClientId, "Demo OBİS", DemoObisAdres,
-        "Notlarınızı görüntüleyin; akademisyenler için ders yönetimi.", clientSecret);
+    public static OpenIddictApplicationDescriptor DemoObis(string clientSecret)
+    {
+        var tanim = Tanim(DemoObisClientId, "Demo OBİS", DemoObisAdres,
+            "Notlarınızı görüntüleyin; akademisyenler için ders yönetimi.", clientSecret);
+        // Notlarım sayfası notları Demo API'den (notlar.oku) çeker.
+        tanim.Permissions.Add(Permissions.Prefixes.Scope + NotlarOkuKapsami);
+        return tanim;
+    }
+
+    /// <summary>Demo API'nin kapsamı: kimlik sunucusunda açılışta oluşturulur veya güncellenir (tüm ortamlarda).</summary>
+    public static OpenIddictScopeDescriptor NotlarOku() => new()
+    {
+        Name = NotlarOkuKapsami,
+        DisplayName = "Not bilgilerini okuma",
+        Resources = { DemoApiKaynagi },
+    };
 
     public static OpenIddictApplicationDescriptor DemoYemekhane(string clientSecret) => Tanim(
         DemoYemekhaneClientId, "Demo Yemekhane", DemoYemekhaneAdres,
@@ -131,7 +148,8 @@ public static class Istemciler
 
     /// <summary>
     /// Gizli web istemcisi: authorization_code + PKCE zorunlu, explicit onay; redirect, post-logout ve
-    /// back-channel logout adresleri uygulamanın kök adresinden türetilir.
+    /// back-channel logout adresleri uygulamanın kök adresinden türetilir. offline_access ile refresh token alabilir
+    /// (kayan, tek kullanımlık) ve çıkışta refresh token'ını revocation uç noktasıyla iptal edebilir.
     /// </summary>
     private static OpenIddictApplicationDescriptor Tanim(
         string clientId, string gorunenAd, string adres, string aciklama, string clientSecret) => new()
@@ -149,11 +167,14 @@ public static class Istemciler
             Permissions.Endpoints.Authorization,
             Permissions.Endpoints.Token,
             Permissions.Endpoints.EndSession,
+            Permissions.Endpoints.Revocation,
             Permissions.GrantTypes.AuthorizationCode,
+            Permissions.GrantTypes.RefreshToken,
             Permissions.ResponseTypes.Code,
             Permissions.Scopes.Profile,
             Permissions.Scopes.Email,
             Permissions.Scopes.Roles,
+            Permissions.Prefixes.Scope + Scopes.OfflineAccess,
         },
         Requirements =
         {

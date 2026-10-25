@@ -177,8 +177,8 @@ public sealed partial class OidcAkisTests : IDisposable
         Assert.Equal("nonce-123", id.GetClaim(Claims.Nonce).Value);
         Assert.InRange(id.ValidTo, DateTime.UtcNow, DateTime.UtcNow.AddHours(1).AddMinutes(1));
 
-        // access_token: şifresiz, imzalı JWT (at+jwt). Henüz kaynak sunucusu (API) tanımlı olmadığı için
-        // aud claim'i yoktur; hangi istemciye verildiği client_id claim'inde taşınır.
+        // access_token: şifresiz, imzalı JWT (at+jwt). Kaynak sunucusu kapsamı (notlar.oku) istenmediği için aud
+        // claim'i yoktur; hangi istemciye verildiği client_id claim'inde taşınır.
         var accessSonuc = await handler.ValidateTokenAsync(accessToken, new TokenValidationParameters
         {
             ValidIssuer = Issuer,
@@ -192,15 +192,22 @@ public sealed partial class OidcAkisTests : IDisposable
         Assert.Equal("at+jwt", access.Typ);
         Assert.Empty(access.Audiences);
         Assert.Equal(Istemciler.DemoObisClientId, access.GetClaim(Claims.ClientId).Value);
-        Assert.InRange(access.ValidTo, DateTime.UtcNow, DateTime.UtcNow.AddHours(1).AddMinutes(1));
+        // Access token 15 dakika geçerli (Tokenlar:AccessTokenSuresi).
+        Assert.InRange(access.ValidTo, DateTime.UtcNow.AddMinutes(14), DateTime.UtcNow.AddMinutes(16));
 
         foreach (var token in new[] { id, access })
         {
             Assert.Equal(subject, token.Subject);
-            Assert.Equal("Test Kullanıcısı", token.GetClaim(Claims.Name).Value);
             Assert.Equal(Roller.Ogrenci, token.GetClaim(Claims.Role).Value);
-            Assert.Equal(Fakulte, token.GetClaim("fakulte").Value);
-            Assert.Equal(Bolum, token.GetClaim("bolum").Value);
+        }
+
+        // Profil bilgileri yalnızca id_token'da (ve userinfo'da); access token'da yok (veri minimizasyonu).
+        Assert.Equal("Test Kullanıcısı", id.GetClaim(Claims.Name).Value);
+        Assert.Equal(Fakulte, id.GetClaim("fakulte").Value);
+        Assert.Equal(Bolum, id.GetClaim("bolum").Value);
+        foreach (var ad in new[] { Claims.Name, Claims.Email, "fakulte", "bolum", Claims.PreferredUsername })
+        {
+            Assert.False(access.TryGetClaim(ad, out _), ad);
         }
 
         // userinfo: aynı bilgiler access token ile alınabiliyor.

@@ -15,6 +15,7 @@ namespace Selcuk.Identity.Hesap;
 public sealed class SifreDegisikligi(
     UserManager<ApplicationUser> userManager,
     BackChannelLogoutGonderici backChannelLogout,
+    TokenIptali tokenIptali,
     EpostaKuyrugu eposta,
     DenetimKaydedici denetim,
     TimeProvider zaman)
@@ -37,6 +38,8 @@ public sealed class SifreDegisikligi(
 
         // Tarayıcı bağlantıyı kapatsa da bildirimler tamamlansın (süre sınırı HttpClient'ta).
         await backChannelLogout.KullaniciOturumlariniKapatAsync(user.Id, haricSid, CancellationToken.None);
+        // Kapanan oturumlardan alınmış token'lar (refresh token'lar dahil) iptal edilir.
+        await tokenIptali.KullaniciyiIptalEtAsync(user.Id, haricSid, CancellationToken.None);
 
         if (!string.IsNullOrEmpty(user.Email))
         {

@@ -26,6 +26,24 @@
         <pre>@token.Payload</pre>
     }
 
+    <h2>refresh_token</h2>
+    @if (Model.RefreshTokenVar)
+    {
+        <p class="ipucu">
+            Oturumda bir refresh token <strong>var</strong> (değeri gösterilmez; kimlik sunucusunca şifrelenmiştir, istemci
+            içeriğini okuyamaz). Access token süresi dolmak üzereyken istek sırasında bununla yenilenir.
+            @if (Model.RefreshTokenBitis is { } rtBitis)
+            {
+                <br />
+                <span>Son kullanma (yaklaşık): <strong>@rtBitis.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")</strong></span>
+            }
+        </p>
+    }
+    else
+    {
+        <p class="ipucu">Oturumda refresh token yok.</p>
+    }
+
     @if (Model.Tokenlar.Count == 0)
     {
         <p>Oturumda kayıtlı token bulunamadı.</p>

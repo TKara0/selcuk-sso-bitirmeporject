@@ -69,8 +69,10 @@ public static class OidcKimlik
     }
 
     /// <summary>
-    /// Bir claim'in hangi tokena gireceğini belirler. Profil, e-posta ve rol bilgileri yalnızca
-    /// kullanıcının onay verdiği kapsam varsa tokenlara yazılır.
+    /// Bir claim'in hangi tokena gireceğini belirler. Profil, e-posta ve rol bilgileri yalnızca kullanıcının onay
+    /// verdiği kapsam varsa tokenlara yazılır. Veri minimizasyonu (KVKK): access token'da yalnızca kaynak sunucusunun
+    /// yetkilendirme için ihtiyaç duyduğu bilgiler kalır (sub, role, sid; OpenIddict'in iss, aud, exp, iat, jti,
+    /// client_id, scope'u). Ad, kullanıcı adı, e-posta, fakülte ve bölüm yalnızca id_token'da ve userinfo'dadır.
     /// </summary>
     public static IEnumerable<string> Hedefler(Claim claim)
     {
@@ -84,7 +86,6 @@ public static class OidcKimlik
             case Claims.Name or Claims.PreferredUsername or FakulteClaim or BolumClaim:
                 if (claim.Subject!.HasScope(Scopes.Profile))
                 {
-                    yield return Destinations.AccessToken;
                     yield return Destinations.IdentityToken;
                 }
                 yield break;
@@ -92,7 +93,6 @@ public static class OidcKimlik
             case Claims.Email:
                 if (claim.Subject!.HasScope(Scopes.Email))
                 {
-                    yield return Destinations.AccessToken;
                     yield return Destinations.IdentityToken;
                 }
                 yield break;
@@ -105,9 +105,15 @@ public static class OidcKimlik
                 }
                 yield break;
 
-            // sid yalnızca id_token'da: istemci, Back-Channel Logout bildirimini oturumuyla eşler.
-            // amr (kimlik doğrulama yöntemleri) de bir id_token claim'idir.
-            case SidClaim or Claims.AuthenticationMethodReference:
+            // sid: id_token'da istemci Back-Channel Logout bildirimini oturumuyla eşler; access token'da kaynak
+            // sunucusu token'ın hangi oturumdan geldiğini bilir.
+            case SidClaim:
+                yield return Destinations.AccessToken;
+                yield return Destinations.IdentityToken;
+                yield break;
+
+            // amr (kimlik doğrulama yöntemleri) bir id_token claim'idir.
+            case Claims.AuthenticationMethodReference:
                 yield return Destinations.IdentityToken;
                 yield break;
 

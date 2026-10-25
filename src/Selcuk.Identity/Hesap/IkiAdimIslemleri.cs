@@ -43,6 +43,7 @@ public sealed class IkiAdimIslemleri(
     TekKullanimlikTotpSaglayici totp,
     IOptions<IkiAdimAyarlari> ayarlar,
     BackChannelLogoutGonderici backChannelLogout,
+    TokenIptali tokenIptali,
     EpostaKuyrugu eposta,
     DenetimKaydedici denetim,
     TimeProvider zaman)
@@ -237,6 +238,7 @@ public sealed class IkiAdimIslemleri(
     {
         // Tarayıcı bağlantıyı kapatsa da bildirimler tamamlansın (süre sınırı HttpClient'ta).
         await backChannelLogout.KullaniciOturumlariniKapatAsync(user.Id, mevcutSid, CancellationToken.None);
+        await tokenIptali.KullaniciyiIptalEtAsync(user.Id, mevcutSid, CancellationToken.None);
 
         if (!string.IsNullOrEmpty(user.Email))
         {

@@ -13,9 +13,18 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
 - `src/Selcuk.Identity`: ASP.NET Core (.NET 10) kimlik sunucusu.
   - **ASP.NET Core Identity**: kullanıcılar (`ApplicationUser`: `AdSoyad`, `Fakulte`, `Bolum`), roller
     (`ogrenci`, `akademisyen`, `personel`), şifre politikası, hesap kilitleme.
-  - **OpenIddict Server**: authorize, token, userinfo, end-session ve discovery uç noktaları.
-    Authorization Code + PKCE (zorunlu, yalnızca S256) ve Refresh Token akışları. Access token'lar imzalı JWT.
+  - **OpenIddict Server**: authorize, token, userinfo, end-session, revocation (`/connect/revoke`, RFC 7009) ve
+    discovery uç noktaları. Authorization Code + PKCE (zorunlu, yalnızca S256) ve Refresh Token akışları.
     `profile` kapsamıyla `name`, `fakulte`, `bolum`; `roles` kapsamıyla `role` claim'leri verilir.
+  - **Token yaşam döngüsü**: access token imzalı JWT, 15 dk (`Tokenlar:AccessTokenSuresi`), küçültülmüş: profil/e-posta
+    yok, yalnızca sub, role, scope, sid, client_id, aud (+ OpenIddict `oi_*`); profil id_token'da ve userinfo'da
+    (`OidcKimlik.Hedefler`). Refresh token yalnızca `offline_access` ile (demo-obis, demo-yemekhane; tek-kapi değil),
+    8 saat (`Tokenlar:RefreshTokenSuresi`), kayan; tekrar kullanım payı kapalı (`SetRefreshTokenReuseLeeway(null)`):
+    kullanılmış refresh token gelirse OpenIddict zincirin tüm token'larını iptal eder, `RefreshTokenTekrarDenetimi`
+    denetim kaydı yazar. Authorize her kodda kalıcı onaydan ayrı, `sid` özellikli bir ad-hoc yetkilendirme açar
+    (`Oidc/TokenIptali`); çıkışta (o sid), şifre ve 2FA değişikliklerinde (mevcut sid hariç / sıfırlamada hepsi) bu
+    yetkilendirmeler ve token'ları iptal edilir. `notlar.oku` kapsamı (`demo-api` kaynağı) açılışta her ortamda
+    oluşturulur. `OpenIddict.Server.OpenIddictServerDispatcher` logu Warning (OpenIddict `code_verifier`'ı maskelemiyor).
   - **Oturum ve tek çıkış**: her kimlik sunucusu oturumuna bir `sid` verilir (`Oidc/OturumKimligi.cs`) ve id_token'a
     yazılır. Token uç noktası hangi istemciye token verildiğini `IstemciOturumlari` tablosuna kaydeder. Çıkışta
     `BackChannelLogoutGonderici` o sid'deki her istemcinin `backchannel_logout_uri`'sine imzalı `logout+jwt`
@@ -92,9 +101,18 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   oturumu çerez doğrulamasında reddeder; kayıtlar `IDistributedCache`'te, varsayılan bellek içi, en az çerez süresi
   kadar). Çerez süresi `Kimlik:OturumSuresi` (varsayılan 8 saat, kayan). `GirisDonusHatasi` `/signin-oidc`
   hatalarını `/GirisHatasi`'na yönlendirir; `UcuncuTarafGiris` initiate_login isteğindeki `iss`'i doğrular (yanlışsa
-  400). Yeni bir alt uygulama bu kütüphaneyle bağlanır.
+  400). `TokenYenileyici`: çerezdeki access token'ın süresine 1 dk'dan az kaldıysa çerez doğrulamasında refresh token
+  ile yeniler (aynı refresh token için tek uçuş, sonuç 1 dk paylaşılır; invalid_grant'te yerel oturum kapanır);
+  çıkışta (`OnRedirectToIdentityProviderForSignOut`) önce refresh token'ı iptal eder. Ek kapsamlar
+  `Kimlik:EkKapsamlar`. Yeni bir alt uygulama bu kütüphaneyle bağlanır.
 - `src/Selcuk.Demo.Obis` (https://localhost:5101): rol bazlı sayfalar (Notlarım: ogrenci, Ders Yönetimi:
-  akademisyen), Profilim, yalnızca Development'ta Token İnceleme, RP-initiated logout. Veriler uydurmadır.
+  akademisyen), Profilim, yalnızca Development'ta Token İnceleme (refresh token yalnızca var/son kullanma),
+  RP-initiated logout. Notlarım notları Demo API'den (`NotlarApiIstemcisi`, `DemoApi:Adres`, oturumdaki access token)
+  çeker; API'ye ulaşılamazsa Türkçe hata. Veriler uydurmadır.
+- `src/Selcuk.Demo.Api` (https://localhost:5201): yalnızca kaynak sunucusu, minimal API. JWT Bearer (Authority
+  kimlik sunucusu, JWKS; `aud` = `demo-api`, `typ` = `at+jwt`, `IncludeErrorDetails = false`). `GET /api/notlar`:
+  `scope` ⊇ `notlar.oku` ve rol `ogrenci` (yoksa 401/403); yalnızca token'daki `sub`'ın notları (`INotDeposu`).
+  Güvenlik başlıkları ve `no-store`.
 - `src/Selcuk.Demo.Yemekhane` (https://localhost:5102): Haftalık menü (herkese açık), Rezervasyonlarım (bellek içi),
   Yemekhane Yönetimi (personel), Profilim, RP-initiated logout. Veriler uydurmadır.
 - `tests/Selcuk.Identity.Tests`: xUnit + `WebApplicationFactory` entegrasyon, uçtan uca protokol, tek giriş ve tek
@@ -112,7 +130,9 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   tek bir zaman ölçümünden üretir. Denetim kayıtları arka planda yazıldığı için
   `DenetimKayitlariAsync` ile beklenir.
 - `tests/Selcuk.Istemci.Ortak.Tests`: Back-Channel Logout alıcısı, çerez süresi, ortak dağıtık önbellek, JWKS hatası
-  (503) ve `iss` doğrulaması testleri; yerel RSA anahtarı ve sahte JWKS.
+  (503), `iss` doğrulaması ve token yenileme/iptal testleri; yerel RSA anahtarı, sahte JWKS ve sahte token/revocation
+  uç noktaları (`TestUygulamasi.TokenUcu`).
+- `tests/Selcuk.Demo.Api.Tests`: Demo API token doğrulama ve yetkilendirme; yerel RSA anahtarı, sabit discovery.
 - `tests/Selcuk.Demo.Obis.Tests`, `tests/Selcuk.Demo.Yemekhane.Tests`: yönlendirme, rol ve önbellek (`no-store`) testleri; gerçek kimlik
   sunucusu yerine sabit discovery bilgisi ve sahte kimlik doğrulama şeması kullanır.
 - `araclar/tek-kapi` (http://127.0.0.1:4545): Tek Kapı, kullanıcının kendi bilgisayarında çalışan Node.js portalı
@@ -124,8 +144,9 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   kapatılmaz). `SSO_MFA_ZORUNLU` (varsayılan açık): id_token `amr`'si `mfa` içermezse oturum açılmaz. Testleri
   (`npm test`: bağımsız mod 33 + SSO 14 kontrol) sahte siteler (5600-5606) ve sahte OIDC sağlayıcıyla (5190) çalışır.
   Node 22.15+ (`engines`), express 4.22.3 (tam sürüm).
-- `scripts/run-all.ps1`: önce `dotnet build SelcukSSO.sln` (başarısızsa durur), sonra üç uygulamayı ayrı pencerelerde
-  `dotnet run --no-build` ile başlatır; `-TekKapi` ile Tek Kapı'yı da SSO modunda başlatır.
+- `scripts/run-all.ps1`: önce `dotnet build SelcukSSO.sln` (başarısızsa durur), sonra kimlik sunucusu, iki demo ve
+  Demo API'yi ayrı pencerelerde `dotnet run --no-build` ile başlatır; `-TekKapi` ile Tek Kapı'yı da SSO modunda
+  başlatır; `-TarayiciAcma` ile sonda tarayıcı açılmaz.
 
 Ayrıntılar için `README.md` dosyasına bakın.
 
@@ -165,7 +186,8 @@ dotnet test
 dotnet run --project src/Selcuk.Identity                                   # https://localhost:5001
 dotnet run --project src/Selcuk.Demo.Obis                                  # https://localhost:5101
 dotnet run --project src/Selcuk.Demo.Yemekhane                             # https://localhost:5102
-powershell -ExecutionPolicy Bypass -File scripts\run-all.ps1               # üçü birlikte
+dotnet run --project src/Selcuk.Demo.Api                                   # https://localhost:5201
+powershell -ExecutionPolicy Bypass -File scripts\run-all.ps1               # hepsi birlikte
 powershell -ExecutionPolicy Bypass -File scripts\run-all.ps1 -TekKapi      # + Tek Kapı (SSO modu, :4545)
 cd araclar\tek-kapi; npm ci; npm test                                       # Tek Kapı testleri
 dotnet tool restore

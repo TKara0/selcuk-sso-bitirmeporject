@@ -10,17 +10,21 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using Selcuk.Demo.Obis.Data;
 
 namespace Selcuk.Demo.Obis.Tests;
 
 /// <summary>
 /// Demo OBİS'i kimlik sunucusu olmadan çalıştırır. Discovery bilgisi sabit verilir; böylece
 /// OpenID Connect challenge'ı ağ isteği yapmadan üretilir. sahteKimlik açıkken kullanıcı,
-/// istekteki X-Test-Rol başlığından oluşturulur (gerçek kimlik sunucusu yerine).
+/// istekteki X-Test-Rol başlığından oluşturulur (gerçek kimlik sunucusu yerine); oturumda sahte bir access token
+/// (<see cref="SahteAccessToken"/>) bulunur. Demo API'ye istekler demoApi işleyicisine gider; verilmezse API kapalıdır
+/// (bağlantı hatası), testler ağa çıkmaz.
 /// </summary>
-public sealed class ObisFactory(bool sahteKimlik = false) : WebApplicationFactory<Program>
+public sealed class ObisFactory(bool sahteKimlik = false, HttpMessageHandler? demoApi = null) : WebApplicationFactory<Program>
 {
     public const string RolBasligi = "X-Test-Rol";
+    public const string SahteAccessToken = "test-erisim-tokeni";
     private const string TestSemasi = "Test";
     private const string Authority = "https://localhost:5001/";
 
@@ -42,6 +46,9 @@ public sealed class ObisFactory(bool sahteKimlik = false) : WebApplicationFactor
                 options.ConfigurationManager =
                     new StaticConfigurationManager<OpenIdConnectConfiguration>(options.Configuration);
             });
+
+            services.AddHttpClient(NotlarApiIstemcisi.Ad)
+                .ConfigurePrimaryHttpMessageHandler(() => demoApi ?? new KapaliApi());
 
             if (sahteKimlik)
             {
@@ -90,8 +97,17 @@ public sealed class ObisFactory(bool sahteKimlik = false) : WebApplicationFactor
                 new Claim("role", rol.ToString()),
             ], Scheme.Name, "name", "role");
 
+            var ozellikler = new AuthenticationProperties();
+            ozellikler.StoreTokens([new AuthenticationToken { Name = "access_token", Value = SahteAccessToken }]);
             return Task.FromResult(AuthenticateResult.Success(
-                new AuthenticationTicket(new ClaimsPrincipal(identity), Scheme.Name)));
+                new AuthenticationTicket(new ClaimsPrincipal(identity), ozellikler, Scheme.Name)));
         }
+    }
+
+    /// <summary>Demo API kapalıymış gibi: her istekte bağlantı hatası.</summary>
+    private sealed class KapaliApi : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            throw new HttpRequestException("Sahte bağlantı hatası (Demo API kapalı).");
     }
 }

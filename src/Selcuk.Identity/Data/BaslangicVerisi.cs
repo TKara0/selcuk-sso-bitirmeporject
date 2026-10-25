@@ -48,6 +48,18 @@ public sealed class BaslangicVerisi(
             }
         }
 
+        // Demo API kapsamı (notlar.oku -> aud demo-api) her ortamda tanımlı olmalı: authorize kaynakları buradan okur.
+        var scopeManager = scope.ServiceProvider.GetRequiredService<IOpenIddictScopeManager>();
+        var notlarOku = Istemciler.NotlarOku();
+        if (await scopeManager.FindByNameAsync(notlarOku.Name!) is { } mevcutKapsam)
+        {
+            await scopeManager.UpdateAsync(mevcutKapsam, notlarOku);
+        }
+        else
+        {
+            await scopeManager.CreateAsync(notlarOku);
+        }
+
         if (environment.IsDevelopment())
         {
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();

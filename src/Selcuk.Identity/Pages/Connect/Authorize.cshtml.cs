@@ -30,6 +30,7 @@ public class AuthorizeModel(
     UserManager<ApplicationUser> userManager,
     IkiAdimIslemleri ikiAdim,
     IstemciErisimi istemciErisimi,
+    TokenIptali tokenIptali,
     DenetimKaydedici denetim) : PageModel
 {
     public const string IzinYokAciklamasi = "Bu uygulamaya erişim izniniz yok.";
@@ -44,11 +45,16 @@ public class AuthorizeModel(
         Scopes.Profile => ("Profil", "Ad soyadınız, kullanıcı adınız / öğrenci numaranız, fakülte ve bölüm bilginiz"),
         Scopes.Email => ("E-posta", "E-posta adresiniz"),
         Scopes.Roles => ("Rol", "Rolünüz (öğrenci, akademisyen veya personel)"),
+        Scopes.OfflineAccess => ("Erişimi yenileme",
+            "Uygulama, oturumun açıkken erişimini sen tekrar giriş yapmadan yenileyebilir."),
+        Istemciler.NotlarOkuKapsami => ("Notlar", "Not bilgilerini okuma"),
         _ => (kapsam, "Uygulamaya özel izin"),
     };
 
     public async Task<IActionResult> OnGetAsync()
     {
+        // Onay ekranı ve yönlendirmeler önbelleğe alınmaz (geri tuşuyla eski onay formu gösterilmesin).
+        Response.Headers.CacheControl = "no-store";
         var request = OidcIstegi();
         var result = await HttpContext.AuthenticateAsync(IdentityConstants.ApplicationScheme);
 
@@ -131,6 +137,7 @@ public class AuthorizeModel(
 
     public async Task<IActionResult> OnPostAsync(string? karar)
     {
+        Response.Headers.CacheControl = "no-store";
         var request = OidcIstegi();
         var user = await userManager.GetUserAsync(User);
         if (user is null)
@@ -199,7 +206,13 @@ public class AuthorizeModel(
             type: AuthorizationTypes.Permanent,
             scopes: identity.GetScopes());
 
-        identity.SetAuthorizationId(await authorizationManager.GetIdAsync(authorization));
+        // Kod ve ondan türeyen token'lar (refresh token zinciri dahil) bu oturuma (sid) ait ayrı bir ad-hoc
+        // yetkilendirmeye bağlanır: çıkışta veya şifre/2FA değişikliğinde oturum bazında iptal edilebilir, kalıcı onay
+        // kaydı etkilenmez. Tekrar kullanılan bir refresh token'da OpenIddict de yalnızca bu zinciri iptal eder.
+        var oturumYetkisi = await tokenIptali.OturumYetkisiOlusturAsync(
+            await userManager.GetUserIdAsync(user), (await applicationManager.GetIdAsync(application))!,
+            identity.GetClaim(OidcKimlik.SidClaim), identity.GetScopes());
+        identity.SetAuthorizationId(await authorizationManager.GetIdAsync(oturumYetkisi));
         identity.SetDestinations(OidcKimlik.Hedefler);
 
         return SignIn(new ClaimsPrincipal(identity), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
