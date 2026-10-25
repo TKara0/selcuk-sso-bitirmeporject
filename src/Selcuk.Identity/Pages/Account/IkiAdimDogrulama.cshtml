@@ -14,6 +14,13 @@
             Rolünüz için iki aşamalı doğrulama zorunludur. Kurulumu tamamlamadan uygulamalara giriş yapamazsınız.
         </p>
     }
+    @if (Model.UygulamaGerektiriyor && !Model.Etkin)
+    {
+        <p class="bilgi" role="status">
+            Bu uygulama iki aşamalı doğrulama gerektiriyor. Kurulumu tamamladığınızda uygulamaya kaldığınız yerden devam
+            edersiniz.
+        </p>
+    }
     else if (Model.Durum == "kapatildi" && !Model.Etkin)
     {
         <p class="bilgi" role="status">

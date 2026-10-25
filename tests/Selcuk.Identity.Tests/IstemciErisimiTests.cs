@@ -32,6 +32,19 @@ public sealed class IstemciErisimiTests : IDisposable
         await scope.ServiceProvider.GetRequiredService<IOpenIddictApplicationManager>().CreateAsync(tanim);
     }
 
+    /// <summary>
+    /// Tek Kapı iki aşamalı doğrulama ister (mfaZorunlu): kullanıcıda 2FA açılır, şifre + TOTP ile giriş yapılır
+    /// (oturum amr ["pwd","mfa"]).
+    /// </summary>
+    private async Task<HttpClient> IkiAdimliGirisYapmisIstemciAsync(string kullaniciAdi, string sifre)
+    {
+        var (anahtar, _) = await _factory.IkiAdimAcAsync(kullaniciAdi);
+        var client = _factory.HttpsIstemcisi();
+        await SelcukIdentityFactory.GirisYapAsync(client, kullaniciAdi, sifre);
+        Assert.Equal(HttpStatusCode.Redirect, (await SelcukIdentityFactory.IkinciAdimAsync(client, Totp.Uret(anahtar))).StatusCode);
+        return client;
+    }
+
     private async Task<HttpClient> GirisYapmisIstemciAsync(string kullaniciAdi, string sifre)
     {
         var client = _factory.HttpsIstemcisi();
@@ -84,7 +97,7 @@ public sealed class IstemciErisimiTests : IDisposable
             Assert.False(await manager.ValidateClientSecretAsync(uygulama, "herhangi-bir-deger"));
         }
 
-        var client = await GirisYapmisIstemciAsync(kullaniciAdi, sifre);
+        var client = await IkiAdimliGirisYapmisIstemciAsync(kullaniciAdi, sifre);
         var yanit = await TekKapiTokenAlAsync(client);
 
         Assert.Equal(HttpStatusCode.OK, yanit.StatusCode);
@@ -257,7 +270,7 @@ public sealed class IstemciErisimiTests : IDisposable
         var (kullaniciAdi, sifre) = await _factory.KullaniciOlusturAsync(Roller.Ogrenci);
         var kullaniciId = (await _factory.KullaniciAsync(kullaniciAdi)).Id;
         await TekKapiKaydetAsync(kullaniciAdi);
-        var client = await GirisYapmisIstemciAsync(kullaniciAdi, sifre);
+        var client = await IkiAdimliGirisYapmisIstemciAsync(kullaniciAdi, sifre);
         var pkce = OidcYardimcisi.Pkce.Yeni();
         var code = await OidcYardimcisi.KodAlAsync(client, pkce, Istemciler.TekKapiClientId, Istemciler.TekKapiRedirectUri,
             TekKapiKapsam);
@@ -289,7 +302,7 @@ public sealed class IstemciErisimiTests : IDisposable
         var secret = await OidcYardimcisi.DemoObisKaydetAsync(_factory);
         var (kullaniciAdi, sifre) = await _factory.KullaniciOlusturAsync(Roller.Ogrenci);
         await TekKapiKaydetAsync(kullaniciAdi);
-        var client = await GirisYapmisIstemciAsync(kullaniciAdi, sifre);
+        var client = await IkiAdimliGirisYapmisIstemciAsync(kullaniciAdi, sifre);
         Assert.Equal(HttpStatusCode.OK, (await TekKapiTokenAlAsync(client)).StatusCode);
         await OidcYardimcisi.TokenAlAsync(client, secret);
 
@@ -324,7 +337,7 @@ public sealed class IstemciErisimiTests : IDisposable
         var kullaniciId = (await _factory.KullaniciAsync(kullaniciAdi)).Id;
         await TekKapiKaydetAsync(kullaniciAdi);
         _factory.BackChannel.UlasilamayanAdresler[new Uri(Istemciler.TekKapiBackChannelLogoutUri)] = true;
-        var client = await GirisYapmisIstemciAsync(kullaniciAdi, sifre);
+        var client = await IkiAdimliGirisYapmisIstemciAsync(kullaniciAdi, sifre);
         Assert.Equal(HttpStatusCode.OK, (await TekKapiTokenAlAsync(client)).StatusCode);
         await OidcYardimcisi.TokenAlAsync(client, secret);
 

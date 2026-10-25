@@ -20,6 +20,8 @@ public static class Istemciler
     // İstemci bazlı erişim izni (IstemciErisimi): ikisi de boşsa herkes, doluysa en az birine uyan kullanıcı girebilir.
     public const string IzinliRollerOzelligi = "izinliRoller";
     public const string IzinliKullaniciAdlariOzelligi = "izinliKullaniciAdlari";
+    // true ise bu istemciye yalnızca iki aşamalı doğrulanmış (amr "mfa") oturumdan kod ve token verilir.
+    public const string MfaZorunluOzelligi = "mfaZorunlu";
 
     public const string DemoObisClientId = "demo-obis";
     private const string DemoObisAdres = "https://localhost:5101";
@@ -57,6 +59,7 @@ public static class Istemciler
     /// Tek Kapı: kullanıcının kendi bilgisayarında çalışan yerel köprü uygulaması (Node.js). Public istemci (RFC 8252
     /// native app): client_secret yok, çünkü yerel uygulamada gizli tutulamaz; bunun yerine PKCE zorunlu ve adresler
     /// yalnızca 127.0.0.1 loopback. Explicit onay; yalnızca izinliKullaniciAdlari listesindeki kullanıcılar girebilir.
+    /// Gerçek sistem şifrelerinin kilidini açtığı için iki aşamalı doğrulama zorunludur (mfaZorunlu).
     /// </summary>
     public static OpenIddictApplicationDescriptor TekKapi(IEnumerable<string> izinliKullaniciAdlari)
     {
@@ -94,6 +97,7 @@ public static class Istemciler
                     "Üniversite şifren yalnızca bu bilgisayarda, şifreli saklanır."),
                 [IzinliKullaniciAdlariOzelligi] = JsonSerializer.SerializeToElement(
                     izinliler.Length > 0 ? izinliler : TekKapiVarsayilanIzinliKullaniciAdlari),
+                [MfaZorunluOzelligi] = JsonSerializer.SerializeToElement(true),
             },
         };
     }
@@ -161,6 +165,7 @@ public static class Istemciler
             [ClientUriOzelligi] = JsonSerializer.SerializeToElement(adres + "/"),
             [InitiateLoginUriOzelligi] = JsonSerializer.SerializeToElement(adres + "/Giris"),
             [AciklamaOzelligi] = JsonSerializer.SerializeToElement(aciklama),
+            [MfaZorunluOzelligi] = JsonSerializer.SerializeToElement(false),
         },
     };
 }

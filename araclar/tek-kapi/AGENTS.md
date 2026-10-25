@@ -7,7 +7,7 @@ Bu dosya bu projede çalışan her kod agent'ı (Copilot, Claude Code, Codex, Cu
 Selçuk Üniversitesi otomasyonlarına (OBİS, öğrenci e-postası, UZEM, Yemekhane/SSO) tek ana şifreyle giriş yapan, **yalnızca yerel bilgisayarda çalışan** bir portal.
 Bitirme projesinin "bugün kurum desteği olmadan çalışan" parçasıdır (form tabanlı SSO / ESSO).
 
-- Node.js 18+ (CommonJS), Express, Playwright; SSO modu için openid-client ve jose (ES modülü, `import()` ile). `npm start` `--use-system-ca` kullanır (Node 22.15+). Frontend vanilla HTML/CSS/JS, framework yok, build adımı yok.
+- Node.js 22.15+ (`engines`; CommonJS), Express 4.22.3, Playwright; SSO modu için openid-client ve jose (ES modülü, `import()` ile). `npm start` `--use-system-ca` kullanır. Bağımlılıklar tam sürüme sabit; `npm audit --audit-level=high` temiz kalmalı. Frontend vanilla HTML/CSS/JS, framework yok, build adımı yok.
 - Geliştirme ortamı Windows (PowerShell). Komutları buna göre yaz.
 
 ## Mimari
@@ -22,7 +22,7 @@ src/sites.js     Site adaptörleri: { id, startUrl, origins, appOrigins?, mode: 
 public/          Portal arayüzü (index.html, app.js, style.css)
 src/sso.js       İsteğe bağlı SSO modu (SSO_ISSUER): OIDC public istemci (PKCE S256), iki katmanlı erişim
                  (SSO oturumu + kasa ana şifresi), Back-Channel Logout (jose ile logout_token doğrulama)
-test/            mock-sites.js (gerçek formları taklit eden sahte siteler) + e2e.js (uçtan uca test, bağımsız mod)
+test/            mock-sites.js (gerçek formları taklit eden sahte siteler, 5600-5606) + e2e.js (uçtan uca test, bağımsız mod)
                  + fake-oidc.js (sahte OIDC sağlayıcı, yalnızca HTTP/test) + sso.js (SSO modu testi)
 TekKapi-Baslat.bat, start.py   Başlatıcılar. Port doluysa server.js /api/focus ile mevcut pencereyi öne getirip çıkar
 data/metrics.csv Ölçüm kaydı (server.js recordMetric). Sadece süre ve sonuç; kimlik bilgisi asla yazılmaz
@@ -37,6 +37,8 @@ logout_token doğrulanır, JWKS yoksa 503). SSO modunda `/api/*` (state, focus, 
 oturumu ister; kasa ana şifresi yine gereklidir, kasa anahtarı kimlik sunucusundan türetilmez. SSO çerezleri
 `HttpOnly; SameSite=Lax` (callback başka siteden gelen üst düzey yönlendirme), kasa çerezi `Strict` kalır. Token'lar
 yalnızca bellekte; loglanmaz, diske yazılmaz. Çıkış/Back-Channel Logout: kasa kilitlenir + `engine.logoutAll()`.
+`SSO_MFA_ZORUNLU` (varsayılan açık): callback'te id_token `amr`'si `mfa` içermezse oturum açılmaz (kimlik sunucusu da
+`tek-kapi` için `mfaZorunlu` ile 2FA ister). Tüm yanıtlar `Cache-Control: no-store`.
 
 Akış: Kullanıcı portalda karta tıklar → `POST /api/open/:id` → `BrowserEngine.open` siteyi yönetilen pencerede açar → her `load` olayında `_handle` URL'ye uyan adaptörü bulur → `detect` giriş formunu görürse `fill` çalışır.
 
@@ -75,7 +77,7 @@ Her değişiklikten sonra:
 npm test
 ```
 
-Bağımsız modda 33 (`test/e2e.js`) ve SSO modunda 13 (`test/sso.js`) kontrolün hepsi geçmeli. Yeni bir davranış
+Bağımsız modda 33 (`test/e2e.js`) ve SSO modunda 14 (`test/sso.js`) kontrolün hepsi geçmeli. Yeni bir davranış
 eklediysen ilgili test dosyasına onu doğrulayan bir kontrol ekle. Testi geçmeyen bir değişikliği "bitti" diye raporlama.
 
 ## Çıktı biçimi

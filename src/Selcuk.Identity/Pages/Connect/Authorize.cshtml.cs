@@ -20,6 +20,8 @@ namespace Selcuk.Identity.Pages.Connect;
 /// bu sayfa kullanıcı girişini ve ilk girişteki onay ekranını yönetir. Hatalı denemelerden kaynaklanan geçici hesap
 /// kilidi açık oturumu etkilemez: kilit yeni girişleri engeller, bu oturumdan kod alınabilir (token uç noktasıyla aynı kural).
 /// İstemci bazlı erişim izni olmayan kullanıcı istemciye error=access_denied ile döner (<see cref="IstemciErisimi"/>).
+/// mfaZorunlu istemcide oturum çok faktörlü değilse (amr "mfa" yok; "Bu cihazı hatırla" ile açılan oturum dahil) 2FA'sı
+/// açık kullanıcı ek doğrulamaya (step-up), kapalı kullanıcı 2FA kurulumuna gider; ikisinden sonra bu isteğe dönülür.
 /// </summary>
 public class AuthorizeModel(
     IOpenIddictApplicationManager applicationManager,
@@ -87,6 +89,23 @@ public class AuthorizeModel(
                     new { returnUrl = Request.PathBase + Request.Path + Request.QueryString });
         }
 
+        // Uygulama iki aşamalı doğrulama istiyor ve oturum yalnızca şifreyle açılmış: step-up veya kurulum.
+        if (await istemciErisimi.MfaZorunluMuAsync(application) && !CokFaktorlu(result.Principal))
+        {
+            var ikiAdimAcik = await userManager.GetTwoFactorEnabledAsync(user);
+            denetim.Ekle(DenetimOlayi.IstemciMfaGerekli, DenetimSonucu.Basarisiz, user.Id, request.ClientId,
+                $"uc=authorize; yonlendirme={(ikiAdimAcik ? "ek-dogrulama" : "kurulum")}");
+            if (request.HasPromptValue(PromptValues.None))
+            {
+                return Reddet(Errors.InteractionRequired, "Bu uygulama iki aşamalı doğrulama gerektiriyor.");
+            }
+
+            var donus = Request.PathBase + Request.Path + Request.QueryString;
+            return ikiAdimAcik
+                ? RedirectToPage("/Account/EkDogrulama", new { returnUrl = donus })
+                : RedirectToPage("/Account/IkiAdimDogrulama", new { returnUrl = donus });
+        }
+
         var authorizations = await YetkilendirmelerAsync(user, application, request);
 
         switch (await applicationManager.GetConsentTypeAsync(application))
@@ -130,6 +149,14 @@ public class AuthorizeModel(
         if (await ikiAdim.KurulumGerekliAsync(user))
         {
             return Reddet(Errors.AccessDenied, "İki aşamalı doğrulama kurulumu gerekli.");
+        }
+
+        // Onay formu doğrudan gönderilse de çok faktörlü olmayan oturum mfaZorunlu istemciden kod alamaz.
+        if (await istemciErisimi.MfaZorunluMuAsync(application) && !CokFaktorlu(User))
+        {
+            denetim.Ekle(DenetimOlayi.IstemciMfaGerekli, DenetimSonucu.Basarisiz, user.Id, request.ClientId,
+                "uc=authorize; neden=onay-formu");
+            return Reddet(Errors.AccessDenied, "Bu uygulama iki aşamalı doğrulama gerektiriyor.");
         }
 
         if (karar != "kabul")
@@ -177,6 +204,9 @@ public class AuthorizeModel(
 
         return SignIn(new ClaimsPrincipal(identity), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }
+
+    private static bool CokFaktorlu(ClaimsPrincipal oturum) =>
+        OidcKimlik.AmrDegerleri(oturum).Contains(OidcKimlik.AmrCokFaktorlu);
 
     private OpenIddictRequest OidcIstegi() =>
         HttpContext.GetOpenIddictServerRequest()

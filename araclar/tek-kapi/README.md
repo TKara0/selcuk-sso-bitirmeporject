@@ -14,8 +14,10 @@ Tek Kapı penceresinde açılıyor ve giriş kendiliğinden yapılıyor.
 
 ## Kurulum
 
-Gerekenler: Node.js 18 veya üstü. `npm start` ve `TekKapi-Baslat.bat` `--use-system-ca` bayrağını kullandığı için
-Node 22.15 veya üstü gerekir (daha eski sürümde bağımsız mod `node src/server.js` ile çalışır).
+Gerekenler: Node.js **22.15 veya üstü** (`package.json` `engines`: `>=22.15`). `npm start`, `TekKapi-Baslat.bat` ve
+`run-all.ps1 -TekKapi` kimlik sunucusunun sertifikasına güvenmek için `--use-system-ca` bayrağını kullanır; bayrak Node
+22.15'te geldi (v22.23.2 ile denendi). Bağımlılıklar tam sürüme sabitlidir (express 4.22.3, openid-client 6.8.8,
+jose 6.2.13, playwright 1.56.1); `npm audit --audit-level=high` temiz olmalıdır.
 
 **En kolayı:** `TekKapi-Baslat.bat` dosyasına çift tıkla. İlk seferde bağımlılıkları kendisi kurar.
 İstersen sağ tık → "Kısayol oluştur" ile masaüstüne bir kısayol koyabilirsin. Tek Kapı zaten açıksa yeni kopya başlatmaz, mevcut pencereyi öne getirir.
@@ -40,7 +42,7 @@ Ayarlar:
 | `PORT` | 4545 | Portal portu |
 | `IDLE_LOCK_MIN` | 15 | Bu kadar dakika işlem olmazsa kasa kilitlenir |
 | `PORTAL_BROWSER_CHANNEL` | (yok) | `chrome` veya `msedge` ile kurulu tarayıcıyı zorla |
-| `SSO_ISSUER`, `SSO_CLIENT_ID`, `SSO_IZINLI_KULLANICILAR` | (yok) | SSO modu, bkz. [SSO modu](#sso-modu) |
+| `SSO_ISSUER`, `SSO_CLIENT_ID`, `SSO_IZINLI_KULLANICILAR`, `SSO_MFA_ZORUNLU` | (yok) | SSO modu, bkz. [SSO modu](#sso-modu) |
 
 ## Özellikler
 
@@ -95,6 +97,16 @@ OpenID Connect ile bağlanabilir. Bu modda:
   **Back-Channel Logout** bildirimi gönderir: kasa kilitlenir, yönetilen penceredeki gerçek Selçuk sitelerinin sekmeleri
   kapanır ve çerezleri silinir ("Hepsinden çık"), SSO oturumu silinir (tek çıkış).
 
+**İki aşamalı doğrulama şartı:** kimlik sunucusu `tek-kapi` istemcisine yalnızca iki aşamalı doğrulanmış oturumdan
+kod verir (`mfaZorunlu`). Yalnızca şifreyle veya "Bu cihazı hatırla" ile girilmişse kimlik sunucusu **ek doğrulama**
+(step-up) ister: doğrulayıcı uygulamadaki kod veya kurtarma kodu; 2FA'sı kapalı kullanıcı önce kuruluma yönlendirilir
+("Bu uygulama iki aşamalı doğrulama gerektiriyor"). Tek Kapı derinlemesine savunma olarak callback'te id_token'daki
+`amr`'yi ayrıca denetler (`SSO_MFA_ZORUNLU`, varsayılan açık): `mfa` yoksa oturum açılmaz ve "Tek Kapı iki aşamalı
+doğrulama gerektiriyor" sayfası gösterilir. Uygulamalarım'daki Tek Kapı kartında "2FA gerekli" etiketi görünür.
+
+**Önbellek:** Tek Kapı tüm yanıtlarında `Cache-Control: no-store` gönderir (portal, API, SSO rotaları); çıkıştan
+sonra geri tuşu kişisel bir sayfayı tarayıcı önbelleğinden göstermez.
+
 **İki katmanlı erişim:** önce SSO oturumu (yoksa portal `/auth/login`'e yönlendirir), sonra kasa **ana şifresi**
 (kilit ekranı değişmedi). Kasa anahtarı kimlik sunucusundan türetilmez; ana şifre yine gereklidir. Kimlik sunucusu
 üniversite şifrelerini **hiçbir zaman görmez**: onlar yalnızca bu bilgisayardaki şifreli kasadadır. Kimlik sunucusundan
@@ -117,6 +129,7 @@ Ayarlar ortam değişkeninden veya `data/sso.json`'dan okunur (ortam değişkeni
 | `SSO_ISSUER` | `https://localhost:5001/` | Kimlik sunucusu. https olmalı |
 | `SSO_CLIENT_ID` | `tek-kapi` | Kimlik sunucusundaki istemci kaydı (varsayılan `tek-kapi`) |
 | `SSO_IZINLI_KULLANICILAR` | `203011001` | Virgülle ayrılmış kullanıcı adları (varsayılan `203011001`). Kimlik sunucusu da `Istemciler:TekKapi:IzinliKullaniciAdlari` ile ayrıca kısıtlar |
+| `SSO_MFA_ZORUNLU` | `true` | Varsayılan açık; yalnızca `false`/`0` kapatır. id_token'daki `amr` `mfa` içermezse oturum açılmaz |
 
 ```json
 { "SSO_ISSUER": "https://localhost:5001/", "SSO_CLIENT_ID": "tek-kapi", "SSO_IZINLI_KULLANICILAR": "203011001" }
@@ -178,13 +191,16 @@ npm test
 `test/mock-sites.js` gerçek giriş sayfalarının alan adlarını, oturuma bağlı tokenlarını, CAPTCHA ve 2FA adımlarını taklit eden sahte siteler kurar.
 `test/e2e.js` bunlara karşı bağımsız modda 33 kontrol çalıştırır: kasa şifrelemesi, otomatik ve yarı otomatik girişler, hatırlanan oturumlar, ölçüm kaydı, hesap kilitletmeme koruması, "Hepsinden çık", CSV dışa aktarma, tek kopya başlatma, kilit ekranı, Host/CSRF korumaları, günlüklerde ve ölçümlerde kimlik bilgisi olmaması.
 
-`test/sso.js` SSO modunu 13 kontrolle dener. Gerçek kimlik sunucusuna bağlanmaz: `test/fake-oidc.js` jose ile anahtar
+`test/sso.js` SSO modunu 14 kontrolle dener. Gerçek kimlik sunucusuna bağlanmaz: `test/fake-oidc.js` jose ile anahtar
 üreten, PKCE'yi gerçekten doğrulayan sahte bir OIDC sağlayıcı (yalnızca HTTP, yalnızca test) kurar. Kontroller:
 girişe yönlendirme (S256, state, nonce), tam akış ve ardından kasa kilidi, yanlış/tekrar kullanılan state, yanlış
 aud/nonce/imzalı id_token, izinsiz kullanıcı ve `access_denied`, yanlış `iss`, JWKS yokken 503, geçersiz `logout_token`'lar
 (imza, aud, iss, events, nonce, typ, sid/sub, iat, tekrar eden jti), başka sid'e ait bildirim, geçerli bildirimle kilit
-ve sekmelerin kapanması, `POST /auth/logout`, günlüklerde ve `data/`'da token/kod/şifre olmaması. `npm test` ikisini
-sırayla çalıştırır.
+ve sekmelerin kapanması, `POST /auth/logout`, `amr`'si `mfa` içermeyen id_token, `no-store` başlığı, günlüklerde ve
+`data/`'da token/kod/şifre olmaması. `npm test` ikisini sırayla çalıştırır.
+
+Sahte siteler 5600-5606, sahte OIDC sağlayıcı 5190 portunu kullanır; böylece kimlik sunucusu ve demo uygulamalar
+(5001, 5101, 5102) açıkken de `npm test` çalışır. Portal testleri 4646 ve 4647 portlarını kullanır.
 
 ## Klasör yapısı
 

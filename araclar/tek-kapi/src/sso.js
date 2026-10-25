@@ -37,7 +37,10 @@ function ayarlariOku(dataDir) {
   const issuer = al('SSO_ISSUER');
   if (!issuer) return null;
   const izinli = al('SSO_IZINLI_KULLANICILAR') ?? '203011001';
+  const mfa = al('SSO_MFA_ZORUNLU');
   return {
+    // Varsayılan açık: yalnızca açıkça false/0 verilirse kapanır (kimlik sunucusu da tek-kapi için 2FA ister).
+    mfaZorunlu: !(mfa === false || ['false', '0'].includes(String(mfa ?? '').trim().toLowerCase())),
     issuer: new URL(issuer),
     clientId: al('SSO_CLIENT_ID') || 'tek-kapi',
     izinliler: (Array.isArray(izinli) ? izinli : String(izinli).split(','))
@@ -221,6 +224,14 @@ function createSso({ dataDir, port, test, log, kapat }) {
       }
 
       const claims = tokenlar.claims();
+      // Derinlemesine savunma: kimlik sunucusu tek-kapi için zaten 2FA ister; yine de id_token'daki amr (RFC 8176)
+      // "mfa" içermiyorsa (ör. sunucu yanlış yapılandırıldıysa) oturum açılmaz.
+      const amr = Array.isArray(claims.amr) ? claims.amr : (typeof claims.amr === 'string' ? [claims.amr] : []);
+      if (ayar.mfaZorunlu && !amr.includes('mfa')) {
+        log('sso', 'İki aşamalı doğrulama olmadan SSO girişi reddedildi');
+        return sayfa(res, 403, 'İki aşamalı doğrulama gerekli',
+          "Tek Kapı iki aşamalı doğrulama gerektiriyor. Tek Şifre Giriş Sistemi'nde iki aşamalı doğrulamayı açıp tekrar giriş yapın.");
+      }
       if (!claims.preferred_username || !ayar.izinliler.includes(claims.preferred_username)) {
         log('sso', 'İzinli olmayan bir hesapla SSO girişi denendi');
         return sayfa(res, 403, 'Erişim izni yok', "Bu hesabın Tek Kapı'ya erişim izni yok.", false);

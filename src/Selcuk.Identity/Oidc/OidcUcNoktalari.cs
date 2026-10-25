@@ -66,6 +66,14 @@ public static class OidcUcNoktalari
             return Reddet(Errors.InvalidGrant, "Bu uygulamaya erişim izni yok.");
         }
 
+        // mfaZorunlu istemciye yalnızca çok faktörlü (amr "mfa") yetkilendirmeden token verilir.
+        if (await istemciErisimi.MfaZorunluMuAsync(uygulama)
+            && !OidcKimlik.AmrOku((ClaimsIdentity)result.Principal!.Identity!).Contains(OidcKimlik.AmrCokFaktorlu))
+        {
+            denetim.Ekle(DenetimOlayi.IstemciMfaGerekli, DenetimSonucu.Basarisiz, user.Id, clientId, "uc=token");
+            return Reddet(Errors.InvalidGrant, "Bu uygulama iki aşamalı doğrulama gerektiriyor.");
+        }
+
         // Rolü iki aşamalı doğrulama gerektiren kullanıcı kurulumu bitirmeden hiçbir istemciye token alamaz
         // (kod veya refresh token kurulum zorunluluğundan önce verilmiş olsa bile).
         if (await ikiAdim.KurulumGerekliAsync(user))

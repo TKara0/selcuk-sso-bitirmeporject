@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.Text.Json;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.WebUtilities;
 using OpenIddict.Abstractions;
 using Selcuk.Identity.Data;
 using Selcuk.Identity.Denetim;
@@ -12,6 +13,7 @@ namespace Selcuk.Identity.Oidc;
 /// izinliKullaniciAdlari listelerinin ikisi de boşsa herkes girebilir; biri doluysa kullanıcı en az birine uymalıdır
 /// (rollerinden biri listede veya kullanıcı adı listede; büyük/küçük harf duyarsız). Authorize (kod verilmeden önce),
 /// token uç noktası (yetkilendirme kodu ve refresh token) ve Uygulamalarım sayfası aynı kuralı kullanır.
+/// mfaZorunlu (true) istemciye yalnızca iki aşamalı doğrulanmış oturumdan (amr "mfa") kod ve token verilir.
 /// </summary>
 public sealed class IstemciErisimi(
     IOpenIddictApplicationManager applicationManager,
@@ -36,6 +38,30 @@ public sealed class IstemciErisimi(
         denetim.Ekle(DenetimOlayi.IstemciErisimiReddedildi, DenetimSonucu.Basarisiz, user.Id,
             await applicationManager.GetClientIdAsync(uygulama, cancellationToken), $"uc={uc}");
         return false;
+    }
+
+    public async Task<bool> MfaZorunluMuAsync(object uygulama, CancellationToken cancellationToken = default) =>
+        MfaZorunlu(await applicationManager.GetPropertiesAsync(uygulama, cancellationToken));
+
+    /// <summary>Yalnızca açıkça true ise; ayar yoksa veya başka bir değerse istemci 2FA istemez (önceki davranış).</summary>
+    public static bool MfaZorunlu(ImmutableDictionary<string, JsonElement> ozellikler) =>
+        ozellikler.TryGetValue(Istemciler.MfaZorunluOzelligi, out var deger) && deger.ValueKind == JsonValueKind.True;
+
+    /// <summary>
+    /// Dönüş adresi (2FA kurulum sayfasındaki returnUrl) mfaZorunlu bir istemcinin authorize isteğiyse true; kurulum
+    /// sayfası "Bu uygulama iki aşamalı doğrulama gerektiriyor" mesajını buna göre gösterir.
+    /// </summary>
+    public async Task<bool> DonusAdresiMfaGerektiriyorMuAsync(string? donusAdresi, CancellationToken cancellationToken = default)
+    {
+        if (donusAdresi is null || !donusAdresi.StartsWith("/connect/authorize?", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        var clientId = QueryHelpers.ParseQuery(donusAdresi[donusAdresi.IndexOf('?')..])["client_id"].ToString();
+        return !string.IsNullOrEmpty(clientId)
+            && await applicationManager.FindByClientIdAsync(clientId, cancellationToken) is { } uygulama
+            && await MfaZorunluMuAsync(uygulama, cancellationToken);
     }
 
     public static bool Izinli(ImmutableDictionary<string, JsonElement> ozellikler, string? kullaniciAdi,

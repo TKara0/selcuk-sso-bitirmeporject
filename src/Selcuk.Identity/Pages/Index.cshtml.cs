@@ -22,7 +22,7 @@ public class IndexModel(
     UserManager<ApplicationUser> userManager,
     IOptionsMonitor<OpenIddictServerOptions> serverAyarlari) : PageModel
 {
-    public sealed record UygulamaKarti(string Ad, string Aciklama, string AnaSayfa, string GirisAdresi);
+    public sealed record UygulamaKarti(string Ad, string Aciklama, string AnaSayfa, string GirisAdresi, bool MfaGerekli);
 
     public List<UygulamaKarti> Uygulamalar { get; } = [];
 
@@ -51,7 +51,8 @@ public class IndexModel(
                 ?? await applicationManager.GetClientIdAsync(uygulama, HttpContext.RequestAborted)
                 ?? string.Empty;
 
-            Uygulamalar.Add(new UygulamaKarti(ad, aciklama, anaSayfa.GetString()!, girisAdresi));
+            Uygulamalar.Add(new UygulamaKarti(ad, aciklama, anaSayfa.GetString()!, girisAdresi,
+                IstemciErisimi.MfaZorunlu(ozellikler)));
         }
 
         Uygulamalar.Sort((x, y) => string.Compare(x.Ad, y.Ad, StringComparison.CurrentCulture));

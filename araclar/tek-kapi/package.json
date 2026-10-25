@@ -9,10 +9,10 @@
     "test": "node test/e2e.js && node test/sso.js"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22.15"
   },
   "dependencies": {
-    "express": "^4.21.2",
+    "express": "4.22.3",
     "jose": "6.2.13",
     "openid-client": "6.8.8",
     "playwright": "1.56.1"

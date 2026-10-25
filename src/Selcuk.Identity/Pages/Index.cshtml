@@ -21,6 +21,10 @@
                 <li>
                     <a class="uygulama" href="@uygulama.GirisAdresi">
                         <strong>@uygulama.Ad</strong>
+                        @if (uygulama.MfaGerekli)
+                        {
+                            <em class="etiket" title="Bu uygulamaya iki aşamalı doğrulanmış oturumla girilir">2FA gerekli</em>
+                        }
                         <span>@uygulama.Aciklama</span>
                         <small>@uygulama.AnaSayfa</small>
                     </a>

@@ -51,6 +51,7 @@ Alınan önlemler [Güvenlik önlemleri](#güvenlik-önlemleri) bölümünde. Di
 | Hesabım | `/Account/Hesabim` | Hesap bilgileri; **Şifre değiştir** (`/Account/SifreDegistir`) |
 | Girişin ikinci adımı | `/Account/IkiAdim` | 2FA açık kullanıcıda şifreden sonra: TOTP kodu veya kurtarma kodu, "Bu cihazı hatırla" |
 | İki aşamalı doğrulama | `/Account/IkiAdimDogrulama` | Hesabım → 2FA kurulumu (anahtar + QR), kurtarma kodlarını yenileme, kapatma |
+| Ek doğrulama | `/Account/EkDogrulama` | 2FA isteyen bir uygulamaya şifreyle açılmış oturumdan gidilince ikinci adım (step-up) |
 | Güvenlik geçmişi | `/Account/GuvenlikGecmisi` | Hesabım → kullanıcının kendi son 20 güvenlik olayı |
 
 **Akışlar:** yalnızca Authorization Code + PKCE ve Refresh Token. PKCE sunucu genelinde zorunlu ve **yalnızca
@@ -122,6 +123,31 @@ Kural `Oidc/IstemciErisimi` sınıfındadır ve üç yerde uygulanır:
 ve `uc=authorize` / `uc=token` ayrıntısıyla yazılır. İzinler şimdilik koddaki istemci tanımında ve (Tek Kapı için)
 ayarlardadır; yönetim paneli yol haritasındadır.
 
+### İstemci bazlı 2FA şartı (`mfaZorunlu`)
+
+İstemci kaydındaki isteğe bağlı `mfaZorunlu` (bool) ayarı `true` ise o uygulamaya yalnızca **iki aşamalı doğrulanmış**
+bir kimlik sunucusu oturumundan (id_token `amr` içinde `mfa`) kod ve token verilir. `tek-kapi` için `true`, demo
+istemciler için `false`tur (davranışları değişmedi). Uygulamalarım'da böyle bir uygulamanın kartında **"2FA gerekli"**
+etiketi görünür.
+
+Authorize isteğinde oturumun `amr`'si `mfa` içermiyorsa (yalnızca şifreyle girildiyse veya "Bu cihazı hatırla" ile
+ikinci adım atlandıysa; o oturum `["pwd"]` sayılır):
+
+- **2FA'sı açık kullanıcı → ek doğrulama (step-up):** `/Account/EkDogrulama?returnUrl=<authorize isteği>`. Mevcut
+  oturumda TOTP veya kurtarma kodu istenir ("Bu uygulama iki aşamalı doğrulama gerektiriyor"). Başarılıysa oturum aynı
+  `sid`'le `["pwd","mfa"]` olarak yeniden imzalanır ve authorize akışı kaldığı yerden devam eder. Hatalı kodlar hatalı
+  deneme sayacına eklenir (5'te kilit), kilitliyken kabul edilmez; TOTP tekrar oynatma koruması ve istek sınırı
+  girişin ikinci adımıyla aynıdır. Kurtarma kodu kullanılırsa e-posta gider.
+- **2FA'sı kapalı kullanıcı → kurulum:** `/Account/IkiAdimDogrulama?returnUrl=…`, "Bu uygulama iki aşamalı doğrulama
+  gerektiriyor" mesajıyla. Kurulumda doğrulanan kod oturumu çok faktörlü yapar; kurtarma kodlarının altındaki
+  "Kodları kaydettim, devam et" authorize isteğine döner.
+- `prompt=none` ise istemciye `interaction_required` döner; onay formu doğrudan gönderilirse `access_denied`.
+
+Token uç noktası da denetler: `mfaZorunlu` istemciye, `amr`'si `mfa` içermeyen bir yetkilendirmeden (ör. kod alındıktan
+sonra istemci 2FA ister hâle geldiyse) token verilmez (`invalid_grant`). Denetim kaydı: yönlendirme ve retler
+**"Uygulama iki aşamalı doğrulama istedi"** (`IstemciMfaGerekli`, `client_id`, `uc=authorize; yonlendirme=ek-dogrulama|kurulum`,
+`uc=authorize; neden=onay-formu` veya `uc=token`), ek doğrulama sonucu `EkDogrulama` (başarılı/başarısız, `yontem=totp|kurtarma-kodu`).
+
 ## Tek Kapı köprüsü
 
 **Tek Kapı**, kullanıcının **kendi bilgisayarında** çalışan ayrı bir Node.js uygulamasıdır (`araclar/tek-kapi`;
@@ -154,6 +180,7 @@ olarak saklar ve kullanır.
 | `client_uri` / `initiate_login_uri` | `http://127.0.0.1:4545/` / `http://127.0.0.1:4545/auth/login` |
 | Görünen ad | Tek Kapı — gerçek Selçuk sistemleri (yerel) |
 | `izinliKullaniciAdlari` | `Istemciler:TekKapi:IzinliKullaniciAdlari` ayarından (`appsettings.Development.json`, varsayılan `["203011001"]`) |
+| `mfaZorunlu` | `true`: yalnızca iki aşamalı doğrulanmış oturumdan kod/token (bkz. Uygulama bazlı erişim izni > İstemci bazlı 2FA şartı). Tek Kapı da callback'te `amr`'yi denetler (`SSO_MFA_ZORUNLU`, varsayılan açık) |
 
 İzin listesi ayarda yoksa veya boşsa Tek Kapı **herkese açılmaz**; varsayılan `["203011001"]` kullanılır. Listeye
 kullanıcı eklemek için `appsettings.Development.json`'daki diziyi değiştirip kimlik sunucusunu yeniden başlatın.
@@ -430,7 +457,8 @@ Güvenlik olayları `DenetimKayitlari` tablosuna yazılır (migration `DenetimKa
 kullanıldı, kurtarma kodu kullanıldı, 2FA kurulumu başlatıldı,
 2FA açıldı/kapatıldı (başarısız denemeler dahil), kurtarma kodları yenilendi, çıkış, şifre sıfırlama istendi, şifre
 sıfırlandı (geçersiz bağlantı dahil), şifre değişti (yanlış mevcut şifre dahil), onay verildi/reddedildi, istemciye
-token verildi (`client_id` ile), istemciye erişim reddedildi (`client_id` ile), back-channel logout
+token verildi (`client_id` ile), istemciye erişim reddedildi (`client_id` ile), uygulama iki aşamalı doğrulama
+istedi (`client_id` ile), ek doğrulama (başarılı/başarısız), back-channel logout
 gönderildi/başarısız, hız sınırı aşıldı.
 
 **Asla kaydedilmeyenler:** şifre, TOTP veya kurtarma kodu, paylaşılan anahtar, sıfırlama token'ı, access/id/refresh
@@ -605,6 +633,16 @@ yazdığı bir başlıkla HTTP isteğini HTTPS gibi gösteremez.
     (fail-closed). *Gerekçe:* kimlik doğrulama herkese açık olsa da her uygulama herkese açık olmamalıdır (en az
     yetki); kontrolün token anında tekrarlanması, kod veya refresh token verildikten sonra kaldırılan iznin de
     uygulanmasını sağlar.
+25. **İstemci bazlı 2FA şartı (`mfaZorunlu`).** Tek Kapı gibi hassas bir uygulamaya yalnızca iki aşamalı doğrulanmış
+    oturumla girilir: şifreyle veya "Bu cihazı hatırla" ile açılmış oturumda ek doğrulama (step-up), 2FA'sı kapalı
+    kullanıcıda kurulum; token uç noktası da `amr`'yi denetler; Tek Kapı callback'te ayrıca denetler (derinlemesine
+    savunma). *Gerekçe:* Tek Kapı gerçek üniversite sistemlerinin şifrelerinin bulunduğu kasaya kapı açar; yalnızca
+    şifrenin çalınması buna yetmemeli. Uygulama bazında istemek, diğer uygulamalarda kullanıcıyı gereksiz yere zorlamaz.
+26. **Giriş gerektiren yanıtlar önbelleğe alınmaz.** Kimlik sunucusunda ve ortak istemci kütüphanesinde (demo
+    uygulamalar) `[Authorize]` uç noktaların tüm yanıtları (girişe yönlendirme dahil) `Cache-Control: no-store` ile
+    döner; Tek Kapı tüm yanıtlarında zaten `no-store` kullanır. Herkese açık sayfalar (menü, ana sayfa) ve statik
+    dosyalar normal önbelleklenir. *Gerekçe:* çıkıştan sonra geri tuşu veya ortak bilgisayardaki tarayıcı geçmişi,
+    kişisel bir sayfayı (hesap bilgileri, güvenlik geçmişi, notlar) önbellekten göstermemeli.
 
 ### Yanıt süresi eşitleme (kod incelemesi)
 
@@ -805,8 +843,11 @@ kayıtları); başka bir etkisi yoktur.
 powershell -ExecutionPolicy Bypass -File scripts\run-all.ps1
 ```
 
-Betik kimlik sunucusunu (5001), Demo OBİS'i (5101) ve Demo Yemekhane'yi (5102) ayrı PowerShell pencerelerinde
+Betik önce çözümü bir kez derler (`dotnet build SelcukSSO.sln`; başarısızsa durur), sonra kimlik sunucusunu
+(5001), Demo OBİS'i (5101) ve Demo Yemekhane'yi (5102) ayrı PowerShell pencerelerinde `dotnet run --no-build` ile
 başlatır, hepsi hazır olunca tarayıcıda https://localhost:5001 adresini açar. Durdurmak için pencerelerde `Ctrl+C`.
+Önceden her pencere kendisi derlediği için ortak projelerin (`Selcuk.Istemci.Ortak`) dosyalarında kilit hatası
+oluşabiliyordu.
 `-TekKapi` verilirse Tek Kapı da (`araclar/tek-kapi`, http://127.0.0.1:4545) SSO modunda ayrı bir pencerede başlar
 (bkz. [Tek Kapı köprüsü](#tek-kapı-köprüsü)).
 
@@ -905,6 +946,9 @@ ekler.
 3. Çıkış yapıp **`hoca.test`** ile girin: Tek Kapı kartı görünmez, Demo OBİS ve Demo Yemekhane görünür.
 4. `hoca.test` oturumu açıkken tarayıcıya Tek Kapı'nın authorize adresini (client_id `tek-kapi`, PKCE ile) elle
    yazarsanız istemciye `error=access_denied` ile dönülür; Güvenlik geçmişinde "İstemciye erişim reddedildi" görünür.
+5. **2FA şartı:** Tek Kapı kartında "2FA gerekli" etiketi vardır. `203011001`'in 2FA'sı kapalıysa karta tıklayınca
+   kurulum sayfası "Bu uygulama iki aşamalı doğrulama gerektiriyor" der; kurulumdan sonra "devam et" Tek Kapı'ya
+   götürür. 2FA'sı açık ve "Bu cihazı hatırla" ile girilmişse karta tıklayınca **Ek doğrulama** sayfası kodu ister.
 
 Rol bazlı zorunluluğu denemek için `src/Selcuk.Identity/appsettings.Development.json`'a geçici olarak
 `"IkiAdimZorunluRoller": ["akademisyen"]` ekleyip kimlik sunucusunu yeniden başlatın: `hoca.test` girişten sonra
@@ -1006,7 +1050,7 @@ yakalanır.
 | `Listede_olmayan_adresten_gelen_baslik_dikkate_alinmiyor` | Liste başka ağ (CIDR) ve adres: başlık yok sayılır |
 | `GuvenilenProxyler_doluyken_X_Forwarded_Proto_https_dikkate_aliniyor` | HTTP isteği + `X-Forwarded-Proto: https`, liste = proxy: discovery 200 (OpenIddict HTTPS şartı), girişe yönlendirme `https://` |
 | `GuvenilenProxyler_bosken_X_Forwarded_Proto_dikkate_alinmiyor` | Aynı istek, liste boş: discovery reddedilir, yönlendirme `http://` |
-| `TekKapi_public_istemci_secret_olmadan_PKCE_ile_kod_ve_token_aliyor` | Kayıt: public, explicit, PKCE gereksinimi, tek redirect `http://127.0.0.1:4545/auth/callback`, secret doğrulanmaz; izinli kullanıcı secret'sız token isteğiyle token alır; id_token `aud` = `tek-kapi`, `role` var, `email` yok |
+| `TekKapi_public_istemci_secret_olmadan_PKCE_ile_kod_ve_token_aliyor` | (Tek Kapı 2FA istediği için bu ve aşağıdaki Tek Kapı token testlerinde kullanıcı şifre + TOTP ile girer.) Kayıt: public, explicit, PKCE gereksinimi, tek redirect `http://127.0.0.1:4545/auth/callback`, secret doğrulanmaz; izinli kullanıcı secret'sız token isteğiyle token alır; id_token `aud` = `tek-kapi`, `role` var, `email` yok |
 | `TekKapi_PKCE_olmadan_authorize_reddediliyor` | `code_challenge` yok: 400 `invalid_request`, yönlendirme yok; `plain` ile de kod yok |
 | `Izinsiz_kullanici_TekKapi_authorize_isteginde_access_denied_ile_donuyor_ve_denetim_kaydi_olusuyor` | Akademisyen (listede değil): onay ekranı olmadan `redirect_uri?error=access_denied&state=…`, kod yok; onay formu doğrudan gönderilince de; iki `IstemciErisimiReddedildi` kaydı (`client_id`, `uc=authorize`); onay kaydı yok |
 | `Izinsiz_kullanici_Uygulamalarimda_TekKapi_kartini_gormuyor_izinli_goruyor` | İzinli: Tek Kapı kartı, açıklaması ve `iss`'li `initiate_login_uri`; izinsiz: kart ve `127.0.0.1` yok; ikisi de demo kartlarını görür |
@@ -1015,6 +1059,11 @@ yakalanır.
 | `Cikista_TekKapinin_backchannel_logout_uri_adresine_de_logout_token_gidiyor` | Tek Kapı + Demo OBİS token'ı, RP-initiated logout `http://127.0.0.1:4545/?state=cikis`'e döner; iki `backchannel_logout_uri`'ye form POST; Tek Kapı'nınkinde `aud` = `tek-kapi`, `sub` |
 | `TekKapi_calismiyorsa_cikis_tamamlaniyor_diger_istemciler_yine_bildiriliyor` | Tek Kapı'ya bağlanılamaz: çıkış tamamlanır, Demo OBİS bildirilir, Tek Kapı için `BackChannelLogoutBasarisiz` (`hata=HttpRequestException`), kayıtlar kapanır |
 | `Kayit_kurali_disinda_eklenmis_http_redirect_adresi_authorize_ve_cikista_reddediliyor` | Doğrudan eklenmiş `http://istemci.test.local/…`: authorize ve end-session 400 `invalid_request`, yönlendirme yok |
+| `MfaZorunlu_istemci_sifreyle_acilmis_oturumda_ek_dogrulama_istiyor_TOTP_sonrasi_kod_ve_amr_mfa` | Şifreyle açılmış oturum (2FA sonradan, damga değişmeden açılır): authorize `/Account/EkDogrulama?returnUrl=<authorize>`'a yönlenir, sayfa mesajı; yanlış kod reddedilir ve sayaç 1; doğru TOTP aynı sid'le authorize'a döndürür, sayaç 0; token `amr` = `["pwd","mfa"]`; `IstemciMfaGerekli` ve `EkDogrulama` (başarısız/başarılı) kayıtları |
+| `IkiAdimi_kapali_kullanici_MfaZorunlu_istemci_icin_kuruluma_yonleniyor_kurulumdan_once_token_alamiyor` | Uygulamalarım'da yalnızca Tek Kapı kartında "2FA gerekli"; authorize kurulum sayfasına (uygulama mesajıyla); onay formu doğrudan gönderilse de `access_denied`, kod yok; kurulumdan sonra "devam et" authorize'a döner, token `amr` ⊇ `mfa`; `yonlendirme=kurulum` ve `neden=onay-formu` kayıtları |
+| `Bu_cihazi_hatirla_ile_acilmis_oturumda_ek_dogrulama_isteniyor` | "Bu cihazı hatırla" sonrası yalnızca şifreyle giriş (`amr=pwd; cihaz-hatirlandi`): authorize ek doğrulamaya; kurtarma koduyla ek doğrulama, token `amr` = `["pwd","mfa"]` |
+| `Token_ucu_amr_mfa_icermeyen_yetkilendirmeyi_MfaZorunlu_istemci_icin_reddediyor` | Kod istemci 2FA istemezken şifreli oturumdan alınır, sonra `mfaZorunlu` açılır: token `invalid_grant`, `uc=token` kaydı, `TokenVerildi` yok |
+| `Giris_gerektiren_hesap_sayfalarinda_no_store_var_herkese_acik_sayfa_ve_statik_dosyada_yok` | Girişsiz `/Account/Hesabim` yönlendirmesi ve girişli Uygulamalarım, Hesabım, 2FA, şifre değiştir, güvenlik geçmişi, ek doğrulama `no-store`; Erişim reddedildi sayfası ve CSS'te yok |
 | `Istemci_adresleri_https_veya_yalnizca_http_127_0_0_1_olabiliyor` | Üç tanım kurala uyar; `http://localhost`, `http://192.168.1.10`, `http://127.0.0.1.evil.example`, uzak http redirect ve `http://localhost` back-channel reddedilir; boş izin listesi varsayılana döner |
 | **Selcuk.Istemci.Ortak.Tests** | |
 | `Gecerli_logout_token_oturumu_sonlandiriyor` | 200 (`no-store`); o sid'li oturum sonraki istekte authorize'a yönlenir |
@@ -1041,11 +1090,13 @@ yakalanır.
 | `Onay_reddedilince_GirisHatasi_sayfasina_erisim_reddedildi_nedeniyle_yonlendiriliyor` | `error=access_denied`: `/GirisHatasi?neden=erisim-reddedildi` |
 | `Onay_reddedilince_gecerli_state_ile_de_erisim_reddedildi_nedeniyle_yonlendiriliyor` | Geçerli state ile `access_denied` de aynı sayfaya |
 | `Dis_donus_adresine_yonlendirilmiyor` (×3) | State'te `https://evil.example`, `//evil.example`, `/\evil.example`: yönlendirme `/`'a |
+| `Korumali_sayfalarda_no_store_var_ana_sayfa_ve_statik_dosyada_yok` | Profilim, Notlarım, Ders Yönetimi ve girişsiz korumalı sayfanın yönlendirmesi `no-store`; ana sayfa ve CSS'te yok |
 | **Selcuk.Demo.Yemekhane.Tests** | |
 | `Haftalik_menu_herkese_acik` | Girişsiz 200, başlıkta "Demo Yemekhane — test uygulaması" |
 | `Girissiz_kullanici_Rezervasyonlarim_icin_kimlik_sunucusuna_yonlendiriliyor` | 302 → authorize, `client_id=demo-yemekhane`, `code_challenge` + `S256` |
 | `Ogrenci_Yemekhane_Yonetimi_erisim_reddedildi` | ogrenci: Yönetim → Erişim reddedildi; Rezervasyonlarım 200 |
 | `Personel_Yemekhane_Yonetimi_aciliyor` | personel: Yönetim 200 |
+| `Korumali_sayfalarda_no_store_var_haftalik_menude_yok` | Rezervasyonlarım, Profilim, Yemekhane Yönetimi ve girişsiz yönlendirme `no-store`; haftalık menü ve CSS'te yok |
 | `Giris_yapmis_kullanici_eslestirme_cerezi_olmadan_donuste_ana_sayfaya_yonlendiriliyor` | Yemekhane'de geri tuşu, giriş yapmış: 302 → `/` |
 | `Girissiz_kullanici_eslestirme_cerezi_olmadan_donuste_GirisHatasi_sayfasina_yonlendiriliyor` | Yemekhane'de giriş yapmamış: `/GirisHatasi?neden=oturum-suresi` |
 

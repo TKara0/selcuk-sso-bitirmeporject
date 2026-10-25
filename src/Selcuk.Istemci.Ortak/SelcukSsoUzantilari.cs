@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -100,7 +101,12 @@ public static class SelcukSsoUzantilari
         return services;
     }
 
-    /// <summary>Tüm yanıtlara tarayıcı güvenlik başlıklarını ekler.</summary>
+    /// <summary>
+    /// Tüm yanıtlara tarayıcı güvenlik başlıklarını ekler. Giriş gerektiren sayfaların ([Authorize]) yanıtları
+    /// önbelleğe alınmaz (Cache-Control: no-store): çıkıştan sonra geri tuşu kişisel sayfayı önbellekten göstermesin.
+    /// Herkese açık sayfalar ve statik dosyalar normal önbelleklenir. Uç nokta, yanıt başlarken (yönlendirmeden sonra)
+    /// okunur; bu yüzden ara katman UseRouting'den önce eklenebilir.
+    /// </summary>
     public static IApplicationBuilder UseSelcukGuvenlikBasliklari(this IApplicationBuilder app) =>
         app.Use((context, next) =>
         {
@@ -112,6 +118,13 @@ public static class SelcukSsoUzantilari
                 headers["Referrer-Policy"] = "no-referrer";
                 headers.XFrameOptions = "DENY";
                 headers.ContentSecurityPolicy = GuvenlikBasliklari.ContentSecurityPolicy;
+                var endpoint = context.GetEndpoint();
+                if (endpoint is not null && endpoint.Metadata.GetMetadata<IAllowAnonymous>() is null
+                    && endpoint.Metadata.GetMetadata<IAuthorizeData>() is not null)
+                {
+                    headers.CacheControl = "no-store";
+                }
+
                 return Task.CompletedTask;
             });
 

@@ -4,7 +4,7 @@
 const express = require('express');
 const crypto = require('crypto');
 
-const PORTS = { obisEntry: 5100, obis: 5101, posta: 5102, uzem: 5103, yemek: 5104, sso: 5105, sinav: 5106 };
+const PORTS = { obisEntry: 5600, obis: 5601, posta: 5602, uzem: 5603, yemek: 5604, sso: 5605, sinav: 5606 };
 const URLS = Object.fromEntries(Object.entries(PORTS).map(([k, p]) => [k, `http://127.0.0.1:${p}`]));
 
 const USER = {

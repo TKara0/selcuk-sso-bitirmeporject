@@ -13,6 +13,7 @@ const BCL_OLAYI = 'http://schemas.openid.net/event/backchannel-logout';
 
 const VARSAYILAN_KULLANICI = {
   sub: 'kullanici-1', sid: 'oturum-1', name: 'Test Öğrenci', preferred_username: '203011001', role: 'ogrenci',
+  amr: ['pwd', 'mfa'], // kimlik sunucusu tek-kapi için iki aşamalı doğrulama ister
 };
 
 const durum = {

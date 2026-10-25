@@ -106,6 +106,10 @@ const bclGonder = (token) => istek(null, '/auth/backchannel-logout', { method: '
     const girisCerezi = login.headers.getSetCookie().find((c) => c.startsWith('tk_sso_giris='));
     assert.ok(/HttpOnly/i.test(girisCerezi) && /SameSite=Lax/i.test(girisCerezi));
     assert.ok(!girisCerezi.includes(a.searchParams.get('state')) && !girisCerezi.includes(a.searchParams.get('nonce')));
+    // Önbellek: giriş yanıtı, portal sayfası ve API yanıtları no-store (çıkıştan sonra geri tuşu)
+    for (const yanit of [login, await istek(jar, '/'), await fetch(BASE + '/api/state', { headers: { 'x-tek-kapi': '1' } })]) {
+      assert.equal(yanit.headers.get('cache-control'), 'no-store');
+    }
     ok('a) Oturumsuz istek /auth/login\'e, oradan authorize\'a (S256, state, nonce) yönleniyor; çerezde yalnızca rastgele anahtar');
 
     r = await ssoGiris(jar);
@@ -159,6 +163,17 @@ const bclGonder = (token) => istek(null, '/auth/backchannel-logout', { method: '
     }
     oidc.durum.idTokenSapmasi = {};
     ok('d) id_token\'da yanlış aud, yanlış nonce veya geçersiz imza reddediliyor');
+
+    oidc.durum.kullanici = { ...oidc.VARSAYILAN_KULLANICI, amr: ['pwd'] };
+    let jm = new Kavanoz();
+    r = await ssoGiris(jm);
+    assert.equal(r.status, 403); assert.match(await metin(r), /Tek Kapı iki aşamalı doğrulama gerektiriyor/);
+    assert.ok(!jm.c.has('tk_sso'));
+    oidc.durum.kullanici = { ...oidc.VARSAYILAN_KULLANICI, amr: undefined };
+    jm = new Kavanoz();
+    assert.equal((await ssoGiris(jm)).status, 403); assert.ok(!jm.c.has('tk_sso'));
+    oidc.durum.kullanici = { ...oidc.VARSAYILAN_KULLANICI };
+    ok('g2) amr\'si "mfa" içermeyen (veya amr\'siz) id_token ile callback oturum açmıyor; Türkçe 2FA sayfası');
 
     oidc.durum.kullanici = { ...oidc.VARSAYILAN_KULLANICI, sub: 'hoca-1', sid: 'oturum-hoca', name: 'Test Akademisyen', preferred_username: 'hoca.test' };
     let j = new Kavanoz();

@@ -176,6 +176,16 @@ public sealed class IkiAdimIslemleri(
         await DegisiklikSonrasiAsync(user, mevcutSid, DenetimOlayi.IkiAdimKapatildi, EpostaSablonlari.IkiAdimKapatildi);
     }
 
+    /// <summary>
+    /// Ek doğrulama (step-up) başarılı: mevcut oturum çok faktörlü ("amr" = "mfa") olarak yeniden imzalanır; sid ve oturum
+    /// başlangıcı korunur, diğer oturumlar etkilenmez. Hatalı deneme sayacı sıfırlanır (girişin ikinci adımındaki gibi).
+    /// </summary>
+    public async Task EkDogrulamaTamamlandiAsync(ApplicationUser user)
+    {
+        await userManager.ResetAccessFailedCountAsync(user);
+        await OturumuYenileAsync(user, cokFaktorlu: true);
+    }
+
     /// <summary>Girişte kurtarma kodu kullanıldıktan sonra: bilgilendirme e-postası (kalan kod sayısıyla).</summary>
     public async Task KurtarmaKoduKullanildiAsync(ApplicationUser user)
     {

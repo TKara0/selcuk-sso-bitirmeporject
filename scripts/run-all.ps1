@@ -18,8 +18,10 @@ $uygulamalar = @(
     @{ Baslik = 'Selcuk.Demo.Yemekhane :5102';  Proje = 'src/Selcuk.Demo.Yemekhane';  Port = 5102 }
 )
 
+# Uygulamalar önceden derlenmiş çıktıdan başlar (--no-build): üç pencerenin aynı anda derlemesi ortak projelerin
+# (Selcuk.Istemci.Ortak) obj/bin dosyalarında kilit hatasına yol açıyordu.
 function Start-Uygulama([string] $Baslik, [string] $Proje) {
-    $komut = "`$Host.UI.RawUI.WindowTitle = '$Baslik'; Set-Location -LiteralPath '$kok'; dotnet run --project '$Proje'"
+    $komut = "`$Host.UI.RawUI.WindowTitle = '$Baslik'; Set-Location -LiteralPath '$kok'; dotnet run --no-build --project '$Proje'"
     Start-Process powershell -ArgumentList '-NoExit', '-NoProfile', '-Command', $komut | Out-Null
 }
 
@@ -37,6 +39,15 @@ function Wait-Port([int] $Port, [int] $SaniyeSiniri = 120) {
         }
     }
     return $false
+}
+
+# Önce çözüm bir kez derlenir; derleme başarısızsa hiçbir uygulama başlatılmaz.
+Write-Host 'Çözüm derleniyor (dotnet build SelcukSSO.sln)...'
+& dotnet build (Join-Path $kok 'SelcukSSO.sln') --nologo
+if ($LASTEXITCODE -ne 0) {
+    $kod = $LASTEXITCODE
+    Write-Host "Derleme başarısız (çıkış kodu $kod). Uygulamalar başlatılmadı." -ForegroundColor Red
+    exit $kod
 }
 
 foreach ($u in $uygulamalar) {

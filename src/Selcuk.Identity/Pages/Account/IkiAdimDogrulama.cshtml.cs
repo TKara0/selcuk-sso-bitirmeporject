@@ -23,6 +23,7 @@ namespace Selcuk.Identity.Pages.Account;
 public class IkiAdimDogrulamaModel(
     UserManager<ApplicationUser> userManager,
     IkiAdimIslemleri ikiAdim,
+    IstemciErisimi istemciErisimi,
     DenetimKaydedici denetim) : PageModel
 {
     public const string KodHatasiMesaji = "Kod doğrulanamadı. Uygulamadaki güncel 6 haneli kodu girin.";
@@ -41,6 +42,9 @@ public class IkiAdimDogrulamaModel(
     public bool KurulumGerekli { get; private set; }
 
     public bool RolGerektiriyor { get; private set; }
+
+    /// <summary>Kuruluma iki aşamalı doğrulama isteyen bir uygulamanın (mfaZorunlu) authorize isteğinden gelindi.</summary>
+    public bool UygulamaGerektiriyor { get; private set; }
 
     public string? Anahtar { get; private set; }
 
@@ -184,6 +188,7 @@ public class IkiAdimDogrulamaModel(
         Etkin = await userManager.GetTwoFactorEnabledAsync(user);
         KurulumGerekli = await ikiAdim.KurulumGerekliAsync(user);
         RolGerektiriyor = await ikiAdim.RolGerektiriyorAsync(user);
+        UygulamaGerektiriyor = await istemciErisimi.DonusAdresiMfaGerektiriyorMuAsync(DevamAdresi);
 
         if (Etkin)
         {

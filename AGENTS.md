@@ -31,6 +31,14 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
     (kayıtta `Istemciler.AdresleriDogrula`; authorize `redirect_uri` ve end-session `post_logout_redirect_uri` için
     OpenIddict doğrulama işleyicisi, `Program.cs`). Back-Channel Logout da yalnızca https veya `http://127.0.0.1`'e
     gönderilir.
+  - **İstemci bazlı 2FA şartı**: istemci `Properties`'inde `mfaZorunlu` (bool; tek-kapi true, demolar false).
+    Authorize'da oturum `amr`'si `mfa` içermiyorsa (şifre veya "Bu cihazı hatırla") 2FA'sı açık kullanıcı
+    `Account/EkDogrulama`'ya (step-up: TOTP/kurtarma kodu, oturum aynı sid'le `["pwd","mfa"]`, `returnUrl` ile devam),
+    kapalı kullanıcı 2FA kurulumuna (uygulama mesajıyla) gider; token uç noktası da `amr`'yi denetler (`invalid_grant`).
+    Denetim: `IstemciMfaGerekli`, `EkDogrulama`. Uygulamalarım kartında "2FA gerekli".
+  - **Önbellek**: `GuvenlikBasliklari` (kimlik sunucusu) ve `UseSelcukGuvenlikBasliklari` (ortak kütüphane)
+    `[Authorize]` uç noktaların yanıtlarına `Cache-Control: no-store` ekler (yanıt başlarken uç nokta okunur);
+    herkese açık sayfalar ve statik dosyalar etkilenmez.
   - **Uygulama bazlı erişim izni** (`Oidc/IstemciErisimi`): `izinliRoller` ve `izinliKullaniciAdlari` boşsa herkes,
     doluysa en az birine uyan kullanıcı (harf duyarsız; dizi olmayan ayar kimseye izin vermez). Authorize'da izinsiz
     kullanıcı istemciye `error=access_denied` ile döner, token uç noktası `invalid_grant` verir, Uygulamalarım kartı
@@ -38,8 +46,8 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   - **EF Core + SQL Server** (geliştirmede LocalDB, veritabanı `SelcukSSO`). Identity, OpenIddict,
     `IstemciOturumlari` ve `DenetimKayitlari` tabloları aynı `ApplicationDbContext` içinde.
   - **Razor Pages** (Türkçe arayüz): Uygulamalarım (ana sayfa; kartlar `initiate_login_uri?iss=…`), Giriş, Girişin
-    ikinci adımı (2FA), Şifremi unuttum, Şifre sıfırlama, Hesabım, Şifre değiştir, İki aşamalı doğrulama, Güvenlik
-    geçmişi, Onay, Çıkış, Erişim reddedildi. Tüm yanıtlarda güvenlik
+    ikinci adımı (2FA), Şifremi unuttum, Şifre sıfırlama, Hesabım, Şifre değiştir, İki aşamalı doğrulama, Ek doğrulama
+    (step-up), Güvenlik geçmişi, Onay, Çıkış, Erişim reddedildi. Tüm yanıtlarda güvenlik
     başlıkları (`GuvenlikBasliklari.cs`: nosniff, no-referrer, X-Frame-Options DENY, CSP).
   - **Şifre sıfırlama ve değiştirme** (`Hesap/`): Identity'nin yerleşik `DataProtectorTokenProvider`'ı ayrı adla
     (`SifreSifirlamaTokenSaglayici`, 30 dk, güvenlik damgasına bağlı, tek kullanımlık). Bağlantı `OpenIddict:Issuer`
@@ -92,7 +100,9 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
 - `tests/Selcuk.Identity.Tests`: xUnit + `WebApplicationFactory` entegrasyon, uçtan uca protokol, tek giriş ve tek
   çıkış, şifre sıfırlama/değiştirme, istek sınırı ve tahmin koruması, 2FA (TOTP tekrar koruması dahil), kilit
   tutarlılığı, denetim kaydı (HMAC özeti, eksik anahtarla açılmama), güvenilen proxy, Tek Kapı (public istemci,
-  loopback, back-channel) ve uygulama bazlı erişim izni testleri. `OidcYardimcisi` istemci parametreli (varsayılan
+  loopback, back-channel), uygulama bazlı erişim izni, istemci bazlı 2FA şartı (step-up) ve önbellek testleri.
+  `IstemciMfaTests` "yalnızca şifreyle açılmış oturum + 2FA açık" durumunu, 2FA'yı depoya güvenlik damgasını
+  değiştirmeden yazarak kurar. `OidcYardimcisi` istemci parametreli (varsayılan
   demo-obis; public istemci için `PublicTokenIsteAsync`).
   Her test kendi adlandırılmış, paylaşımlı önbellekli SQLite in-memory veritabanını kullanır (DbContext başına
   bağlantı); ortam adı `Testing`; fabrikaya `ayarlar` ile appsettings değeri verilir; her fabrika rastgele bir HMAC
@@ -103,7 +113,7 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   `DenetimKayitlariAsync` ile beklenir.
 - `tests/Selcuk.Istemci.Ortak.Tests`: Back-Channel Logout alıcısı, çerez süresi, ortak dağıtık önbellek, JWKS hatası
   (503) ve `iss` doğrulaması testleri; yerel RSA anahtarı ve sahte JWKS.
-- `tests/Selcuk.Demo.Obis.Tests`, `tests/Selcuk.Demo.Yemekhane.Tests`: yönlendirme ve rol testleri; gerçek kimlik
+- `tests/Selcuk.Demo.Obis.Tests`, `tests/Selcuk.Demo.Yemekhane.Tests`: yönlendirme, rol ve önbellek (`no-store`) testleri; gerçek kimlik
   sunucusu yerine sabit discovery bilgisi ve sahte kimlik doğrulama şeması kullanır.
 - `araclar/tek-kapi` (http://127.0.0.1:4545): Tek Kapı, kullanıcının kendi bilgisayarında çalışan Node.js portalı
   (Express + Playwright; kişisel ESSO, gerçek Selçuk sistemlerine form tabanlı otomatik giriş). Kendi kuralları
@@ -111,9 +121,11 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   İsteğe bağlı SSO modu (`SSO_ISSUER`): kimlik sunucusuna `tek-kapi` public istemcisi olarak bağlanır (openid-client,
   PKCE S256), erişim iki katmanlı (SSO oturumu + kasa ana şifresi), Back-Channel Logout gelince kasayı kilitler ve
   gerçek site oturumlarını kapatır (jose ile logout_token doğrulama). TLS: `node --use-system-ca` (doğrulama
-  kapatılmaz). Testleri (`npm test`: bağımsız mod 33 + SSO 13 kontrol) sahte siteler ve sahte OIDC sağlayıcıyla
-  çalışır.
-- `scripts/run-all.ps1`: üç uygulamayı ayrı pencerelerde başlatır; `-TekKapi` ile Tek Kapı'yı da SSO modunda başlatır.
+  kapatılmaz). `SSO_MFA_ZORUNLU` (varsayılan açık): id_token `amr`'si `mfa` içermezse oturum açılmaz. Testleri
+  (`npm test`: bağımsız mod 33 + SSO 14 kontrol) sahte siteler (5600-5606) ve sahte OIDC sağlayıcıyla (5190) çalışır.
+  Node 22.15+ (`engines`), express 4.22.3 (tam sürüm).
+- `scripts/run-all.ps1`: önce `dotnet build SelcukSSO.sln` (başarısızsa durur), sonra üç uygulamayı ayrı pencerelerde
+  `dotnet run --no-build` ile başlatır; `-TekKapi` ile Tek Kapı'yı da SSO modunda başlatır.
 
 Ayrıntılar için `README.md` dosyasına bakın.
 

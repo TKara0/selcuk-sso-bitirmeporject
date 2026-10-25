@@ -75,7 +75,7 @@ function ok(name) { passed++; console.log('  ✓ ' + name); }
 
     console.log('Otomatik giriş');
     await api('/open/posta', { method: 'POST' });
-    await waitFor(async () => (await pageWith('5102'))?.title.includes('Gelen Kutusu'), 'posta gelen kutusu');
+    await waitFor(async () => (await pageWith('5602'))?.title.includes('Gelen Kutusu'), 'posta gelen kutusu');
     assert.equal(mock.counters.postaPost, 1); ok('E-posta (Zimbra): tek tıkla gelen kutusu');
 
     await api('/open/posta', { method: 'POST' });
@@ -83,32 +83,32 @@ function ok(name) { passed++; console.log('  ✓ ' + name); }
     assert.equal(mock.counters.postaPost, 1); ok('E-posta: ikinci tıklamada oturum hatırlanıyor, yeniden giriş yok');
 
     await api('/open/uzem', { method: 'POST' });
-    await waitFor(async () => (await pageWith('5103/my/')), 'uzem panom');
+    await waitFor(async () => (await pageWith('5603/my/')), 'uzem panom');
     ok('UZEM (Moodle): tek tıkla Panom');
 
     await api('/open/sinav', { method: 'POST' });
-    await waitFor(async () => (await pageWith('5106/my/')), 'sinav panom');
+    await waitFor(async () => (await pageWith('5606/my/')), 'sinav panom');
     assert.equal(mock.counters.sinavPost, 1); ok('Uzaktan Sınav (Moodle): tek tıkla Panom');
 
     console.log('Yarı otomatik giriş');
     await api('/open/obis', { method: 'POST' });
-    await waitFor(async () => (await dbg({ urlIncludes: '5101', action: 'value', selector: 'input[name="id"]' })).value === mock.USER.ogrNo, 'obis dolum');
-    assert.equal((await dbg({ urlIncludes: '5101', action: 'focused' })).value, 'TxtCaptcha');
+    await waitFor(async () => (await dbg({ urlIncludes: '5601', action: 'value', selector: 'input[name="id"]' })).value === mock.USER.ogrNo, 'obis dolum');
+    assert.equal((await dbg({ urlIncludes: '5601', action: 'focused' })).value, 'TxtCaptcha');
     assert.equal(mock.counters.obisPost, 0);
     ok('OBİS: bilgiler dolduruldu, imleç CAPTCHA\'da, form gönderilmedi');
-    await dbg({ urlIncludes: '5101', action: 'fillAndEnter', selector: '#TxtCaptcha', value: mock.CAPTCHA });
-    await waitFor(async () => (await pageWith('5101/Home/Dashboard')), 'obis dashboard');
+    await dbg({ urlIncludes: '5601', action: 'fillAndEnter', selector: '#TxtCaptcha', value: mock.CAPTCHA });
+    await waitFor(async () => (await pageWith('5601/Home/Dashboard')), 'obis dashboard');
     ok('OBİS: kullanıcı kodu yazınca giriş tamam');
 
     await api('/open/yemek', { method: 'POST' });
-    await waitFor(async () => (await dbg({ urlIncludes: '5105', action: 'value', selector: 'input[name="Username"]' })).value === 'talha.test', 'sso dolum');
-    assert.equal((await dbg({ urlIncludes: '5105', action: 'value', selector: 'select[name="EmailDomain"]' })).value, '2');
+    await waitFor(async () => (await dbg({ urlIncludes: '5605', action: 'value', selector: 'input[name="Username"]' })).value === 'talha.test', 'sso dolum');
+    assert.equal((await dbg({ urlIncludes: '5605', action: 'value', selector: 'select[name="EmailDomain"]' })).value, '2');
     assert.equal(mock.counters.ssoPost, 0);
     ok('SSO: kullanıcı adı + @ogr alan adı + şifre dolduruldu, gönderilmedi');
-    await dbg({ urlIncludes: '5105', action: 'click', selector: 'button[type=submit]' });
-    await waitFor(async () => (await dbg({ urlIncludes: '5105', action: 'text' })).value.includes('Doğrula'), 'sso 2fa');
-    await dbg({ urlIncludes: '5105', action: 'fillAndEnter', selector: '#Code', value: mock.TOTP });
-    await waitFor(async () => (await pageWith('5104'))?.title.includes('Yemek Rezervasyon'), 'yemek');
+    await dbg({ urlIncludes: '5605', action: 'click', selector: 'button[type=submit]' });
+    await waitFor(async () => (await dbg({ urlIncludes: '5605', action: 'text' })).value.includes('Doğrula'), 'sso 2fa');
+    await dbg({ urlIncludes: '5605', action: 'fillAndEnter', selector: '#Code', value: mock.TOTP });
+    await waitFor(async () => (await pageWith('5604'))?.title.includes('Yemek Rezervasyon'), 'yemek');
     ok('Yemekhane: kullanıcı "Giriş Yap" + 2FA ile içeride');
 
     console.log('Ölçüm kaydı');
@@ -123,7 +123,7 @@ function ok(name) { passed++; console.log('  ✓ ' + name); }
 
     console.log('Hesap kilitletmeme koruması');
     await api('/credentials', { method: 'PUT', body: { mailPass: 'YANLIS-sifre' } });
-    await dbg({ urlIncludes: '5102', action: 'goto', value: mock.URLS.posta + '/logout' });
+    await dbg({ urlIncludes: '5602', action: 'goto', value: mock.URLS.posta + '/logout' });
     await waitFor(async () => (await api('/sites')).data.find((s) => s.id === 'posta').failed, 'posta failed işareti');
     const before = mock.counters.postaPost;
     await api('/open/posta', { method: 'POST' });
@@ -140,7 +140,7 @@ function ok(name) { passed++; console.log('  ✓ ' + name); }
     assert.ok(lo.data.tabsClosed >= 1 && lo.data.cookiesCleared >= 1 && left.length === 0); ok('Tüm site sekmeleri kapandı, oturum çerezleri silindi');
     const beforeRelogin = mock.counters.postaPost;
     await api('/open/posta', { method: 'POST' });
-    await waitFor(async () => (await pageWith('5102'))?.title.includes('Gelen Kutusu'), 'posta yeniden giriş');
+    await waitFor(async () => (await pageWith('5602'))?.title.includes('Gelen Kutusu'), 'posta yeniden giriş');
     assert.equal(mock.counters.postaPost, beforeRelogin + 1); ok('Çıkıştan sonra site gerçekten yeniden giriş istiyor');
 
     console.log('Ölçüm dosyası ve başlatma');

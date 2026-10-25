@@ -18,6 +18,8 @@ public static class DenetimOlaylari
             DenetimOlayi.KurtarmaKoduKullanildi => "Kurtarma kodu kullanıldı",
             DenetimOlayi.IkiAdimKoduTekrarKullanildi => "2FA kodu tekrar kullanıldı",
             DenetimOlayi.IkiAdimKurulumuBaslatildi => "İki aşamalı doğrulama kurulumu başlatıldı (yeni anahtar)",
+            DenetimOlayi.EkDogrulama => basarili
+                ? "Uygulama için ek doğrulama yapıldı (iki aşamalı)" : "Ek doğrulama başarısız (hatalı kod)",
             DenetimOlayi.IkiAdimAcildi => basarili
                 ? "İki aşamalı doğrulama açıldı" : "İki aşamalı doğrulama açılamadı (hatalı kod)",
             DenetimOlayi.IkiAdimKapatildi => basarili
@@ -32,6 +34,7 @@ public static class DenetimOlaylari
             DenetimOlayi.OnayReddedildi => "Uygulamaya erişim izni reddedildi",
             DenetimOlayi.TokenVerildi => "Uygulamaya giriş yapıldı",
             DenetimOlayi.IstemciErisimiReddedildi => "İstemciye erişim reddedildi",
+            DenetimOlayi.IstemciMfaGerekli => "Uygulama iki aşamalı doğrulama istedi",
             DenetimOlayi.BackChannelLogoutGonderildi => "Uygulamaya çıkış bildirimi gönderildi",
             DenetimOlayi.BackChannelLogoutBasarisiz => "Uygulamaya çıkış bildirimi ulaştırılamadı",
             DenetimOlayi.HizSiniriAsildi => "Çok fazla istek (geçici engel)",
