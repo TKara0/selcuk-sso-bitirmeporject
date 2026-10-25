@@ -91,6 +91,11 @@ builder.Services.AddHttpClient(BackChannelLogoutGonderici.HttpIstemciAdi,
 builder.Services.AddScoped<BackChannelLogoutGonderici>();
 builder.Services.AddScoped<IstemciErisimi>();
 builder.Services.AddScoped<TokenIptali>();
+builder.Services.AddScoped<YenilemeUstSiniri>();
+
+// OpenIddict budaması: süresi dolmuş/iptal edilmiş token'lar ve yetim yetkilendirmeler TokenBudama:Aralik (1 gün) aralıkla.
+builder.Services.AddSingleton<TokenBudamaHizmeti>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<TokenBudamaHizmeti>());
 
 // E-posta: Development'ta App_Data/eposta/ klasörüne .eml, diğer ortamlarda SMTP. Gönderim arka planda (kuyruk).
 builder.Services.Configure<EpostaAyarlari>(builder.Configuration.GetSection(EpostaAyarlari.Bolum));
@@ -109,7 +114,7 @@ builder.Services.AddHostedService<EpostaGonderimHizmeti>();
 builder.Services.AddScoped<SahteSifreDogrulayici>();
 builder.Services.AddScoped<SifreDegisikligi>();
 builder.Services.AddScoped<IkiAdimIslemleri>();
-builder.Services.AddHizSiniri(builder.Configuration);
+builder.Services.AddHizSiniri(builder.Configuration, builder.Environment);
 
 // Var olmayan kullanıcı adı ve kullanılmış TOTP kodları için anahtarlı özet (HMAC-SHA256). Anahtar Development dışında
 // zorunludur; yoksa uygulama açılmaz (aşağıda, Build'den hemen sonra çözümlenir).
@@ -173,6 +178,7 @@ builder.Services.AddOpenIddict()
         // işaretlenir. Varsayılan 30 saniyelik tekrar kullanım payı kapatılır: kullanılmış bir refresh token hiçbir
         // zaman kabul edilmez; gelirse OpenIddict yetkilendirmenin tüm token'larını iptal eder (RefreshTokenTekrarDenetimi
         // denetim kaydını yazar). Eşzamanlı yenileme istemci tarafında tek uçuşla önlenir (Selcuk.Istemci.Ortak).
+        // Kayan sürenin mutlak üst sınırı (Tokenlar:MutlakOturumSuresi, 12 saat) token uç noktasında: YenilemeUstSiniri.
         options.SetRefreshTokenReuseLeeway(null);
         options.AddEventHandler(RefreshTokenTekrarDenetimi.Descriptor);
 
@@ -274,6 +280,13 @@ app.UseHttpsRedirection();
 app.UseCookiePolicy();
 app.UseStaticFiles();
 app.UseRouting();
+// Yalnızca Development + Olcum:HizSiniriGevset=true iken ölçüm hesaplarının giriş POST'ları sayılmaz (README > Ölçüm).
+if (app.Services.GetRequiredService<OlcumGevsetmesi>().Etkin)
+{
+    app.Logger.LogWarning("Ölçüm modu: giriş sayfasının istek sınırı ölçüm hesapları (olcum.kullanici.*) için gevşetildi.");
+}
+
+app.UseOlcumGevsetmesi();
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();

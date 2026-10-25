@@ -239,7 +239,7 @@ sonrası Tek Kapı kasası yeni konumda yeniden kurulur (`data/` taşınmadı).
 |---|---|---|---|---|
 | **id_token** | Kullanıcının kim olduğunu ve nasıl doğrulandığını istemciye bildirir (giriş kanıtı); profil (`name`, `preferred_username`, `fakulte`, `bolum`, `email`), `sid`, `amr` | İstemci uygulama (OBİS, Yemekhane, Tek Kapı) | OpenIddict varsayılanı (20 dk); yalnızca girişte doğrulanır, oturum çerezi ayrıca tutulur | İmzalı JWT |
 | **access token** | Bir API'yi (kaynak sunucusu) çağırma yetkisi. Veri minimizasyonu (KVKK): yalnızca `iss`, `sub`, `aud`, `exp`, `iat`, `jti`, `client_id`, `scope`, `role`, `sid` ve OpenIddict'in kişisel veri içermeyen iç tanımlayıcıları (`oi_prst`, `oi_au_id`, `oi_tkn_id`); ad, e-posta, fakülte, bölüm **yok** | Kaynak sunucusu (Demo API: `aud` = `demo-api`) ve userinfo | **15 dakika** (`Tokenlar:AccessTokenSuresi`) | İmzalı, şifresiz JWT (`typ: at+jwt`) |
-| **refresh token** | Kullanıcı tekrar giriş yapmadan yeni access token almak | Yalnızca gizli istemci (sunucu tarafında, çerezde); `offline_access` kapsamıyla | **8 saat**, kayan (`Tokenlar:RefreshTokenSuresi`, kimlik sunucusu oturumuyla aynı) | Kimlik sunucusunca şifreli; istemci içeriğini okuyamaz |
+| **refresh token** | Kullanıcı tekrar giriş yapmadan yeni access token almak | Yalnızca gizli istemci (sunucu tarafında, çerezde); `offline_access` kapsamıyla | **8 saat**, kayan (`Tokenlar:RefreshTokenSuresi`, kimlik sunucusu oturumuyla aynı); zincir ilk girişten itibaren en çok **12 saat** (`Tokenlar:MutlakOturumSuresi`) | Kimlik sunucusunca şifreli; istemci içeriğini okuyamaz |
 
 `offline_access` yalnızca `demo-obis` ve `demo-yemekhane`'ye izinlidir (`refresh_token` grant izni); `tek-kapi`
 isteyemez (OpenIddict isteği 400 ile reddeder), çünkü yalnızca id_token ile kendi oturumunu kurar. Onay ekranında
@@ -258,6 +258,26 @@ olarak yazılır (`Oidc/RefreshTokenTekrarDenetimi`, OpenIddict'in reddeden işl
 ama authorize her kod verişinde o kimlik sunucusu oturumuna (`sid`) ait ayrı bir **ad-hoc yetkilendirme** açar
 (`Oidc/TokenIptali`) ve kod ile ondan türeyen tüm token'lar ona bağlanır. Böylece iptal oturum bazında yapılabilir,
 tekrar kullanılan bir refresh token da yalnızca o oturumun zincirini düşürür.
+
+**Mutlak üst sınır** (`Oidc/YenilemeUstSiniri`). Kayan refresh token her kullanımda yeni 8 saat alır; böylece düzenli
+yenilenen bir zincir sonsuza kadar yaşayabilirdi. Bir yetkilendirme zincirinin toplam ömrü, ilk girişten (authorize'ın
+açtığı ad-hoc yetkilendirmenin oluşturulma zamanı) itibaren `Tokenlar:MutlakOturumSuresi`'ni (varsayılan **12 saat**)
+aşamaz. OpenIddict'te kayan süreyle birlikte mutlak sınır veren bir ayar yok: `DisableSlidingRefreshTokenExpiration()`
+kayan süreyi tamamen kapatıp refresh token'ı ilk token'ın bitişine sabitler. Bu yüzden token uç noktası
+(`OidcUcNoktalari`) her kod ve refresh isteğinde kalan süreyi hesaplar: süre dolduysa `invalid_grant` ("Oturumun en
+uzun süresi doldu") ve **"Uygulama oturumunun en uzun süresi doldu"** denetim kaydı (`MutlakOturumSuresiDoldu`);
+dolmadıysa verilen refresh token'ın ve access token'ın ömrü kalan süreyle kısaltılır (OpenIddict'in principal'a özel
+token ömrü: `SetRefreshTokenLifetime`, `SetAccessTokenLifetime`). Sınıra 5 dakika kalmış bir zincirin yeni refresh
+token'ı 8 saat değil 5 dakika sonra biter; ardından kullanıcı yeniden giriş yapar (kimlik sunucusu oturumu açıksa
+şifresiz).
+
+**Budama** (`Oidc/TokenBudamaHizmeti`). OpenIddict token ve yetkilendirme tablolarını kendiliğinden temizlemez
+(Quartz entegrasyonu eklenmedi). Arka plan hizmeti açılışta ve ardından `TokenBudama:Aralik` (varsayılan **1 gün**)
+aralıkla OpenIddict'in kendi `PruneAsync` işlevini çağırır: süresi dolmuş, iptal edilmiş veya kullanılmış token'lar;
+geçersiz yetkilendirmeler ve token'ı kalmamış ad-hoc (yetim) yetkilendirmeler silinir. Yalnızca
+`TokenBudama:EnAzYas` (varsayılan **14 gün**) süresinden önce oluşturulmuş kayıtlar silinir; bu süre mutlak oturum
+süresinden kısa verilirse mutlak süre kullanılır, çünkü yaşayan bir zincirin kullanılmış refresh token'ı silinirse
+tekrar kullanım tespiti çalışmaz. Kalıcı onaylar silinmez. Hata loglanır, sonraki turda denenir.
 
 **İstemci tarafında otomatik yenileme** (`Selcuk.Istemci.Ortak/TokenYenileyici`): çerezdeki access token'ın süresi
 **1 dakikadan az** kaldıysa çerez doğrulaması sırasında refresh token ile sessizce yenilenir ve çerez güncellenir.
@@ -860,7 +880,13 @@ Tüm yanıtlar `Cache-Control: no-store`, `nosniff`, `no-referrer`, `X-Frame-Opt
 SelcukSSO.sln
 dotnet-tools.json                 dotnet-ef yerel aracı
 .gitattributes                    Satır sonu kuralları
-scripts/run-all.ps1               Üç uygulamayı ayrı pencerelerde başlatır (-TekKapi: Tek Kapı da, SSO modunda)
+scripts/run-all.ps1               Dört uygulamayı ayrı pencerelerde başlatır (-TekKapi: Tek Kapı da, SSO modunda)
+scripts/olcum-calistir.ps1        Otomatik ölçüm: derle, uygulamaları ölçüm modunda başlat, ölç, durdur
+scripts/olcum_analiz.py           Ölçüm analizi (Python 3, standart kütüphane; matplotlib varsa PNG)
+tools/Selcuk.Olcum/               Otomatik ölçüm aracı (konsol; yalnızca localhost)
+docs/                             Değerlendirme belgeleri: mimari, güvenlik karşılaştırması, tehdit modeli, test kapsamı
+  olcumler/                       Ölçüm çıktıları, elle ölçüm şablonu ve protokolü, karşılaştırma
+  kullanilabilirlik/              SUS anketi
 araclar/tek-kapi/                 Tek Kapı: yerel kişisel ESSO portalı (Node.js), SSO modu; kendi README ve AGENTS.md'si
 src/Selcuk.Identity/
   Program.cs                      Identity, OpenIddict, çerez/HSTS ayarları, e-posta, istek sınırı, denetim kaydı,
@@ -873,11 +899,13 @@ src/Selcuk.Identity/
   Denetim/                        DenetimKaydedici (kuyruk) + yazma hizmeti, saklama süresi temizliği, Türkçe olay adları,
                                   AnahtarliOzet (HMAC-SHA256)
   Eposta/                         IEpostaGonderici, DosyaEpostaGonderici, SmtpEpostaGonderici, kuyruk, şablonlar
-  Hesap/                          Sıfırlama token sağlayıcısı, sahte şifre doğrulama, istek sınırı, oturum damgası,
+  Hesap/                          Sıfırlama token sağlayıcısı, sahte şifre doğrulama, istek sınırı (+ ölçüm gevşetmesi,
+                                  OlcumKullanicilari), oturum damgası,
                                   şifre değişikliği sonrası işler, Türkçe Identity hataları, IkiAdimIslemleri (2FA),
                                   KurtarmaKoduOzetDeposu, TekKullanimlikTotpSaglayici (TOTP tekrar koruması)
   Oidc/                           Token/UserInfo uç noktaları, claim hedefleri (amr dahil), OturumKimligi (sid),
-                                  BackChannelLogoutGonderici, IstemciErisimi (uygulama bazlı erişim izni)
+                                  BackChannelLogoutGonderici, IstemciErisimi (uygulama bazlı erişim izni), TokenIptali,
+                                  RefreshTokenTekrarDenetimi, YenilemeUstSiniri (mutlak sınır), TokenBudamaHizmeti
   Pages/                          Uygulamalarım (Index), Account/Login, IkiAdim, IkiAdimDogrulama, GuvenlikGecmisi,
                                   SifremiUnuttum, SifreSifirla, Hesabim, SifreDegistir, AccessDenied,
                                   Connect/Authorize, Logout
@@ -892,6 +920,7 @@ tests/Selcuk.Istemci.Ortak.Tests/ Back-Channel Logout alıcısı testleri (yerel
 tests/Selcuk.Demo.Obis.Tests/     Demo OBİS yönlendirme ve rol testleri
 tests/Selcuk.Demo.Yemekhane.Tests/ Demo Yemekhane yönlendirme ve rol testleri
 tests/Selcuk.Demo.Api.Tests/      Demo API token doğrulama ve yetkilendirme testleri (yerel anahtar)
+tests/Selcuk.Olcum.Tests/         Ölçüm aracı: localhost dışı reddi, istatistik, dört uygulamayla bellek içi uçtan uca tur
 ```
 
 ## Kurulum
@@ -930,6 +959,7 @@ Hiçbir şifre veya secret repoda yoktur. Development'ta `dotnet user-secrets` k
 | `src/Selcuk.Identity` | `TestKullanicilari:Ogrenci:Sifre`, `…:Akademisyen:Sifre`, `…:Personel:Sifre` | Test kullanıcılarının şifreleri |
 | `src/Selcuk.Identity` | `Istemciler:DemoObis:ClientSecret` | demo-obis secret'ı |
 | `src/Selcuk.Identity` | `Istemciler:DemoYemekhane:ClientSecret` | demo-yemekhane secret'ı |
+| `src/Selcuk.Identity` | `OlcumKullanicilari:Sifre` | Ölçüm kullanıcılarının (`olcum.kullanici.01`…`50`) ortak şifresi; isteğe bağlı, yoksa seed edilmez. Ölçüm aracı da buradan okur ([Ölçüm ve değerlendirme](#ölçüm-ve-değerlendirme)) |
 | `src/Selcuk.Identity` | `Denetim:KullaniciAdiOzetAnahtari` | Anahtarlı özet (HMAC) anahtarı, base64, 32 bayt. Development dışında zorunlu (ortam değişkeni `Denetim__KullaniciAdiOzetAnahtari`) |
 | `src/Selcuk.Demo.Obis` | `Kimlik:ClientSecret` | demo-obis secret'ı (kimlik sunucusundakiyle aynı) |
 | `src/Selcuk.Demo.Yemekhane` | `Kimlik:ClientSecret` | demo-yemekhane secret'ı (kimlik sunucusundakiyle aynı) |
@@ -1084,6 +1114,61 @@ Rol bazlı zorunluluğu denemek için `src/Selcuk.Identity/appsettings.Developme
 `"IkiAdimZorunluRoller": ["akademisyen"]` ekleyip kimlik sunucusunu yeniden başlatın: `hoca.test` girişten sonra
 kurulum sayfasına yönlendirilir ve kurulumu bitirmeden Demo OBİS'e giremez.
 
+## Ölçüm ve değerlendirme
+
+Tezin değerlendirme bölümü için araçlar ve belgeler. Ölçümler **yalnızca bu bilgisayardaki kendi uygulamalarımıza**
+yapılır; gerçek Selçuk sistemlerine veya internete otomatik istek atılmaz.
+
+| Dosya | Ne işe yarar |
+|---|---|
+| `tools/Selcuk.Olcum/` | Otomatik ölçüm aracı (konsol). HttpClient + çerez kabıyla tarayıcının OIDC akışını taklit eder (tarayıcı açmaz): (a) soğuk giriş, (b) tek giriş, (c) token yenileme, (d) tek çıkış, (e) Demo API çağrısı, (f) 1/10/25/50 eşzamanlı kullanıcıyla soğuk giriş. p50/p95/p99, ortalama, min, max, hata; ısınma turları özete girmez |
+| `scripts/olcum-calistir.ps1` | Port kontrolü (doluysa durur, kapatmaz) → `dotnet build` → `run-all.ps1 -TarayiciAcma` (ölçüm modunda) → ölçüm → yalnızca kendi başlattığı pencereleri kapatır |
+| `docs/olcumler/sso-olcumler-<tarih>.csv/.json/.md` | Ham turlar / özet ve ortam / okunabilir tablo. Kullanıcı adı, şifre, token yazılmaz |
+| `docs/olcumler/manuel-giris-sablonu.csv`, `manuel-giris-protokolu.md` | Gerçek sistemlerde elle (kronometreyle) ölçüm şablonu ve nasıl doldurulacağı |
+| `docs/olcumler/tekkapi-olcumler-README.md` | Tek Kapı'nın "CSV indir" çıktısının buraya nasıl kopyalanacağı |
+| `scripts/olcum_analiz.py` | Python 3 (yalnızca standart kütüphane) analiz → `docs/olcumler/karsilastirma.md`; matplotlib kuruluysa PNG grafikler, değilse uyarı verip atlar. `--self-test` örnek veriyle (`ornek-*` dosyaları) geçici klasörde çalışır ve sonucu doğrular |
+| `docs/kullanilabilirlik/sus-anketi.md` | System Usability Scale (Türkçe), uygulama yönergesi, puanlama; yanıtlar `sus-yanitlar.csv` |
+| `docs/mimari.md`, `docs/guvenlik-karsilastirma.md`, `docs/tehdit-modeli.md`, `docs/test-kapsami.md` | Bileşen ve sıra diyagramları, üç yaklaşımın güvenlik karşılaştırması, STRIDE tehdit modeli (açık kalan riskler dahil), test sayıları ve kod kapsamı |
+
+`ornek-` önekli dosyalar gerçek ölçüm değildir; analiz betiği onları hiçbir zaman veri olarak okumaz.
+
+**Önkoşul (bir kez):** ölçüm kullanıcılarının şifresi kimlik sunucusunun user-secrets'ına (değer ekrana yazılmaz):
+
+```powershell
+$b = New-Object byte[] 18; [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b)
+dotnet user-secrets set "OlcumKullanicilari:Sifre" ('Ol9' + ([Convert]::ToBase64String($b) -replace '[+/=]', 'x')) --project src/Selcuk.Identity | Out-Null
+```
+
+Kimlik sunucusu Development'ta açılışta `olcum.kullanici.01` … `olcum.kullanici.50` hesaplarını (rol `ogrenci`, 2FA
+kapalı, `@test.local`) bu şifreyle oluşturur; var olan hesaba dokunmaz. Ölçüm aracı ayrı bir sır tutmaz: kimlik
+sunucusunun user-secrets'ından (aynı `UserSecretsId`) `OlcumKullanicilari:Sifre` ve `Istemciler:DemoObis:ClientSecret`'ı
+okur. (c) ve (e) için araç, açık kimlik sunucusu oturumuyla `demo-obis` istemcisi olarak kendi token'ını alır; Demo
+OBİS'in çerezindeki token'lara erişmez.
+
+**Çalıştırma:**
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\olcum-calistir.ps1                                 # 100 tekrar, 5 ısınma, 1/10/25/50
+powershell -ExecutionPolicy Bypass -File scripts\olcum-calistir.ps1 -Tekrar 20 -Eszamanlilik "1,10" # kısa deneme
+python scripts/olcum_analiz.py                                                                       # karsilastirma.md (+ PNG)
+python scripts/olcum_analiz.py --self-test
+```
+
+Uygulamalar zaten çalışıyorsa araç doğrudan da çalıştırılabilir (`dotnet run --project tools/Selcuk.Olcum --
+--tekrar 100`); hedefler `tools/Selcuk.Olcum/appsettings.json`'da (`Olcum:Hedefler`). Hedeflerden biri `localhost`,
+`127.0.0.1` veya `::1` dışındaysa ya da https değilse araç başlamaz; ayrıca her giden istek (yönlendirmeler dahil)
+yerel olmayan adreste gönderilmeden reddedilir. Sistem proxy'si kullanılmaz, TLS doğrulaması kapatılmaz. (f)'de her
+düzey toplam `Tekrar` kadar giriş yapar (varsayılan 100; 50 eşzamanlı kullanıcıda kullanıcı başına 2 giriş).
+
+**Ölçüm sırasında hız sınırı (bilinçli istisna).** Giriş sayfasının istek sınırı IP başına dakikada 10 POST'tur;
+ölçüm aynı IP'den dakikada yüzlerce giriş yaptığı için sınır ölçümü bozar. Sınır **yalnızca** şu üç koşul birlikte
+sağlanınca, **yalnızca giriş sayfasında** ve **yalnızca ölçüm hesapları** (`olcum.kullanici.01`…`50`) için sayılmaz:
+ortam **Development**, yapılandırmada **`Olcum:HizSiniriGevset` açıkça `true`** (varsayılan yok/kapalı;
+`olcum-calistir.ps1` yalnızca başlattığı süreçlere `Olcum__HizSiniriGevset=true` ortam değişkeniyle verir) ve
+formdaki kullanıcı adı bir ölçüm hesabı. Gevşetme açıkken kimlik sunucusu açılışta uyarı loglar. Diğer kullanıcılar,
+diğer sayfalar, hesap kilitleme ve Development dışındaki ortamlar için **varsayılan davranış değişmez**
+(`Hesap/HizSiniri.cs`, `Hesap/OlcumKullanicilari.cs`; testler `KabaKuvvetTests`).
+
 ## Testler
 
 ```powershell
@@ -1112,6 +1197,11 @@ yakalanır.
   token'ı gibi üretilir.
 - **Selcuk.Demo.Obis.Tests / Selcuk.Demo.Yemekhane.Tests:** discovery bilgisi sabit verilir. Rol testlerinde gerçek
   kimlik sunucusu yerine sahte bir kimlik doğrulama şeması kullanılır.
+- **Selcuk.Olcum.Tests:** uçtan uca testte kimlik sunucusu (Testing, SQLite in-memory), Demo OBİS, Demo Yemekhane ve
+  Demo API aynı süreçte `WebApplicationFactory` ile çalışır; dört web uygulamasının da genel `Program` sınıfı olduğu
+  için proje referansları `extern alias` ile ayrılır. `https://localhost:5001/5101/5102/5201`'e giden her istek
+  (aracın, OIDC backchannel'ının, JWKS'nin, Notlarım → API'nin, Back-Channel Logout'un) porta göre ilgili TestServer'a
+  yönlendirilir; ağa çıkılmaz. Ölçüm aracının çerezleri bir `CookieContainer`'da tutulur.
 
 | Test | Doğruladığı |
 |---|---|
@@ -1151,6 +1241,10 @@ yakalanır.
 | `Yanlis_mevcut_sifre_reddediliyor_dogru_sifreyle_degisiyor_diger_oturumlar_kapaniyor` | Yanlış mevcut şifre: değişiklik ve bildirim yok. Doğru şifre: aynı sid'le oturum açık, diğer oturum kapanır, yalnızca onun istemcilerine logout_token, e-posta |
 | `Sifre_degistirme_ve_hesabim_giris_gerektiriyor` | Girişsiz → giriş sayfası |
 | `Giris_POST_siniri_asilinca_429` | 10 POST'tan sonra 429, `Retry-After`, Türkçe sayfa; GET sınırlanmaz |
+| `Olcum_gevsetmesi_yalnizca_Developmentta_ve_acik_anahtarla_etkin` (×5) | Gevşetme yalnızca Development + `Olcum:HizSiniriGevset=true` iken açık; anahtar yok/false, Testing ve Production'da kapalı |
+| `Olcum_kullanicisi_yalnizca_01_50_arasi_adlar` (×9) | `olcum.kullanici.01`…`50` (büyük/küçük harf duyarsız, kenar boşluğu kırpılır) ölçüm hesabı; `00`, `51`, `1`, `01x`, başka adlar değil |
+| `Gevsetme_anahtar_kapaliyken_veya_Development_disinda_olcum_kullanicisi_icin_de_devrede_degil` (×2) | Anahtar yok veya Testing ortamında anahtar açık: ölçüm hesabıyla da 11. giriş POST'u 429 |
+| `Gevsetme_etkinken_olcum_kullanicisi_olmayan_icin_sinir_devrede_olcum_kullanicisi_sayilmiyor` | Gevşetme etkin: ölçüm hesabının 15 POST'u sayılmaz; aynı IP'den başka bir ad (ve `olcum.kullanici.99`) için sınır aynen 10, 11. POST 429 |
 | `Olmayan_kullanici_ve_yanlis_sifre_ayni_mesaji_donuyor` | Durum kodu ve sayfa (yazılan kullanıcı adı ve antiforgery token'ı dışında) aynı |
 | `Iki_adim_ve_sifre_degistirme_POST_siniri_asilinca_429_ve_denetim_kaydi` (×3) | `/Account/IkiAdim`, `/Account/IkiAdimDogrulama`, `/Account/SifreDegistir`: 11. POST 429, denetim kaydında `HizSiniriAsildi` |
 | `Yanlis_mevcut_sifre_hatali_deneme_sayacini_artiriyor_kilitliyken_degisiklik_yapilmiyor` | Yanlış mevcut şifre sayacı 1 artırır; 5'te kilit, kilitliyken doğru şifreyle de değişmez; denetim kayıtları |
@@ -1204,8 +1298,12 @@ yakalanır.
 | `Revocation_ucu_refresh_tokeni_iptal_ediyor_discovery_ve_onay_ekrani` | Discovery'de `revocation_endpoint`; onay ekranı `no-store` ve offline_access/notlar.oku Türkçe açıklamaları; revoke 200, sonra refresh `invalid_grant` |
 | `Sifre_degistirmede_diger_oturumlarin_refresh_tokenlari_iptal_mevcut_calisiyor_sifirlamada_hepsi` | Şifre değiştirmede diğer oturumun refresh token'ı reddedilir, mevcut oturumunki çalışır; sıfırlamadan sonra o da reddedilir |
 | `Kimlik_sunucusundan_cikista_o_side_bagli_refresh_tokenlar_iptal` | Çıkan oturumun refresh token'ı reddedilir, diğer oturumunki çalışır |
+| `Mutlak_sinir_asilan_yetkilendirmede_refresh_reddediliyor_kayan_sure_kendi_basina_yetmiyor` | Varsayılan mutlak süre 12 saat; yeni kullanılmış (kayan süresi dolmamış) refresh token, ilk giriş 12 saat 1 dakika önceyse `invalid_grant`; `MutlakOturumSuresiDoldu` kaydı (kullanıcı, `client_id`, `grant_type=refresh_token`) |
+| `Mutlak_sinira_yakin_yenilemede_token_omurleri_sinirda_kesiliyor` | İlk girişten 11 saat 55 dk sonra yenileme: access token 4-5 dk (15 değil), yeni refresh token'ın son kullanma zamanı 4-5 dk sonra (8 saat değil) |
 | `Loglarda_ve_denetim_kaydinda_token_degeri_yok` | Giriş, yenileme, tekrar kullanım, revoke ve çıkıştan sonra hiçbir log iletisinde ve denetim tablosunda access/id/refresh token, kod, code_verifier, secret veya şifre yok |
 | `Istemci_adresleri_https_veya_yalnizca_http_127_0_0_1_olabiliyor` | Üç tanım kurala uyar; `http://localhost`, `http://192.168.1.10`, `http://127.0.0.1.evil.example`, uzak http redirect ve `http://localhost` back-channel reddedilir; boş izin listesi varsayılana döner |
+| `Aralik_ve_en_az_yas_yapilandirilabilir_en_az_yas_mutlak_oturum_suresinden_kisa_olamaz` | Budama aralığı varsayılan 1 gün, en az yaş 14 gün; ayarla 6 saat; 1 saatlik en az yaş mutlak oturum süresine (12 saat) yükseltilir |
+| `Budama_suresi_dolmus_ve_iptal_edilmis_kayitlari_siliyor_gecerlileri_silmiyor` | 20 günlük kayıtlar: süresi dolmuş, iptal edilmiş, kullanılmış token ve iptal edilmiş yetkilendirmenin token'ı silinir (4); geçerli token ve 2 saatlik süresi dolmuş token kalır; yetim ad-hoc ve iptal edilmiş yetkilendirme silinir (2), token'ı olan oturum yetkilendirmesi ve kalıcı onay kalır |
 | **Selcuk.Istemci.Ortak.Tests** | |
 | `Gecerli_logout_token_oturumu_sonlandiriyor` | 200 (`no-store`); o sid'li oturum sonraki istekte authorize'a yönlenir |
 | `Imzasi_gecersiz_token_reddediliyor` | 400, oturum etkilenmez |
@@ -1249,6 +1347,14 @@ yakalanır.
 | `Yalnizca_tokendaki_subin_notlari_donuyor_parametreyle_baskasi_istenemiyor` | `?sub=` / `?ogrenci=` yok sayılır; A'nın token'ı her zaman A'nın notlarını, B'ninki B'ninkini döndürür |
 | `Giris_yapmis_kullanici_eslestirme_cerezi_olmadan_donuste_ana_sayfaya_yonlendiriliyor` | Yemekhane'de geri tuşu, giriş yapmış: 302 → `/` |
 | `Girissiz_kullanici_eslestirme_cerezi_olmadan_donuste_GirisHatasi_sayfasina_yonlendiriliyor` | Yemekhane'de giriş yapmamış: `/GirisHatasi?neden=oturum-suresi` |
+| **Selcuk.Olcum.Tests** | |
+| `Yerel_hedefler_kabul_ediliyor_varsayilanlar_dogru` | `localhost`, `127.0.0.1`, `[::1]` kabul; varsayılan tekrar 100, ısınma 5, kullanıcı 50, eşzamanlılık 1/10/25/50 |
+| `Localhost_disi_veya_https_olmayan_hedef_reddediliyor` (×8) | `obis.selcuk.edu.tr`, `example.com`, `localhost.example.com`, `192.168.1.10`, `10.0.0.1`, `0.0.0.0`, `http://localhost`, şemasız adres: ölçüm başlamaz |
+| `Hedef_yerel_degilse_sirlar_eksik_olsa_da_once_hedef_reddediliyor` | Yerel olmayan hedef, sır kontrolünden önce reddedilir |
+| `Yonlendirmeyle_bile_yerel_olmayan_adrese_istek_gitmiyor` (×2) | Yerel sayfa dış adrese yönlendirince istek gönderilmez (`yerel-olmayan-adres`); yalnızca ilk yerel istek gitti |
+| `Gizli_form_alanlari_ilk_formdan_oznitelik_sirasindan_bagimsiz_ve_cozulmus_okunuyor` | Yalnızca ilk formun gizli alanları (sayfadaki ikinci çıkış formu değil), HTML çözülmüş |
+| `Yuzdelikler_en_yakin_sira_yontemiyle_isinma_turlari_ozete_girmiyor` | 1…100 ms: p50 50, p95 95, p99 99, ortalama 50,5; ısınma turu ve hatalı tur süreye girmez, hata sayılır |
+| `Tek_turda_a_e_senaryolari_ve_eszamanli_giris_hatasiz_tamamlaniyor` | Kimlik sunucusu, Demo OBİS, Demo Yemekhane ve Demo API bellek içinde birlikte (TestServer, ağ yok): hazırlık, (a)-(e) ve 2 kullanıcılı (f) hatasız; ısınma ayrı; rapor dosyalarında kullanıcı adı, şifre, secret yok |
 
 ## Sürümler
 
@@ -1282,6 +1388,13 @@ yakalanır.
       istek sınırı olayları), kullanıcının güvenlik geçmişi sayfası, KVKK saklama süresi
 - [x] **Uygulama bazlı erişim izni** (`izinliRoller`, `izinliKullaniciAdlari`) ve **Tek Kapı** public istemci kaydı
       (loopback, PKCE)
+- [x] **Token bakımı**: OpenIddict budaması (günlük arka plan hizmeti) ve kayan refresh token'a mutlak üst sınır
+      (12 saat)
+- [x] **Ölçüm ve değerlendirme altyapısı**: otomatik ölçüm aracı ve ilk ölçüm (`docs/olcumler/`), elle ölçüm şablonu
+      ve protokolü, analiz betiği, mimari / güvenlik karşılaştırması / tehdit modeli / test kapsamı belgeleri, SUS
+      anketi
+- [ ] **Elle ölçümler ve SUS anketi**: gerçek sistemlerde elle ve Tek Kapı ile giriş ölçümleri, katılımcılarla SUS
+      uygulaması (şablonlar hazır, henüz ölçülmedi)
 - [ ] **Yönetim paneli** (kullanıcı, rol ve istemci uygulama yönetimi; erişim izinlerinin arayüzden yönetimi)
 - [x] **Token yönetimi**: küçültülmüş 15 dk access token, kayan refresh token (offline_access, tekrar kullanım
       tespiti), istemcide otomatik yenileme, revocation uç noktası, çıkış/şifre/2FA değişikliğinde oturum bazında

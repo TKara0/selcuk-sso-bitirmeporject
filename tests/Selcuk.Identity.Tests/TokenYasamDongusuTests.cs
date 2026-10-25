@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OpenIddict.Abstractions;
@@ -278,6 +279,76 @@ public sealed class TokenYasamDongusuTests : IDisposable
 
         await ReddedildiAsync(await YenileAsync(cikan, cikanTokenlar.Refresh, secret));
         await YenileBasariliAsync(kalan, kalanTokenlar.Refresh, secret);
+    }
+
+    /// <summary>Token'ın bağlı olduğu ad-hoc yetkilendirmenin (ilk giriş) oluşturulma zamanını geriye alır.</summary>
+    private async Task<string> IlkGirisiGeriAlAsync(string accessToken, TimeSpan once)
+    {
+        var yetkiId = OidcYardimcisi.JwtGovdesi(accessToken).GetProperty("oi_au_id").GetString()!;
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var guncellenen = await db.Set<OpenIddict.EntityFrameworkCore.Models.OpenIddictEntityFrameworkCoreAuthorization>()
+            .Where(a => a.Id == yetkiId)
+            .ExecuteUpdateAsync(s => s.SetProperty(a => a.CreationDate, DateTime.UtcNow - once));
+        Assert.Equal(1, guncellenen);
+        return yetkiId;
+    }
+
+    [Fact]
+    public async Task Mutlak_sinir_asilan_yetkilendirmede_refresh_reddediliyor_kayan_sure_kendi_basina_yetmiyor()
+    {
+        using (var scope = _factory.Services.CreateScope())
+        {
+            Assert.Equal(TimeSpan.FromHours(12), scope.ServiceProvider.GetRequiredService<Oidc.YenilemeUstSiniri>().MutlakSure);
+        }
+
+        var secret = await OidcYardimcisi.DemoObisKaydetAsync(_factory);
+        var (kullaniciAdi, sifre) = await _factory.KullaniciOlusturAsync(Roller.Ogrenci);
+        var kullaniciId = (await _factory.KullaniciAsync(kullaniciAdi)).Id;
+        var client = await GirisAsync(kullaniciAdi, sifre);
+        var tokenlar = await TokenAlAsync(client, secret);
+
+        // Kayan refresh token hâlâ geçerli (son yenileme yeni), ama zincir 12 saatten uzun süredir yaşıyor.
+        var (_, yeniRefresh) = await YenileBasariliAsync(client, tokenlar.Refresh, secret);
+        await IlkGirisiGeriAlAsync(tokenlar.Access, TimeSpan.FromHours(12) + TimeSpan.FromMinutes(1));
+
+        await ReddedildiAsync(await YenileAsync(client, yeniRefresh, secret));
+        var kayitlar = await _factory.DenetimKayitlariAsync(k => k.Any(x => x.OlayTuru == DenetimOlayi.MutlakOturumSuresiDoldu));
+        var kayit = Assert.Single(kayitlar, x => x.OlayTuru == DenetimOlayi.MutlakOturumSuresiDoldu);
+        Assert.Equal((kullaniciId, Istemciler.DemoObisClientId, "grant_type=refresh_token"),
+            (kayit.KullaniciId, kayit.IstemciId, kayit.Ayrinti));
+    }
+
+    [Fact]
+    public async Task Mutlak_sinira_yakin_yenilemede_token_omurleri_sinirda_kesiliyor()
+    {
+        var secret = await OidcYardimcisi.DemoObisKaydetAsync(_factory);
+        var (kullaniciAdi, sifre) = await _factory.KullaniciOlusturAsync(Roller.Ogrenci);
+        var client = await GirisAsync(kullaniciAdi, sifre);
+        var tokenlar = await TokenAlAsync(client, secret);
+
+        // İlk girişten 11 saat 55 dakika geçmiş: 12 saatlik sınıra 5 dakika kaldı.
+        var yetkiId = await IlkGirisiGeriAlAsync(tokenlar.Access, TimeSpan.FromHours(12) - TimeSpan.FromMinutes(5));
+        var (yeniAccess, _) = await YenileBasariliAsync(client, tokenlar.Refresh, secret);
+
+        // Access token 15 değil en fazla 5 dakikalık; yeni refresh token 8 saat değil, sınırda bitiyor.
+        var access = OidcYardimcisi.JwtGovdesi(yeniAccess);
+        Assert.InRange(access.GetProperty("exp").GetInt64() - access.GetProperty("iat").GetInt64(), 4 * 60, 5 * 60);
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var tokenManager = scope.ServiceProvider.GetRequiredService<IOpenIddictTokenManager>();
+        var bitisler = new List<DateTimeOffset>();
+        await foreach (var token in tokenManager.FindByAuthorizationIdAsync(yetkiId))
+        {
+            if (await tokenManager.HasTypeAsync(token, TokenTypeIdentifiers.RefreshToken)
+                && await tokenManager.HasStatusAsync(token, Statuses.Valid)
+                && await tokenManager.GetExpirationDateAsync(token) is { } bitis)
+            {
+                bitisler.Add(bitis);
+            }
+        }
+
+        var yeniRefreshBitis = Assert.Single(bitisler);
+        Assert.InRange(yeniRefreshBitis, DateTimeOffset.UtcNow.AddMinutes(4), DateTimeOffset.UtcNow.AddMinutes(5));
     }
 
     [Fact]

@@ -31,6 +31,7 @@ public static class OidcUcNoktalari
         SignInManager<ApplicationUser> signInManager,
         IkiAdimIslemleri ikiAdim,
         IstemciErisimi istemciErisimi,
+        YenilemeUstSiniri ustSinir,
         IOpenIddictApplicationManager applicationManager,
         DenetimKaydedici denetim,
         ApplicationDbContext db,
@@ -81,6 +82,14 @@ public static class OidcUcNoktalari
             return Reddet(Errors.InvalidGrant, "İki aşamalı doğrulama kurulumu gerekli.");
         }
 
+        // Kayan refresh token'a mutlak üst sınır: zincir ilk girişten itibaren Tokenlar:MutlakOturumSuresi'ni aşamaz.
+        if (await ustSinir.KalanSureAsync(result.Principal!) is not { } kalan)
+        {
+            denetim.Ekle(DenetimOlayi.MutlakOturumSuresiDoldu, DenetimSonucu.Basarisiz, user.Id, clientId,
+                $"grant_type={request.GrantType}");
+            return Reddet(Errors.InvalidGrant, "Oturumun en uzun süresi doldu; yeniden giriş yapın.");
+        }
+
         // Kapsamlar, yetkilendirme kimliği gibi OpenIddict claim'leri korunur; kullanıcı bilgileri tazelenir.
         var identity = new ClaimsIdentity(result.Principal!.Claims,
             authenticationType: result.Principal.Identity?.AuthenticationType,
@@ -93,6 +102,7 @@ public static class OidcUcNoktalari
         }
 
         identity.SetDestinations(OidcKimlik.Hedefler);
+        ustSinir.OmurleriSinirla(identity, kalan);
 
         // Bu oturumda bu istemciye token verildiği kaydedilir; çıkışta Back-Channel Logout bildirimi gider.
         if (request.IsAuthorizationCodeGrantType() && identity.GetClaim(OidcKimlik.SidClaim) is { } sid)

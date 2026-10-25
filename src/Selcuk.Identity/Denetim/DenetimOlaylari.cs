@@ -36,6 +36,7 @@ public static class DenetimOlaylari
             DenetimOlayi.IstemciErisimiReddedildi => "İstemciye erişim reddedildi",
             DenetimOlayi.IstemciMfaGerekli => "Uygulama iki aşamalı doğrulama istedi",
             DenetimOlayi.RefreshTokenTekrarKullanildi => "Refresh token tekrar kullanıldı",
+            DenetimOlayi.MutlakOturumSuresiDoldu => "Uygulama oturumunun en uzun süresi doldu",
             DenetimOlayi.BackChannelLogoutGonderildi => "Uygulamaya çıkış bildirimi gönderildi",
             DenetimOlayi.BackChannelLogoutBasarisiz => "Uygulamaya çıkış bildirimi ulaştırılamadı",
             DenetimOlayi.HizSiniriAsildi => "Çok fazla istek (geçici engel)",

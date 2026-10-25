@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.RateLimiting;
 using Selcuk.Identity.Data;
 using Selcuk.Identity.Denetim;
@@ -11,22 +12,29 @@ namespace Selcuk.Identity.Hesap;
 /// doğrulama (giriş ikinci adımı ve kurulum/yönetim), şifremi unuttum, şifre sıfırlama ve şifre değiştirme sayfaları
 /// <c>[EnableRateLimiting(HassasForm)]</c> ile işaretlidir; yalnızca POST sayılır, her sayfanın ayrı sayacı vardır.
 /// IP, güvenilen proxy arkasında gerçek istemci adresidir (<see cref="GuvenilenProxyler"/>). Sınır aşılınca 429,
-/// Türkçe hata sayfası ve denetim kaydı.
+/// Türkçe hata sayfası ve denetim kaydı. Tek istisna performans ölçümüdür: yalnızca Development'ta ve
+/// Olcum:HizSiniriGevset açıkça true ise, giriş sayfasına ölçüm hesaplarıyla (<see cref="OlcumKullanicilari"/>) yapılan
+/// POST'lar sayılmaz (<see cref="UseOlcumGevsetmesi"/>); diğer kullanıcılar ve sayfalar için sınır aynıdır.
 /// </summary>
 public static class HizSiniri
 {
     public const string HassasForm = "hassas-form";
     public const int VarsayilanDakikadaIstek = 10;
+    private const string GirisSayfasi = "/Account/Login";
+    private static readonly object OlcumIstegi = new();
 
-    public static IServiceCollection AddHizSiniri(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddHizSiniri(this IServiceCollection services, IConfiguration configuration,
+        IHostEnvironment environment)
     {
         var dakikadaIstek = configuration.GetValue<int?>("HizSiniri:DakikadaIstek") ?? VarsayilanDakikadaIstek;
+        services.AddSingleton(new OlcumGevsetmesi(OlcumKullanicilari.GevsetmeEtkinMi(environment, configuration)));
 
         return services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
             options.OnRejected = ReddedildiAsync;
             options.AddPolicy(HassasForm, context => HttpMethods.IsPost(context.Request.Method)
+                && !context.Items.ContainsKey(OlcumIstegi)
                 ? RateLimitPartition.GetFixedWindowLimiter(
                     // Sayfa, yolun yazılışından (büyük/küçük harf, sondaki /) bağımsız olarak uç noktayla belirlenir.
                     $"{context.GetEndpoint()?.DisplayName}|{context.Connection.RemoteIpAddress}",
@@ -39,6 +47,29 @@ public static class HizSiniri
                 : RateLimitPartition.GetNoLimiter(string.Empty));
         });
     }
+
+    /// <summary>
+    /// UseRateLimiter'dan önce: gevşetme etkinse giriş sayfasına gelen POST'un formu okunur ve kullanıcı adı ölçüm
+    /// hesabıysa istek işaretlenir (istek sınırı politikası işaretli isteği saymaz). Gevşetme kapalıyken hiçbir şey
+    /// yapmaz; form okunmaz. Form ASP.NET Core'un form önbelleğinde kalır, model bağlama aynı formu kullanır.
+    /// </summary>
+    public static IApplicationBuilder UseOlcumGevsetmesi(this IApplicationBuilder app) =>
+        app.Use(async (context, next) =>
+        {
+            if (context.RequestServices.GetRequiredService<OlcumGevsetmesi>().Etkin
+                && HttpMethods.IsPost(context.Request.Method)
+                && context.Request.HasFormContentType
+                && context.GetEndpoint()?.Metadata.GetMetadata<PageActionDescriptor>()?.ViewEnginePath == GirisSayfasi)
+            {
+                var form = await context.Request.ReadFormAsync(context.RequestAborted);
+                if (OlcumKullanicilari.OlcumKullanicisiMi(form["Input.KullaniciAdi"]))
+                {
+                    context.Items[OlcumIstegi] = true;
+                }
+            }
+
+            await next(context);
+        });
 
     private static async ValueTask ReddedildiAsync(OnRejectedContext context, CancellationToken cancellationToken)
     {
@@ -85,3 +116,6 @@ public static class HizSiniri
         </html>
         """;
 }
+
+/// <summary>Ölçüm hesapları için giriş sınırı gevşetmesi açık mı (<see cref="OlcumKullanicilari.GevsetmeEtkinMi"/>).</summary>
+public sealed record OlcumGevsetmesi(bool Etkin);

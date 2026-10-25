@@ -21,7 +21,13 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
     (`OidcKimlik.Hedefler`). Refresh token yalnızca `offline_access` ile (demo-obis, demo-yemekhane; tek-kapi değil),
     8 saat (`Tokenlar:RefreshTokenSuresi`), kayan; tekrar kullanım payı kapalı (`SetRefreshTokenReuseLeeway(null)`):
     kullanılmış refresh token gelirse OpenIddict zincirin tüm token'larını iptal eder, `RefreshTokenTekrarDenetimi`
-    denetim kaydı yazar. Authorize her kodda kalıcı onaydan ayrı, `sid` özellikli bir ad-hoc yetkilendirme açar
+    denetim kaydı yazar. Mutlak üst sınır `Tokenlar:MutlakOturumSuresi` (12 saat, ilk girişten = ad-hoc yetkilendirmenin
+    oluşturulma zamanı): OpenIddict'te kayan + mutlak ayarı olmadığı için token uç noktası `Oidc/YenilemeUstSiniri` ile
+    kalan süreyi hesaplar; dolduysa `invalid_grant` + `MutlakOturumSuresiDoldu` denetim kaydı, dolmadıysa refresh ve
+    access token ömrü kalan süreyle kısaltılır (`SetRefreshTokenLifetime`/`SetAccessTokenLifetime`). Budama:
+    `Oidc/TokenBudamaHizmeti` (BackgroundService, Quartz yok) açılışta ve `TokenBudama:Aralik` (1 gün) aralıkla
+    OpenIddict `PruneAsync` (önce token, sonra yetkilendirme); yalnızca `TokenBudama:EnAzYas` (14 gün, en az mutlak
+    oturum süresi) öncesi kayıtlar. Authorize her kodda kalıcı onaydan ayrı, `sid` özellikli bir ad-hoc yetkilendirme açar
     (`Oidc/TokenIptali`); çıkışta (o sid), şifre ve 2FA değişikliklerinde (mevcut sid hariç / sıfırlamada hepsi) bu
     yetkilendirmeler ve token'ları iptal edilir. `notlar.oku` kapsamı (`demo-api` kaynağı) açılışta her ortamda
     oluşturulur. `OpenIddict.Server.OpenIddictServerDispatcher` logu Warning (OpenIddict `code_verifier`'ı maskelemiyor).
@@ -70,7 +76,10 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
     doğrulaması yapar; şifremi unuttum her durumda aynı işi yapar. 5 deneme / 15 dk kilitleme; yanlış TOTP/kurtarma
     kodu ve şifre değiştirmede yanlış mevcut şifre de sayılır. Kilit yalnızca yeni girişleri engeller: authorize ve
     token uç noktası kilidi kontrol etmez, kilitten önce açılmış oturum token almaya devam eder (hizmet engellemeye karşı). Identity'nin şifre hataları Türkçe
-    (`TurkceIdentityHatalari`).
+    (`TurkceIdentityHatalari`). Ölçüm istisnası (`Hesap/OlcumKullanicilari`, `HizSiniri.UseOlcumGevsetmesi`): yalnızca
+    Development + `Olcum:HizSiniriGevset=true` (varsayılan yok) iken giriş sayfasına `olcum.kullanici.01`…`50` ile gelen
+    POST'lar sayılmaz; diğer kullanıcılar, sayfalar ve ortamlar aynı. Ölçüm kullanıcıları Development'ta
+    `OlcumKullanicilari:Sifre` (user-secrets) varsa seed edilir (ogrenci, 2FA kapalı).
   - **İki aşamalı doğrulama** (`Hesap/IkiAdimIslemleri`, sayfalar `Account/IkiAdim` ve `Account/IkiAdimDogrulama`):
     Identity'nin `AuthenticatorTokenProvider`'ı (TOTP). Anahtar metin + QR (QRCoder, sunucuda SVG, data URI; CSP
     değişmedi), kod doğrulanmadan açılmaz, 10 kurtarma kodu bir kez gösterilir. `KurtarmaKoduOzetDeposu`
@@ -118,7 +127,8 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
 - `tests/Selcuk.Identity.Tests`: xUnit + `WebApplicationFactory` entegrasyon, uçtan uca protokol, tek giriş ve tek
   çıkış, şifre sıfırlama/değiştirme, istek sınırı ve tahmin koruması, 2FA (TOTP tekrar koruması dahil), kilit
   tutarlılığı, denetim kaydı (HMAC özeti, eksik anahtarla açılmama), güvenilen proxy, Tek Kapı (public istemci,
-  loopback, back-channel), uygulama bazlı erişim izni, istemci bazlı 2FA şartı (step-up) ve önbellek testleri.
+  loopback, back-channel), uygulama bazlı erişim izni, istemci bazlı 2FA şartı (step-up), önbellek, token budama,
+  refresh mutlak sınırı ve ölçüm hız sınırı gevşetmesi testleri.
   `IstemciMfaTests` "yalnızca şifreyle açılmış oturum + 2FA açık" durumunu, 2FA'yı depoya güvenlik damgasını
   değiştirmeden yazarak kurar. `OidcYardimcisi` istemci parametreli (varsayılan
   demo-obis; public istemci için `PublicTokenIsteAsync`).
@@ -144,6 +154,24 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   kapatılmaz). `SSO_MFA_ZORUNLU` (varsayılan açık): id_token `amr`'si `mfa` içermezse oturum açılmaz. Testleri
   (`npm test`: bağımsız mod 33 + SSO 14 kontrol) sahte siteler (5600-5606) ve sahte OIDC sağlayıcıyla (5190) çalışır.
   Node 22.15+ (`engines`), express 4.22.3 (tam sürüm).
+- `tools/Selcuk.Olcum`: otomatik ölçüm aracı (konsol, `FrameworkReference Microsoft.AspNetCore.App`, yeni NuGet yok).
+  Yalnızca localhost/127.0.0.1/::1 + https hedefler (`YerelAg.Dogrula`; her istek `YalnizcaYerelHandler`'dan geçer,
+  proxy yok). HttpClient + `CookieContainer` ile OIDC akışı (`TarayiciOturumu`: yönlendirme, giriş/onay/çıkış
+  formları, ilk formun gizli alanları). Senaryolar (a) soğuk giriş, (b) tek giriş, (c) token yenileme ve (e) Demo API
+  (aracın kendi demo-obis token'ıyla), (d) tek çıkış, (f) 1/10/25/50 eşzamanlı soğuk giriş; önce hazırlık (her ölçüm
+  kullanıcısı bir kez girip çıkar), ısınma turları özete girmez. Şifre ve demo-obis secret'ı kimlik sunucusunun
+  user-secrets'ından (aynı `UserSecretsId`). Çıktı `docs/olcumler/sso-olcumler-<tarih>.csv/.json/.md` (kullanıcı adı,
+  şifre, token yok).
+- `tests/Selcuk.Olcum.Tests`: localhost dışı reddi, form ayrıştırma, istatistik; uçtan uca test dört web uygulamasını
+  `WebApplicationFactory` ile aynı süreçte çalıştırır (`extern alias` kimlik/obis/yemekhane/api; porta göre TestServer
+  yönlendirici, ağ yok).
+- `docs/`: `mimari.md` (Mermaid), `guvenlik-karsilastirma.md`, `tehdit-modeli.md` (STRIDE, gerçek test adları, açık
+  riskler), `test-kapsami.md` (`--list-tests`, `npm test`, coverlet), `olcumler/` (ölçüm çıktıları, elle ölçüm şablonu
+  ve protokolü, Tek Kapı CSV yönergesi, `karsilastirma.md` + PNG), `kullanilabilirlik/sus-anketi.md`. `ornek-` önekli
+  dosyalar gerçek veri değildir, analiz okumaz. Belgelere ölçülmemiş sayı yazılmaz ("henüz ölçülmedi").
+- `scripts/olcum-calistir.ps1`: portlar doluysa durur → build → `run-all.ps1 -TarayiciAcma` (`Olcum__HizSiniriGevset`
+  yalnızca başlattığı süreçlere) → ölçüm → yalnızca kendi açtığı pencereleri kapatır. `scripts/olcum_analiz.py`:
+  Python 3 standart kütüphane (matplotlib varsa PNG, yoksa uyarı; pip yok), `--self-test`.
 - `scripts/run-all.ps1`: önce `dotnet build SelcukSSO.sln` (başarısızsa durur), sonra kimlik sunucusu, iki demo ve
   Demo API'yi ayrı pencerelerde `dotnet run --no-build` ile başlatır; `-TekKapi` ile Tek Kapı'yı da SSO modunda
   başlatır; `-TarayiciAcma` ile sonda tarayıcı açılmaz.
@@ -190,6 +218,8 @@ dotnet run --project src/Selcuk.Demo.Api                                   # htt
 powershell -ExecutionPolicy Bypass -File scripts\run-all.ps1               # hepsi birlikte
 powershell -ExecutionPolicy Bypass -File scripts\run-all.ps1 -TekKapi      # + Tek Kapı (SSO modu, :4545)
 cd araclar\tek-kapi; npm ci; npm test                                       # Tek Kapı testleri
+powershell -ExecutionPolicy Bypass -File scripts\olcum-calistir.ps1         # otomatik ölçüm (docs/olcumler/)
+python scripts/olcum_analiz.py                                              # karsilastirma.md (--self-test)
 dotnet tool restore
 dotnet ef migrations add <Ad> --project src/Selcuk.Identity --output-dir Data/Migrations
 dotnet ef database update --project src/Selcuk.Identity

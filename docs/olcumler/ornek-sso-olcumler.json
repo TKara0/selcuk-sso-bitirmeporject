@@ -1,0 +1,6 @@
+{
+  "not": "ÖRNEK VERİ - gerçek ölçüm değil; yalnızca scripts/olcum_analiz.py --self-test kullanır.",
+  "senaryolar": [
+    { "senaryo": "f-eszamanli-giris", "eszamanlilik": 10, "saniyede_basarili_giris": 20.0 }
+  ]
+}

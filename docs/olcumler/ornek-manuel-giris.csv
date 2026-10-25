@@ -1,0 +1,6 @@
+tarih,sistem,yontem,deneme_no,sure_sn,tik_sayisi,tus_vurusu_tahmini,sifre_girildi_mi,captcha_var_mi,hata_oldu_mu,not
+2000-01-01,OBİS,elle,1,25,9,28,evet,hayır,hayır,ÖRNEK VERİ - gerçek ölçüm değil
+2000-01-01,OBİS,elle,2,30,9,28,evet,evet,hayır,ÖRNEK VERİ - gerçek ölçüm değil
+2000-01-01,OBİS,elle,3,30,9,28,evet,hayır,hayır,ÖRNEK VERİ - gerçek ölçüm değil
+2000-01-01,OBİS,elle,4,35,9,28,evet,evet,hayır,ÖRNEK VERİ - gerçek ölçüm değil
+2000-01-01,OBİS,elle,5,35,9,28,evet,hayır,hayır,ÖRNEK VERİ - gerçek ölçüm değil

@@ -1,12 +1,14 @@
 using Microsoft.AspNetCore.Identity;
 using OpenIddict.Abstractions;
+using Selcuk.Identity.Hesap;
 
 namespace Selcuk.Identity.Data;
 
 /// <summary>
 /// Uygulama açılışında rolleri oluşturur. Yalnızca Development ortamında, şifreleri
-/// user-secrets'tan okunan test kullanıcılarını, demo istemcileri (demo-obis, demo-yemekhane) ve Tek Kapı'yı (public
-/// istemci, izinli kullanıcılar Istemciler:TekKapi:IzinliKullaniciAdlari ayarından) ekler veya günceller.
+/// user-secrets'tan okunan test kullanıcılarını, ölçüm kullanıcılarını (<see cref="OlcumKullanicilari"/>), demo
+/// istemcileri (demo-obis, demo-yemekhane) ve Tek Kapı'yı (public istemci, izinli kullanıcılar
+/// Istemciler:TekKapi:IzinliKullaniciAdlari ayarından) ekler veya günceller.
 /// </summary>
 public sealed class BaslangicVerisi(
     IServiceProvider services,
@@ -68,6 +70,8 @@ public sealed class BaslangicVerisi(
                 await TestKullanicisiOlusturAsync(userManager, kullanici);
             }
 
+            await OlcumKullanicilariniOlusturAsync(userManager);
+
             var applicationManager = scope.ServiceProvider.GetRequiredService<IOpenIddictApplicationManager>();
             await IstemciKaydetAsync(applicationManager, "Istemciler:DemoObis:ClientSecret", Istemciler.DemoObis);
             await IstemciKaydetAsync(applicationManager, "Istemciler:DemoYemekhane:ClientSecret", Istemciler.DemoYemekhane);
@@ -112,6 +116,60 @@ public sealed class BaslangicVerisi(
             // eşitlenir.
             await applicationManager.UpdateAsync(mevcut, descriptor);
             logger.LogInformation("İstemci güncellendi: {ClientId}", descriptor.ClientId);
+        }
+    }
+
+    /// <summary>
+    /// olcum.kullanici.01 … 50 (ogrenci, 2FA kapalı); hepsinin şifresi OlcumKullanicilari:Sifre (user-secrets). Şifre
+    /// tanımlı değilse atlanır. Var olan hesaba dokunulmaz.
+    /// </summary>
+    private async Task OlcumKullanicilariniOlusturAsync(UserManager<ApplicationUser> userManager)
+    {
+        var sifre = configuration[OlcumKullanicilari.SifreAyari];
+        if (string.IsNullOrEmpty(sifre))
+        {
+            logger.LogInformation("Ölçüm kullanıcıları atlandı: '{Anahtar}' user-secrets'ta tanımlı değil.",
+                OlcumKullanicilari.SifreAyari);
+            return;
+        }
+
+        var olusturulan = 0;
+        for (var no = 1; no <= OlcumKullanicilari.Sayi; no++)
+        {
+            var kullaniciAdi = OlcumKullanicilari.KullaniciAdi(no);
+            if (await userManager.FindByNameAsync(kullaniciAdi) is not null)
+            {
+                continue;
+            }
+
+            var kullanici = new ApplicationUser
+            {
+                UserName = kullaniciAdi,
+                Email = $"{kullaniciAdi}@test.local",
+                EmailConfirmed = true,
+                AdSoyad = $"Ölçüm Kullanıcısı {no:00}",
+                Fakulte = "Teknoloji Fakültesi",
+                Bolum = "Bilgisayar Mühendisliği",
+            };
+            var sonuc = await userManager.CreateAsync(kullanici, sifre);
+            if (sonuc.Succeeded)
+            {
+                sonuc = await userManager.AddToRoleAsync(kullanici, Roller.Ogrenci);
+            }
+
+            if (!sonuc.Succeeded)
+            {
+                logger.LogError("Ölçüm kullanıcısı {KullaniciAdi} oluşturulamadı: {Hatalar}",
+                    kullaniciAdi, string.Join("; ", sonuc.Errors.Select(e => e.Description)));
+                return;
+            }
+
+            olusturulan++;
+        }
+
+        if (olusturulan > 0)
+        {
+            logger.LogInformation("{Adet} ölçüm kullanıcısı oluşturuldu.", olusturulan);
         }
     }
 

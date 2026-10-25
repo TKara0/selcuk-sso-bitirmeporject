@@ -60,6 +60,7 @@ public enum DenetimOlayi
     IstemciErisimiReddedildi,
     IstemciMfaGerekli,
     RefreshTokenTekrarKullanildi,
+    MutlakOturumSuresiDoldu,
     BackChannelLogoutGonderildi,
     BackChannelLogoutBasarisiz,
     HizSiniriAsildi,
