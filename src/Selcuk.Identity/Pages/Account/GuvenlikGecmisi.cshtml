@@ -2,37 +2,54 @@
 @model Selcuk.Identity.Pages.Account.GuvenlikGecmisiModel
 @{
     ViewData["Title"] = "Güvenlik geçmişi";
+    ViewData[Duzen.Ayar.Genislik] = "genis";
 }
-<section class="kart">
-    <h1>Güvenlik geçmişi</h1>
-    <p class="aciklama">
-        Hesabınızla ilgili son @GuvenlikGecmisiModel.KayitSayisi güvenlik olayı. Tanımadığınız bir giriş veya değişiklik
-        görürseniz şifrenizi değiştirin ve sistem yöneticisine başvurun.
-    </p>
+<h1>Güvenlik geçmişi</h1>
+<p class="giris-metni">
+    Hesabınla ilgili son @GuvenlikGecmisiModel.KayitSayisi güvenlik olayı. Tanımadığın bir giriş veya değişiklik
+    görürsen şifreni değiştir ve sistem yöneticisine başvur.
+</p>
 
-    @if (Model.Satirlar.Count == 0)
-    {
-        <p>Henüz kayıt yok.</p>
-    }
-    else
-    {
-        <ul class="kapsamlar gecmis">
+@if (Model.Satirlar.Count == 0)
+{
+    <p>Henüz kayıt yok.</p>
+}
+else
+{
+    @* Dar ekranda her satır iki satırlık bir öğeye dönüşür (site.css); rol öznitelikleri tablo anlamını korur. *@
+    <table class="gecmis" role="table">
+        <caption class="gorunmez">Son güvenlik olayları, en yenisi üstte</caption>
+        <thead role="rowgroup">
+            <tr role="row">
+                <th scope="col" role="columnheader">Zaman</th>
+                <th scope="col" role="columnheader">Olay</th>
+                <th scope="col" role="columnheader">Uygulama</th>
+                <th scope="col" role="columnheader">IP</th>
+            </tr>
+        </thead>
+        <tbody role="rowgroup">
             @foreach (var satir in Model.Satirlar)
             {
-                <li>
-                    <strong>@satir.Olay</strong>
-                    <span>@satir.Zaman</span>
-                    @if (satir.Uygulama is not null)
+                <tr role="row">
+                    <td role="cell" data-etiket="Zaman">@satir.Zaman</td>
+                    <td role="cell" class="gecmis-olay">
+                        @if (satir.Basarisiz)
+                        {
+                            <span class="etiket etiket-tehlike">@Html.Raw(Simge.Hata)Başarısız</span>
+                        }
+                        <span>@satir.Olay</span>
+                    </td>
+                    @if (satir.Uygulama is null)
                     {
-                        <span>Uygulama: @satir.Uygulama</span>
+                        <td role="cell" data-etiket="Uygulama" class="bos"><span aria-hidden="true">—</span><span class="gorunmez">yok</span></td>
                     }
-                    <span>IP: @(satir.IpAdresi ?? "bilinmiyor")</span>
-                </li>
+                    else
+                    {
+                        <td role="cell" data-etiket="Uygulama">@satir.Uygulama</td>
+                    }
+                    <td role="cell" data-etiket="IP" class="mono">@(satir.IpAdresi ?? "bilinmiyor")</td>
+                </tr>
             }
-        </ul>
-    }
-
-    <div class="dugmeler">
-        <a class="dugme ikincil" asp-page="/Account/Hesabim">Hesabım</a>
-    </div>
-</section>
+        </tbody>
+    </table>
+}

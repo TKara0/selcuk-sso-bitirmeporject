@@ -1,18 +1,35 @@
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.Extensions.Options
+@model string
 @inject IOptions<IdentityOptions> IdentityAyarlari
+@*
+    Şifre kuralları Identity'nin şifre ayarlarından üretilir; politika değişirse liste de değişir. Model: izlenen şifre
+    alanının id'si. selcuk.js kuralları yazarken denetler ve karşılananı işaretler (aria-live polite). Sunucu yine
+    Identity ile doğrular.
+*@
 @{
-    // Açıklama Identity'nin şifre ayarlarından üretilir; politika değişirse metin de değişir.
     var politika = IdentityAyarlari.Value.Password;
-    var icermeli = new List<string>();
-    if (politika.RequireUppercase) { icermeli.Add("bir büyük harf"); }
-    if (politika.RequireLowercase) { icermeli.Add("bir küçük harf"); }
-    if (politika.RequireDigit) { icermeli.Add("bir rakam"); }
-    if (politika.RequireNonAlphanumeric) { icermeli.Add("bir sembol"); }
-    var kurallar = icermeli.Count == 0
-        ? string.Empty
-        : " ve en az " + (icermeli.Count == 1
-            ? icermeli[0]
-            : string.Join(", ", icermeli.Take(icermeli.Count - 1)) + " ve " + icermeli[^1]) + " içermelidir";
+    var kurallar = new List<(string Kural, int Deger, string Metin)>
+    {
+        ("uzunluk", politika.RequiredLength, $"En az {politika.RequiredLength} karakter"),
+    };
+    if (politika.RequireUppercase) { kurallar.Add(("buyuk", 0, "En az bir büyük harf")); }
+    if (politika.RequireLowercase) { kurallar.Add(("kucuk", 0, "En az bir küçük harf")); }
+    if (politika.RequireDigit) { kurallar.Add(("rakam", 0, "En az bir rakam")); }
+    if (politika.RequireNonAlphanumeric) { kurallar.Add(("sembol", 0, "En az bir sembol")); }
+    if (politika.RequiredUniqueChars > 1) { kurallar.Add(("farkli", politika.RequiredUniqueChars, $"En az {politika.RequiredUniqueChars} farklı karakter")); }
 }
-<p class="ipucu">Şifre en az @politika.RequiredLength karakter olmalı@(kurallar). Başka sitelerde kullandığınız bir şifreyi seçmeyin.</p>
+<div class="sifre-politikasi" id="sifre-kurallari">
+    <p id="sifre-kurallari-baslik">Yeni şifren şunları içermeli:</p>
+    <ul aria-labelledby="sifre-kurallari-baslik" aria-live="polite" data-sifre-politikasi="@Model">
+        @foreach (var (kural, deger, metin) in kurallar)
+        {
+            <li data-kural="@kural" data-deger="@deger">
+                <span class="simge-bos">@Html.Raw(Simge.Daire)</span>
+                <span class="simge-tamam">@Html.Raw(Simge.Onay)</span>
+                <span>@metin<span class="gorunmez" data-durum></span></span>
+            </li>
+        }
+    </ul>
+    <p class="ipucu">Başka sitelerde kullandığın bir şifreyi seçme.</p>
+</div>

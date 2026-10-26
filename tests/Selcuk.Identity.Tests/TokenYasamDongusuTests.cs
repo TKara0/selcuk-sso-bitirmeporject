@@ -261,7 +261,7 @@ public sealed class TokenYasamDongusuTests : IDisposable
                 ["Input.YeniSifre"] = sifirlamaSifresi,
                 ["Input.YeniSifreTekrar"] = sifirlamaSifresi,
             });
-        Assert.Contains("Şifreniz değiştirildi", WebUtility.HtmlDecode(await sifirla.Content.ReadAsStringAsync()));
+        Assert.Contains("Şifren değiştirildi", WebUtility.HtmlDecode(await sifirla.Content.ReadAsStringAsync()));
         await ReddedildiAsync(await YenileAsync(bu, buYeniRefresh, secret));
     }
 

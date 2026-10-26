@@ -1,30 +1,43 @@
 @page
 @model Selcuk.Identity.Pages.Account.LoginModel
 @{
-    ViewData["Title"] = "Giriş";
+    ViewData["Title"] = "Giriş yap";
+    ViewData[Duzen.Ayar.Genislik] = "giris";
+    ViewData[Duzen.Ayar.KapiBasligi] = "Tek Şifre Giriş";
+    ViewData[Duzen.Ayar.KapiCumlesi] = "Fakültedeki bütün uygulamalara tek hesapla girin.";
+    var formHatasi = Html.FormHatasiVar() ? " form-hatasi" : "";
 }
-<section class="kart">
-    <h1>Giriş yap</h1>
-    <p class="aciklama">Tek kullanıcı adı ve şifrenizle tüm fakülte uygulamalarına erişin.</p>
+<h1 class="baslik-buyuk">Giriş yap</h1>
+<p class="giris-metni">Öğrenciler öğrenci numarasıyla, akademik ve idari personel kullanıcı adıyla girer.</p>
 
-    <form method="post" class="form">
-        <div asp-validation-summary="ModelOnly" class="hata" role="alert"></div>
-        <input type="hidden" asp-for="ReturnUrl" />
+<partial name="_FormHatalari" />
 
+<form method="post" class="form">
+    <input type="hidden" asp-for="ReturnUrl" />
+
+    <div class="alan">
         <label asp-for="Input.KullaniciAdi"></label>
-        <input asp-for="Input.KullaniciAdi" autocomplete="username" autocapitalize="none" spellcheck="false" autofocus />
-        <span asp-validation-for="Input.KullaniciAdi" class="alan-hatasi"></span>
+        <input asp-for="Input.KullaniciAdi" class="metin-alani" autocomplete="username" autocapitalize="none"
+               spellcheck="false" autofocus aria-describedby="@("kullanici-adi-hatasi" + formHatasi)"
+               aria-invalid="@Html.AlanHatali("Input.KullaniciAdi")" />
+        <span asp-validation-for="Input.KullaniciAdi" id="kullanici-adi-hatasi" class="alan-hatasi"></span>
+    </div>
 
+    <div class="alan">
         <label asp-for="Input.Sifre"></label>
-        <input asp-for="Input.Sifre" autocomplete="current-password" />
-        <span asp-validation-for="Input.Sifre" class="alan-hatasi"></span>
+        <div class="sifre-kutusu">
+            <input asp-for="Input.Sifre" class="metin-alani" autocomplete="current-password"
+                   aria-describedby="@("sifre-hatasi" + formHatasi)" aria-invalid="@Html.AlanHatali("Input.Sifre")" />
+            <button type="button" class="sifre-goster" aria-label="Şifreyi göster" aria-pressed="false"
+                    aria-controls="Input_Sifre" data-sifre-goster hidden>
+                <span class="simge-acik">@Html.Raw(Simge.Goz)</span>
+                <span class="simge-gizli">@Html.Raw(Simge.GozKapali)</span>
+            </button>
+        </div>
+        <span asp-validation-for="Input.Sifre" id="sifre-hatasi" class="alan-hatasi"></span>
+    </div>
 
-        <button type="submit" class="dugme birincil">Giriş yap</button>
-    </form>
+    <button type="submit" class="dugme dugme-ana dugme-tam">Giriş yap</button>
+</form>
 
-    <p class="ipucu"><a asp-page="/Account/SifremiUnuttum">Şifremi unuttum</a></p>
-
-    <p class="ipucu">
-        Öğrenciler öğrenci numarasıyla, akademik ve idari personel kullanıcı adıyla giriş yapar.
-    </p>
-</section>
+<p class="giris-alt"><a asp-page="/Account/SifremiUnuttum">Şifremi unuttum</a></p>

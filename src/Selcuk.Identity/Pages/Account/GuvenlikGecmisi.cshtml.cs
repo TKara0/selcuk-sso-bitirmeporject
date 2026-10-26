@@ -18,7 +18,7 @@ public class GuvenlikGecmisiModel(
 {
     public const int KayitSayisi = 20;
 
-    public sealed record Satir(string Zaman, string Olay, string? Uygulama, string? IpAdresi);
+    public sealed record Satir(string Zaman, string Olay, string? Uygulama, string? IpAdresi, bool Basarisiz);
 
     public List<Satir> Satirlar { get; } = [];
 
@@ -48,6 +48,7 @@ public class GuvenlikGecmisiModel(
             EpostaSablonlari.Bicimle(new DateTimeOffset(DateTime.SpecifyKind(k.ZamanUtc, DateTimeKind.Utc))),
             DenetimOlaylari.Ad(k.OlayTuru, k.Sonuc),
             k.IstemciId is null ? null : uygulamaAdlari[k.IstemciId],
-            k.IpAdresi)));
+            k.IpAdresi,
+            k.Sonuc == DenetimSonucu.Basarisiz)));
     }
 }

@@ -2,36 +2,78 @@
 @model Selcuk.Identity.Pages.Account.HesabimModel
 @{
     ViewData["Title"] = "Hesabım";
+    ViewData[Duzen.Ayar.Genislik] = "dar";
 }
-<section class="kart">
-    <h1>Hesabım</h1>
+<h1>Hesabım</h1>
 
-    @if (Model.SifreDegisti)
-    {
-        <p class="bilgi" role="status">
-            Şifreniz değiştirildi. Bu oturum açık kaldı; diğer cihaz ve tarayıcılardaki oturumlarınız kapatıldı.
-        </p>
-    }
-
-    <ul class="kapsamlar">
-        <li><strong>Ad soyad</strong><span>@Model.Kullanici.AdSoyad</span></li>
-        <li><strong>Kullanıcı adı</strong><span>@Model.Kullanici.UserName</span></li>
-        <li><strong>E-posta</strong><span>@Model.Kullanici.Email</span></li>
-        @if (Model.Kullanici.Fakulte is not null)
-        {
-            <li><strong>Fakülte</strong><span>@Model.Kullanici.Fakulte</span></li>
-        }
-        @if (Model.Kullanici.Bolum is not null)
-        {
-            <li><strong>Bölüm</strong><span>@Model.Kullanici.Bolum</span></li>
-        }
-        <li><strong>İki aşamalı doğrulama</strong><span>@(Model.IkiAdimEtkin ? "Açık" : "Kapalı")</span></li>
-    </ul>
-
-    <div class="dugmeler">
-        <a class="dugme birincil" asp-page="/Account/SifreDegistir">Şifre değiştir</a>
-        <a class="dugme ikincil" asp-page="/Account/IkiAdimDogrulama">İki aşamalı doğrulama</a>
-        <a class="dugme ikincil" asp-page="/Account/GuvenlikGecmisi">Güvenlik geçmişi</a>
-        <a class="dugme ikincil" asp-page="/Index">Uygulamalarım</a>
+@if (Model.SifreDegisti)
+{
+    <div class="bant bant-bilgi" role="status">
+        @Html.Raw(Simge.Onay)
+        <p>Şifren değiştirildi. Bu oturum açık kaldı, diğer cihaz ve tarayıcılardaki oturumların kapatıldı.</p>
     </div>
-</section>
+}
+
+<dl class="tanimlar">
+    <div>
+        <dt>Ad soyad</dt>
+        <dd>@Model.Kullanici.AdSoyad</dd>
+    </div>
+    <div>
+        <dt>Kullanıcı adı</dt>
+        <dd class="mono">@Model.Kullanici.UserName</dd>
+    </div>
+    <div>
+        <dt>E-posta</dt>
+        <dd>@Model.Kullanici.Email</dd>
+    </div>
+    @if (Model.Kullanici.Fakulte is not null)
+    {
+        <div>
+            <dt>Fakülte</dt>
+            <dd>@Model.Kullanici.Fakulte</dd>
+        </div>
+    }
+    @if (Model.Kullanici.Bolum is not null)
+    {
+        <div>
+            <dt>Bölüm</dt>
+            <dd>@Model.Kullanici.Bolum</dd>
+        </div>
+    }
+</dl>
+
+<h2>Güvenlik</h2>
+<ul class="satirlar eylem-satirlari">
+    <li>
+        <div>
+            <p class="satir-baslik">Şifre</p>
+            <p class="ipucu">Değiştirince diğer cihazlardaki oturumların kapanır.</p>
+        </div>
+        <a class="dugme dugme-ikincil" asp-page="/Account/SifreDegistir">Şifreyi değiştir</a>
+    </li>
+    <li>
+        <div>
+            <p class="satir-baslik">
+                İki aşamalı doğrulama
+                @if (Model.IkiAdimEtkin)
+                {
+                    <span class="etiket">Açık</span>
+                }
+                else
+                {
+                    <span class="etiket etiket-notr">Kapalı</span>
+                }
+            </p>
+            <p class="ipucu">Girişte şifrenle birlikte telefonundaki kod istenir.</p>
+        </div>
+        <a class="dugme dugme-ikincil" asp-page="/Account/IkiAdimDogrulama">Yönet<span class="gorunmez"> (iki aşamalı doğrulama)</span></a>
+    </li>
+    <li>
+        <div>
+            <p class="satir-baslik">Güvenlik geçmişi</p>
+            <p class="ipucu">Hesabınla ilgili son girişler ve değişiklikler.</p>
+        </div>
+        <a class="dugme dugme-ikincil" asp-page="/Account/GuvenlikGecmisi">Görüntüle<span class="gorunmez"> (güvenlik geçmişi)</span></a>
+    </li>
+</ul>

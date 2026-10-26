@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.RateLimiting;
+using Selcuk.Arayuz;
 using Selcuk.Identity.Data;
 using Selcuk.Identity.Denetim;
 
@@ -90,28 +91,32 @@ public static class HizSiniri
         await http.Response.WriteAsync(CokFazlaIstekSayfasi, cancellationToken);
     }
 
-    // Razor düzeniyle aynı görünüm; dinamik içerik yok.
-    private const string CokFazlaIstekSayfasi = """
+    // Ortak düzenle (Selcuk.Arayuz/_SelcukDuzen) aynı görünüm; dinamik içerik yok. İstek sınırı Razor'dan önce
+    // çalıştığı için sayfa sabit metindir; kapı işareti, alt bilgi ve stil dosyası ortak kütüphaneden gelir.
+    private const string CokFazlaIstekSayfasi = $$"""
         <!DOCTYPE html>
         <html lang="tr">
         <head>
             <meta charset="utf-8" />
             <meta name="viewport" content="width=device-width, initial-scale=1" />
-            <title>Çok fazla deneme · Tek Şifre Giriş</title>
+            <meta name="color-scheme" content="light dark" />
+            <title>Çok fazla deneme — Tek Şifre Giriş</title>
+            <link rel="stylesheet" href="{{Duzen.StilDosyasi}}" />
             <link rel="stylesheet" href="/css/site.css" />
         </head>
         <body>
-            <header class="ust"><a class="marka" href="/">Tek Şifre Giriş</a></header>
-            <main class="kap">
-                <section class="kart">
+            <a class="atla" href="#icerik">İçeriğe geç</a>
+            <header class="ust-cubuk">
+                <a class="marka" href="/">{{KapiIsareti.Kucuk}}<span>Tek Şifre Giriş</span><span class="etiket etiket-notr">Test</span></a>
+            </header>
+            <main id="icerik" class="icerik icerik-dar">
+                <div class="durum-sayfasi">
                     <h1>Çok fazla deneme</h1>
-                    <p class="aciklama">
-                        Kısa sürede çok fazla istek gönderildi. Lütfen bir dakika bekleyip tekrar deneyin.
-                    </p>
-                    <a class="dugme ikincil" href="/Account/Login">Giriş sayfasına dön</a>
-                </section>
+                    <p class="giris-metni">Kısa sürede çok fazla istek geldi. Bir dakika bekleyip tekrar dene.</p>
+                    <a class="dugme dugme-ana" href="/Account/Login">Giriş sayfasına dön</a>
+                </div>
             </main>
-            <footer class="alt">Merkezi kimlik doğrulama sunucusu</footer>
+            <footer class="alt-bilgi"><p>{{Duzen.AltBilgi}}</p></footer>
         </body>
         </html>
         """;

@@ -22,10 +22,10 @@ public class SifreSifirlaModel(
     DenetimKaydedici denetim) : PageModel
 {
     public const string GecersizBaglantiMesaji =
-        "Bağlantı geçersiz, süresi dolmuş veya daha önce kullanılmış. Şifremi unuttum sayfasından yeni bir bağlantı isteyin.";
+        "Bağlantı geçersiz, süresi dolmuş veya daha önce kullanılmış. Şifremi unuttum sayfasından yeni bir bağlantı iste.";
 
     public const string TamamlandiMesaji =
-        "Şifreniz değiştirildi. Açık oturumlarınız kapatıldı; yeni şifrenizle giriş yapabilirsiniz.";
+        "Şifren değiştirildi. Açık oturumların kapatıldı, yeni şifrenle giriş yapabilirsin.";
 
     [BindProperty]
     public SifirlamaGirdisi Input { get; set; } = new();
@@ -42,14 +42,14 @@ public class SifreSifirlaModel(
         [Required]
         public string Kod { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Yeni şifre zorunludur.")]
+        [Required(ErrorMessage = "Yeni şifreni yaz.")]
         [DataType(DataType.Password)]
         [Display(Name = "Yeni şifre")]
         public string YeniSifre { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Şifre tekrarı zorunludur.")]
+        [Required(ErrorMessage = "Yeni şifreni tekrar yaz.")]
         [DataType(DataType.Password)]
-        [Compare(nameof(YeniSifre), ErrorMessage = "Şifreler aynı değil.")]
+        [Compare(nameof(YeniSifre), ErrorMessage = "Şifreler aynı değil. İki alana da aynı şifreyi yaz.")]
         [Display(Name = "Yeni şifre (tekrar)")]
         public string YeniSifreTekrar { get; set; } = string.Empty;
     }

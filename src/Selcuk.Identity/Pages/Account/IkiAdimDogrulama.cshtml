@@ -1,135 +1,204 @@
 @page
 @model Selcuk.Identity.Pages.Account.IkiAdimDogrulamaModel
 @{
-    ViewData["Title"] = "İki aşamalı doğrulama";
+    ViewData["Title"] = Model.YeniKodlar is not null ? "Kurtarma kodları" : "İki aşamalı doğrulama";
 }
-<section class="kart">
-    <h1>İki aşamalı doğrulama</h1>
+<h1>@ViewData["Title"]</h1>
 
-    <div asp-validation-summary="ModelOnly" class="hata" role="alert"></div>
+<partial name="_FormHatalari" />
 
-    @if (Model.KurulumGerekli)
-    {
-        <p class="bilgi" role="status">
-            Rolünüz için iki aşamalı doğrulama zorunludur. Kurulumu tamamlamadan uygulamalara giriş yapamazsınız.
-        </p>
-    }
-    @if (Model.UygulamaGerektiriyor && !Model.Etkin)
-    {
-        <p class="bilgi" role="status">
-            Bu uygulama iki aşamalı doğrulama gerektiriyor. Kurulumu tamamladığınızda uygulamaya kaldığınız yerden devam
-            edersiniz.
-        </p>
-    }
-    else if (Model.Durum == "kapatildi" && !Model.Etkin)
-    {
-        <p class="bilgi" role="status">
-            İki aşamalı doğrulama kapatıldı. Diğer cihaz ve tarayıcılardaki oturumlarınız kapatıldı.
-        </p>
-    }
+@if (Model.KurulumGerekli)
+{
+    <div class="bant bant-bilgi" role="status">
+        @Html.Raw(Simge.Bilgi)
+        <p>Rolün için iki aşamalı doğrulama zorunludur. Kurulumu tamamlamadan uygulamalara giremezsin.</p>
+    </div>
+}
+@if (Model.UygulamaGerektiriyor && !Model.Etkin)
+{
+    <div class="bant bant-bilgi" role="status">
+        @Html.Raw(Simge.Bilgi)
+        <p>Bu uygulama iki aşamalı doğrulama gerektiriyor. Kurulumu tamamlayınca uygulamaya kaldığın yerden devam edersin.</p>
+    </div>
+}
+else if (Model.Durum == "kapatildi" && !Model.Etkin)
+{
+    <div class="bant bant-bilgi" role="status">
+        @Html.Raw(Simge.Bilgi)
+        <p>İki aşamalı doğrulama kapatıldı. Diğer cihaz ve tarayıcılardaki oturumların kapatıldı.</p>
+    </div>
+}
 
-    @if (Model.YeniKodlar is not null)
-    {
-        <p class="bilgi" role="status">
-            @(Model.YeniAcildi ? "İki aşamalı doğrulama açıldı." : "Kurtarma kodlarınız yenilendi.")
-            Diğer cihaz ve tarayıcılardaki oturumlarınız kapatıldı.
+@if (Model.YeniKodlar is not null)
+{
+    <div class="bant bant-bilgi" role="status">
+        @Html.Raw(Simge.Onay)
+        <p>
+            @(Model.YeniAcildi ? "İki aşamalı doğrulama açıldı." : "Kurtarma kodların yenilendi.")
+            Diğer cihaz ve tarayıcılardaki oturumların kapatıldı.
         </p>
-        <h2>Kurtarma kodları</h2>
-        <p class="aciklama">
-            Bu kodlar <strong>yalnızca şimdi, bir kez</strong> gösteriliyor. Güvenli bir yere yazın veya yazdırın.
-            Telefonunuza erişemezseniz her kodu bir kez, doğrulama kodu yerine kullanabilirsiniz.
-        </p>
-        <ul class="kodlar">
-            @foreach (var kod in Model.YeniKodlar)
-            {
-                <li><code>@kod</code></li>
-            }
-        </ul>
-        <div class="dugmeler">
-            @if (Model.DevamAdresi is not null)
-            {
-                <a class="dugme birincil" href="@Model.DevamAdresi">Kodları kaydettim, devam et</a>
-            }
-            else
-            {
-                <a class="dugme birincil" asp-page="/Account/Hesabim">Kodları kaydettim</a>
-            }
-        </div>
-    }
-    else if (Model.Etkin)
-    {
-        <p class="bilgi" role="status">
-            İki aşamalı doğrulama <strong>açık</strong>. Girişte şifrenizle birlikte doğrulayıcı uygulamadaki kod istenir.
-        </p>
-        <ul class="kapsamlar">
-            <li><strong>Kalan kurtarma kodu</strong><span>@Model.KalanKodSayisi</span></li>
-        </ul>
+    </div>
 
-        <h2>Kurtarma kodlarını yenile</h2>
-        <p class="aciklama">Eski kodların hepsi geçersiz olur, 10 yeni kod bir kez gösterilir.</p>
-        <form method="post" asp-page-handler="KodlariYenile" class="form">
-            <input type="hidden" asp-for="ReturnUrl" />
-            <label asp-for="Onay.Sifre"></label>
-            <input asp-for="Onay.Sifre" id="yenile-sifre" autocomplete="current-password" />
-            <label asp-for="Onay.Kod"></label>
-            <input asp-for="Onay.Kod" id="yenile-kod" type="text" inputmode="numeric" autocomplete="one-time-code" />
-            <button type="submit" class="dugme birincil">Kodları yenile</button>
-        </form>
+    <div class="bant bant-uyari" role="alert">
+        @Html.Raw(Simge.Uyari)
+        <p class="bant-baslik">Bu kodlar bir daha gösterilmeyecek. Güvenli bir yere kaydet.</p>
+    </div>
 
-        <h2>İki aşamalı doğrulamayı kapat</h2>
-        @if (Model.RolGerektiriyor)
+    <p class="giris-metni">
+        Telefonuna erişemezsen doğrulama kodu yerine bu kodlardan birini kullanırsın. Her kod bir kez geçer.
+    </p>
+
+    <ul class="kod-izgarasi" id="kurtarma-kodlari" aria-label="Kurtarma kodları">
+        @foreach (var kod in Model.YeniKodlar)
         {
-            <p class="aciklama">Rolünüz için iki aşamalı doğrulama zorunludur; kapatılamaz.</p>
+            <li><code>@kod</code></li>
+        }
+    </ul>
+
+    <div class="dugmeler">
+        <button type="button" class="dugme dugme-ikincil" data-kopyala="#kurtarma-kodlari"
+                data-kopyala-mesaj="Kurtarma kodları panoya kopyalandı." hidden>
+            @Html.Raw(Simge.Kopyala)<span data-etiket>Kopyala</span>
+        </button>
+        <button type="button" class="dugme dugme-ikincil" data-indir="#kurtarma-kodlari"
+                data-dosya-adi="tek-sifre-giris-kurtarma-kodlari.txt"
+                data-dosya-basligi="Selçuk Üniversitesi (Test) — Tek Şifre Giriş kurtarma kodları. Her kod bir kez kullanılabilir." hidden>
+            @Html.Raw(Simge.Indir)<span>Metin dosyası olarak indir</span>
+        </button>
+    </div>
+
+    <div class="dugmeler bolum">
+        @if (Model.DevamAdresi is not null)
+        {
+            <a class="dugme dugme-ana" href="@Model.DevamAdresi">Kodları kaydettim, devam et</a>
         }
         else
         {
-            <p class="aciklama">Kapatınca anahtarınız, kurtarma kodlarınız ve hatırlanan cihazlarınız geçersiz olur.</p>
-            <form method="post" asp-page-handler="Kapat" class="form">
-                <label asp-for="Onay.Sifre"></label>
-                <input asp-for="Onay.Sifre" id="kapat-sifre" autocomplete="current-password" />
-                <label asp-for="Onay.Kod"></label>
-                <input asp-for="Onay.Kod" id="kapat-kod" type="text" inputmode="numeric" autocomplete="one-time-code" />
-                <button type="submit" class="dugme ikincil">Kapat</button>
-            </form>
+            <a class="dugme dugme-ana" asp-page="/Account/Hesabim">Kodları kaydettim</a>
         }
-    }
-    else if (Model.Anahtar is not null)
-    {
-        <ol class="adimlar">
-            <li>Telefonunuza bir doğrulayıcı uygulama kurun (Google Authenticator, Microsoft Authenticator vb.).</li>
-            <li>Uygulamada yeni hesap ekleyip aşağıdaki QR kodu okutun veya anahtarı elle girin.</li>
-            <li>Uygulamanın gösterdiği 6 haneli kodu yazıp <strong>Doğrula ve aç</strong> deyin.</li>
-        </ol>
-        <p class="qr"><img src="@Model.QrKod" alt="Doğrulayıcı uygulama için QR kod" width="200" height="200" /></p>
-        <ul class="kapsamlar">
-            <li><strong>Anahtar</strong><code class="anahtar">@Model.Anahtar</code></li>
-            <li><strong>Hesap türü</strong><span>Zamana dayalı (TOTP), 6 hane, 30 saniye</span></li>
-        </ul>
-        <p class="ipucu"><a href="@Model.OtpauthUri">Bu cihazdaki doğrulayıcı uygulamada aç</a></p>
-
-        <form method="post" asp-page-handler="Etkinlestir" class="form">
-            <input type="hidden" asp-for="ReturnUrl" />
-            <label asp-for="Etkinlestirme.Kod"></label>
-            <input asp-for="Etkinlestirme.Kod" type="text" inputmode="numeric" autocomplete="one-time-code" autofocus />
-            <button type="submit" class="dugme birincil">Doğrula ve aç</button>
-        </form>
-    }
-    else
-    {
-        <p class="aciklama">
-            İki aşamalı doğrulama <strong>kapalı</strong>. Açarsanız girişte şifrenizle birlikte telefonunuzdaki doğrulayıcı
-            uygulamanın ürettiği 6 haneli kod istenir; şifreniz ele geçirilse bile hesabınıza giriş yapılamaz.
-        </p>
-        <form method="post" asp-page-handler="Baslat" class="form">
-            <input type="hidden" asp-for="ReturnUrl" />
-            <button type="submit" class="dugme birincil">Kurulumu başlat</button>
-        </form>
-    }
-
-    @if (Model.YeniKodlar is null)
-    {
-        <div class="dugmeler">
-            <a class="dugme ikincil" asp-page="/Account/Hesabim">Hesabım</a>
+    </div>
+}
+else if (Model.Etkin)
+{
+    <dl class="tanimlar">
+        <div>
+            <dt>Durum</dt>
+            <dd><span class="etiket">Açık</span></dd>
         </div>
-    }
-</section>
+        <div>
+            <dt>Kalan kurtarma kodu</dt>
+            <dd>@Model.KalanKodSayisi</dd>
+        </div>
+    </dl>
+    <p class="giris-metni">Girişte şifrenle birlikte doğrulayıcı uygulamandaki kod istenir.</p>
+
+    <section class="bolum" aria-labelledby="yenile-baslik">
+        <h2 id="yenile-baslik">Kurtarma kodlarını yenile</h2>
+        <p class="soluk">Eski kodların hepsi geçersiz olur, 10 yeni kod bir kez gösterilir.</p>
+        <div class="panel">
+            <form method="post" asp-page-handler="KodlariYenile" class="form">
+                <input type="hidden" asp-for="ReturnUrl" />
+                <div class="alan">
+                    <label for="yenile-sifre">Mevcut şifre</label>
+                    <input asp-for="Onay.Sifre" id="yenile-sifre" class="metin-alani" autocomplete="current-password" />
+                </div>
+                <div class="alan">
+                    <label for="yenile-kod">Uygulamadaki 6 haneli kod</label>
+                    <input asp-for="Onay.Kod" id="yenile-kod" class="metin-alani kod-alani" type="text"
+                           inputmode="numeric" autocomplete="one-time-code" spellcheck="false" data-kod-alani />
+                </div>
+                <div class="dugmeler">
+                    <button type="submit" class="dugme dugme-ana">Kodları yenile</button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <section class="bolum" aria-labelledby="kapat-baslik">
+        <h2 id="kapat-baslik">İki aşamalı doğrulamayı kapat</h2>
+        @if (Model.RolGerektiriyor)
+        {
+            <p class="soluk">Rolün için iki aşamalı doğrulama zorunludur, kapatamazsın.</p>
+        }
+        else
+        {
+            <p class="soluk">Kapatınca anahtarın, kurtarma kodların ve hatırlanan cihazların geçersiz olur.</p>
+            <div class="panel">
+                <form method="post" asp-page-handler="Kapat" class="form">
+                    <div class="alan">
+                        <label for="kapat-sifre">Mevcut şifre</label>
+                        <input asp-for="Onay.Sifre" id="kapat-sifre" class="metin-alani" autocomplete="current-password" />
+                    </div>
+                    <div class="alan">
+                        <label for="kapat-kod">Uygulamadaki 6 haneli kod</label>
+                        <input asp-for="Onay.Kod" id="kapat-kod" class="metin-alani kod-alani" type="text"
+                               inputmode="numeric" autocomplete="one-time-code" spellcheck="false" data-kod-alani />
+                    </div>
+                    <div class="dugmeler">
+                        <button type="submit" class="dugme dugme-tehlikeli">İki aşamalı doğrulamayı kapat</button>
+                    </div>
+                </form>
+            </div>
+        }
+    </section>
+}
+else if (Model.Anahtar is not null)
+{
+    <p class="giris-metni">Üç adımda kur. Kurulum bitince girişte şifrenle birlikte telefonundaki kod istenir.</p>
+
+    <ol class="adimlar">
+        <li>
+            <h2 class="adim-baslik">Uygulamayı aç</h2>
+            <p>
+                Telefonunda bir doğrulayıcı uygulama aç (Google Authenticator, Microsoft Authenticator gibi). Yoksa önce
+                uygulama mağazasından kur.
+            </p>
+        </li>
+        <li>
+            <h2 class="adim-baslik">QR kodu okut</h2>
+            <div class="qr-blok">
+                <img class="qr" src="@Model.QrKod" alt="Doğrulayıcı uygulama için QR kod" width="184" height="184" />
+                <div class="qr-anahtar">
+                    <p>Okutamıyorsan uygulamada yeni hesap ekleyip bu anahtarı elle gir:</p>
+                    <code class="anahtar" id="anahtar">@Model.Anahtar</code>
+                    <div class="dugmeler">
+                        <button type="button" class="dugme dugme-ikincil" data-kopyala="#anahtar" data-bosluksuz
+                                data-kopyala-mesaj="Anahtar panoya kopyalandı." hidden>
+                            @Html.Raw(Simge.Kopyala)<span data-etiket>Kopyala</span>
+                        </button>
+                    </div>
+                    <p class="ipucu">Hesap türü: zamana dayalı (TOTP), 6 hane, 30 saniye.</p>
+                    <p class="ipucu"><a href="@Model.OtpauthUri">Bu cihazdaki doğrulayıcı uygulamada aç</a></p>
+                </div>
+            </div>
+        </li>
+        <li>
+            <h2 class="adim-baslik">Kodu gir</h2>
+            <form method="post" asp-page-handler="Etkinlestir" class="form">
+                <input type="hidden" asp-for="ReturnUrl" />
+                <div class="alan">
+                    <label for="Etkinlestirme_Kod">Uygulamanın gösterdiği 6 haneli kod</label>
+                    <input asp-for="Etkinlestirme.Kod" class="metin-alani kod-alani" type="text" inputmode="numeric"
+                           autocomplete="one-time-code" spellcheck="false" data-kod-alani
+                           aria-describedby="@(Html.FormHatasiVar() ? "form-hatasi" : null)" />
+                </div>
+                <div class="dugmeler">
+                    <button type="submit" class="dugme dugme-ana">Kodu doğrula ve aç</button>
+                </div>
+            </form>
+        </li>
+    </ol>
+}
+else
+{
+    <p class="giris-metni">
+        İki aşamalı doğrulama kapalı. Açarsan girişte şifrenle birlikte telefonundaki doğrulayıcı uygulamanın ürettiği
+        6 haneli kod istenir. Şifren ele geçirilse bile hesabına giriş yapılamaz.
+    </p>
+    <form method="post" asp-page-handler="Baslat" class="form">
+        <input type="hidden" asp-for="ReturnUrl" />
+        <div class="dugmeler">
+            <button type="submit" class="dugme dugme-ana">Kurulumu başlat</button>
+        </div>
+    </form>
+}

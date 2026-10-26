@@ -1,0 +1,13 @@
+@* Forma ait hatalar (ModelState'in boş anahtarı) hata bandında. Alan hataları alanın altında (aria-describedby). *@
+@if (Html.FormHatasiVar())
+{
+    <div class="bant bant-hata" role="alert" id="form-hatasi">
+        @Html.Raw(Simge.Hata)
+        <div>
+            @foreach (var hata in ViewData.ModelState[string.Empty]!.Errors)
+            {
+                <p>@hata.ErrorMessage</p>
+            }
+        </div>
+    </div>
+}

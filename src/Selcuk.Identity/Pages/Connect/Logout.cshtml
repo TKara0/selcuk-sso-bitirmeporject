@@ -1,11 +1,12 @@
 @page "/connect/logout"
 @model Selcuk.Identity.Pages.Connect.LogoutModel
 @{
-    ViewData["Title"] = "Çıkış";
+    ViewData["Title"] = "Çıkış yap";
+    ViewData[Duzen.Ayar.Genislik] = "dar";
 }
-<section class="kart">
-    <h1>Çıkış</h1>
-    <p class="aciklama">Bu kimlik sunucusundaki oturumunuz kapatılacak. Devam etmek istiyor musunuz?</p>
+<div class="durum-sayfasi">
+    <h1>Çıkış yap</h1>
+    <p class="giris-metni">Oturumun kapanır ve tek şifreyle girdiğin uygulamalardan da çıkış yapılır.</p>
 
     <form method="post" asp-page="/Connect/Logout">
         @* end-session parametreleri (post_logout_redirect_uri, state, id_token_hint) korunur. *@
@@ -16,9 +17,6 @@
                 <input type="hidden" name="@parametre.Key" value="@deger" />
             }
         }
-        <div class="dugmeler">
-            <button type="submit" class="dugme birincil">Çıkış yap</button>
-            <a class="dugme ikincil" href="/">Vazgeç</a>
-        </div>
+        <button type="submit" class="dugme dugme-ana">Çıkış yap</button>
     </form>
-</section>
+</div>

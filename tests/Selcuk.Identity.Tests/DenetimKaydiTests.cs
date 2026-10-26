@@ -222,7 +222,7 @@ public sealed partial class DenetimKaydiTests : IDisposable
             ["Input.YeniSifre"] = yeniSifre,
             ["Input.YeniSifreTekrar"] = yeniSifre,
         });
-        Assert.Contains("Şifreniz değiştirildi", WebUtility.HtmlDecode(await sifirlama.Content.ReadAsStringAsync()));
+        Assert.Contains("Şifren değiştirildi", WebUtility.HtmlDecode(await sifirlama.Content.ReadAsStringAsync()));
 
         var kayitlar = await _factory.DenetimKayitlariAsync(k => k.Any(x => x.OlayTuru == DenetimOlayi.SifreSifirlandi));
         var olaylar = kayitlar.Select(k => k.OlayTuru).ToHashSet();
@@ -316,8 +316,8 @@ public sealed partial class DenetimKaydiTests : IDisposable
         Assert.Equal(HttpStatusCode.OK, yanit.StatusCode);
         var html = WebUtility.HtmlDecode(await yanit.Content.ReadAsStringAsync());
         Assert.Contains("Uygulamaya giriş yapıldı", html);
-        Assert.Contains("Uygulama: Demo OBİS", html);
-        Assert.Contains("IP: 192.0.2.10", html);
+        Assert.Contains("<td role=\"cell\" data-etiket=\"Uygulama\">Demo OBİS</td>", html);
+        Assert.Contains("<td role=\"cell\" data-etiket=\"IP\" class=\"mono\">192.0.2.10</td>", html);
         Assert.DoesNotContain("Demo Yemekhane", html);
         Assert.DoesNotContain("198.51.100.77", html);
         Assert.Equal(20, Satir().Matches(GecmisListesi().Match(html).Value).Count);
@@ -329,10 +329,10 @@ public sealed partial class DenetimKaydiTests : IDisposable
     [GeneratedRegex(@"https://\S+/Account/SifreSifirla\?\S+")]
     private static partial Regex SifirlamaBaglantisi();
 
-    [GeneratedRegex("<ul class=\"kapsamlar gecmis\">.*?</ul>", RegexOptions.Singleline)]
+    [GeneratedRegex("<tbody role=\"rowgroup\">.*?</tbody>", RegexOptions.Singleline)]
     private static partial Regex GecmisListesi();
 
-    [GeneratedRegex("<li>")]
+    [GeneratedRegex("<tr role=\"row\"")]
     private static partial Regex Satir();
 
     [GeneratedRegex(@"kullanici_adi_ozeti=\S+")]

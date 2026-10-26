@@ -2,29 +2,42 @@
 @model Selcuk.Identity.Pages.Account.EkDogrulamaModel
 @{
     ViewData["Title"] = "Ek doğrulama";
+    ViewData[Duzen.Ayar.Genislik] = "dar";
+    var formHatasi = Html.FormHatasiVar() ? " form-hatasi" : "";
 }
-<section class="kart">
-    <h1>Ek doğrulama</h1>
-    <p class="bilgi" role="status">
-        Bu uygulama iki aşamalı doğrulama gerektiriyor. Devam etmek için doğrulayıcı uygulamanızdaki 6 haneli kodu girin.
-    </p>
-    <p class="aciklama">
-        Oturumunuz şifreyle (veya hatırlanan bir cihazda) açıldı. Kodu doğruladıktan sonra uygulamaya kaldığınız yerden
-        devam edersiniz. Telefonunuz yanınızda değilse kurtarma kodlarınızdan birini kullanabilirsiniz.
-    </p>
+<h1>Ek doğrulama</h1>
 
+<div class="bant bant-bilgi" role="status">
+    @Html.Raw(Simge.Bilgi)
+    <p>Bu uygulama iki aşamalı doğrulama gerektiriyor. Kodu doğrulayınca uygulamaya kaldığın yerden devam edersin.</p>
+</div>
+
+<partial name="_FormHatalari" />
+
+<div class="panel">
     <form method="post" class="form">
-        <div asp-validation-summary="ModelOnly" class="hata" role="alert"></div>
         <input type="hidden" asp-for="ReturnUrl" />
 
-        <label asp-for="Input.Kod"></label>
-        <input asp-for="Input.Kod" type="text" inputmode="text" autocomplete="one-time-code" autocapitalize="characters"
-               spellcheck="false" autofocus />
-        <span asp-validation-for="Input.Kod" class="alan-hatasi"></span>
+        <div class="alan">
+            <label for="Input_Kod" id="kod-etiketi">Doğrulama kodu</label>
+            <input asp-for="Input.Kod" class="metin-alani kod-alani" type="text" inputmode="numeric"
+                   autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" autofocus data-kod-alani
+                   aria-describedby="@("kod-ipucu kod-hatasi" + formHatasi)" aria-invalid="@Html.AlanHatali("Input.Kod")" />
+            <p class="ipucu" id="kod-ipucu">
+                Doğrulayıcı uygulamandaki 6 haneli kodu gir. Telefonun yanında değilse kurtarma kodlarından birini de
+                yazabilirsin.
+            </p>
+            <span asp-validation-for="Input.Kod" id="kod-hatasi" class="alan-hatasi"></span>
+            <div>
+                <button type="button" class="dugme-baglanti" data-kod-modu="Input_Kod" data-etiket-id="kod-etiketi"
+                        data-ipucu-id="kod-ipucu" data-etiket-kurtarma="Kurtarma kodu"
+                        data-ipucu-kurtarma="Kurtarma kodları XXXXX-XXXXX biçimindedir, her biri bir kez kullanılır."
+                        data-dugme-kurtarma="Doğrulama kodu kullan" hidden>Kurtarma kodu kullan</button>
+            </div>
+        </div>
 
-        <button type="submit" class="dugme birincil">Doğrula ve devam et</button>
+        <button type="submit" class="dugme dugme-ana dugme-tam">Kodu doğrula ve devam et</button>
     </form>
+</div>
 
-    <p class="ipucu">Kurtarma kodu her biri bir kez kullanılabilir.</p>
-    <p class="ipucu"><a href="/">Uygulamalarım'a dön</a></p>
-</section>
+<p><a href="/">Uygulamalarım'a dön</a></p>

@@ -80,6 +80,10 @@ public sealed partial class SelcukIdentityFactory : WebApplicationFactory<Progra
             }
         });
 
+        // Ortak tasarım kütüphanesinin (Selcuk.Arayuz) _content/ dosyaları: ASP.NET Core bunları yalnızca Development'ta
+        // derleme çıktısındaki manifestten sunar; yayımlanan uygulamada wwwroot/_content altındadır.
+        builder.UseStaticWebAssets();
+
         builder.ConfigureTestServices(services =>
         {
             services.RemoveAll<DbContextOptions<ApplicationDbContext>>();

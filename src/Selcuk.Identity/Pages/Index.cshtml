@@ -2,39 +2,36 @@
 @model Selcuk.Identity.Pages.IndexModel
 @{
     ViewData["Title"] = "Uygulamalarım";
+    ViewData[Duzen.Ayar.Genislik] = "genis";
 }
-<section class="kart">
-    <h1>Uygulamalarım</h1>
-    <p class="aciklama">
-        Oturumunuz açık: <strong>@User.Identity?.Name</strong>. Aşağıdaki uygulamalara şifre girmeden geçebilirsiniz.
-    </p>
+<h1 class="baslik-buyuk">Merhaba, @Model.Ad</h1>
 
-    @if (Model.Uygulamalar.Count == 0)
-    {
-        <p>Kayıtlı uygulama bulunmuyor.</p>
-    }
-    else
-    {
-        <ul class="uygulamalar">
-            @foreach (var uygulama in Model.Uygulamalar)
-            {
-                <li>
-                    <a class="uygulama" href="@uygulama.GirisAdresi">
-                        <strong>@uygulama.Ad</strong>
+@if (Model.Uygulamalar.Count == 0)
+{
+    <p class="giris-metni">Henüz erişebildiğin bir uygulama yok. Yetki için birim yöneticine başvur.</p>
+}
+else
+{
+    <p class="giris-metni">Bu uygulamalara şifre girmeden geçebilirsin.</p>
+
+    <h2 class="gorunmez">Uygulamalarım</h2>
+    <ul class="satirlar uygulamalar">
+        @for (var i = 0; i < Model.Uygulamalar.Count; i++)
+        {
+            var uygulama = Model.Uygulamalar[i];
+            <li>
+                <span class="uygulama-simge" aria-hidden="true">@IndexModel.BasHarfler(uygulama.Ad)</span>
+                <div>
+                    <p class="satir-baslik"><span id="uygulama-@i">@uygulama.Ad</span>
                         @if (uygulama.MfaGerekli)
                         {
-                            <em class="etiket" title="Bu uygulamaya iki aşamalı doğrulanmış oturumla girilir">2FA gerekli</em>
+                            <span class="etiket" title="Bu uygulamaya iki aşamalı doğrulanmış oturumla girilir">2FA gerekli</span>
                         }
-                        <span>@uygulama.Aciklama</span>
-                        <small>@uygulama.AnaSayfa</small>
-                    </a>
-                </li>
-            }
-        </ul>
-    }
-
-    <div class="dugmeler">
-        <a class="dugme ikincil" asp-page="/Account/Hesabim">Hesabım</a>
-        <a class="dugme ikincil" href="/connect/logout">Çıkış yap</a>
-    </div>
-</section>
+                    </p>
+                    <p class="ipucu">@uygulama.Aciklama</p>
+                </div>
+                <a class="dugme dugme-ikincil" href="@uygulama.GirisAdresi" aria-describedby="uygulama-@i">Aç</a>
+            </li>
+        }
+    </ul>
+}

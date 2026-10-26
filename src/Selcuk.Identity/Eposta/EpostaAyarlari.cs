@@ -31,8 +31,9 @@ public sealed class EpostaAyarlari
         public bool SslKullan { get; set; } = true;
     }
 
-    internal MailMessage MailMessageOlustur(EpostaMesaji mesaj) =>
-        new(new MailAddress(Gonderen, GonderenAdi, Encoding.UTF8), new MailAddress(mesaj.Alici))
+    internal MailMessage MailMessageOlustur(EpostaMesaji mesaj)
+    {
+        var mail = new MailMessage(new MailAddress(Gonderen, GonderenAdi, Encoding.UTF8), new MailAddress(mesaj.Alici))
         {
             Subject = mesaj.Konu,
             SubjectEncoding = Encoding.UTF8,
@@ -42,4 +43,15 @@ public sealed class EpostaAyarlari
             BodyTransferEncoding = TransferEncoding.EightBit,
             IsBodyHtml = false,
         };
+
+        // HTML sürümü düz metnin alternatifi (multipart/alternative); istemci destekliyorsa onu gösterir.
+        if (mesaj.HtmlGovde is not null)
+        {
+            var html = AlternateView.CreateAlternateViewFromString(mesaj.HtmlGovde, Encoding.UTF8, MediaTypeNames.Text.Html);
+            html.TransferEncoding = TransferEncoding.QuotedPrintable;
+            mail.AlternateViews.Add(html);
+        }
+
+        return mail;
+    }
 }

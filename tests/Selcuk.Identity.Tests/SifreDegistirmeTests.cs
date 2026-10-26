@@ -67,7 +67,7 @@ public sealed class SifreDegistirmeTests : IDisposable
         Assert.Equal(buSid, _factory.OturumSid(yanit));
         var hesabim = await bu.GetAsync(yanit.Headers.Location);
         Assert.Equal(HttpStatusCode.OK, hesabim.StatusCode);
-        Assert.Contains("Şifreniz değiştirildi", WebUtility.HtmlDecode(await hesabim.Content.ReadAsStringAsync()));
+        Assert.Contains("Şifren değiştirildi", WebUtility.HtmlDecode(await hesabim.Content.ReadAsStringAsync()));
 
         // Diğer oturum kapandı ve onun istemcilerine (yalnızca onlara) Back-Channel Logout gitti.
         var digerSonra = await diger.GetAsync("/");

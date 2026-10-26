@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -11,10 +12,10 @@ using Selcuk.Identity.Oidc;
 namespace Selcuk.Identity.Pages;
 
 /// <summary>
-/// "Uygulamalarım": kayıtlı istemcilerin kartları. Kart, istemcinin giriş başlatma adresine (initiate_login_uri)
-/// gider; kimlik sunucusunda oturum açık olduğu için şifre sorulmadan içeri girilir. OIDC Core 1.0 bölüm 4'e göre
-/// initiate_login_uri'ye iss parametresi eklenir; istemci bunu kendi kimlik sunucusuyla karşılaştırır. Kullanıcının
-/// istemci bazlı erişim izni olmayan uygulamaların kartı gösterilmez (<see cref="IstemciErisimi"/>).
+/// "Uygulamalarım": kayıtlı istemcilerin satırları. Satırdaki "Aç" bağlantısı istemcinin giriş başlatma adresine
+/// (initiate_login_uri) gider; kimlik sunucusunda oturum açık olduğu için şifre sorulmadan içeri girilir. OIDC Core 1.0
+/// bölüm 4'e göre initiate_login_uri'ye iss parametresi eklenir; istemci bunu kendi kimlik sunucusuyla karşılaştırır.
+/// Kullanıcının istemci bazlı erişim izni olmayan uygulamaların satırı gösterilmez (<see cref="IstemciErisimi"/>).
 /// </summary>
 [Authorize]
 public class IndexModel(
@@ -26,6 +27,16 @@ public class IndexModel(
 
     public List<UygulamaKarti> Uygulamalar { get; } = [];
 
+    /// <summary>Karşılama başlığındaki ad: ad soyad, yoksa kullanıcı adı.</summary>
+    public string Ad { get; private set; } = string.Empty;
+
+    /// <summary>Uygulama simgesindeki baş harfler: addaki ilk iki kelimenin ilk harfleri ("Demo OBİS" → "DO").</summary>
+    public static string BasHarfler(string ad) => string.Concat(ad
+        .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+        .Where(kelime => char.IsLetter(kelime[0]))
+        .Take(2)
+        .Select(kelime => char.ToUpper(kelime[0], CultureInfo.GetCultureInfo("tr-TR"))));
+
     public async Task OnGetAsync()
     {
         var uygulamalar = await applicationManager.ListAsync(count: null, offset: null, HttpContext.RequestAborted)
@@ -33,6 +44,7 @@ public class IndexModel(
         var user = await userManager.GetUserAsync(User)
             ?? throw new InvalidOperationException("Oturumdaki kullanıcı bulunamadı.");
         var roller = await userManager.GetRolesAsync(user);
+        Ad = string.IsNullOrWhiteSpace(user.AdSoyad) ? user.UserName ?? string.Empty : user.AdSoyad;
 
         foreach (var uygulama in uygulamalar)
         {

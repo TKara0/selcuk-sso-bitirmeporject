@@ -41,10 +41,10 @@ public class AuthorizeModel(
 
     public static (string Baslik, string Aciklama) KapsamBilgisi(string kapsam) => kapsam switch
     {
-        Scopes.OpenId => ("Kimlik", "Hesabınıza ait benzersiz kimlik numarası"),
-        Scopes.Profile => ("Profil", "Ad soyadınız, kullanıcı adınız / öğrenci numaranız, fakülte ve bölüm bilginiz"),
-        Scopes.Email => ("E-posta", "E-posta adresiniz"),
-        Scopes.Roles => ("Rol", "Rolünüz (öğrenci, akademisyen veya personel)"),
+        Scopes.OpenId => ("Kimlik", "Hesabına ait benzersiz kimlik numarası"),
+        Scopes.Profile => ("Profil", "Ad soyadın, kullanıcı adın veya öğrenci numaran, fakülte ve bölüm bilgin"),
+        Scopes.Email => ("E-posta", "E-posta adresin"),
+        Scopes.Roles => ("Rol", "Rolün (öğrenci, akademisyen veya personel)"),
         Scopes.OfflineAccess => ("Erişimi yenileme",
             "Uygulama, oturumun açıkken erişimini sen tekrar giriş yapmadan yenileyebilir."),
         Istemciler.NotlarOkuKapsami => ("Notlar", "Not bilgilerini okuma"),

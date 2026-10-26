@@ -38,7 +38,7 @@ public class SifremiUnuttumModel(
 
     public class IstekGirdisi
     {
-        [Required(ErrorMessage = "Kullanıcı adı veya e-posta zorunludur.")]
+        [Required(ErrorMessage = "Kullanıcı adını, öğrenci numaranı veya e-posta adresini yaz.")]
         [MaxLength(256)]
         [Display(Name = "Kullanıcı adı, öğrenci numarası veya e-posta")]
         public string KullaniciAdiVeyaEposta { get; set; } = string.Empty;

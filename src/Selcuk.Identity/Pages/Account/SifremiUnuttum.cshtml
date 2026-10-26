@@ -2,34 +2,44 @@
 @model Selcuk.Identity.Pages.Account.SifremiUnuttumModel
 @{
     ViewData["Title"] = "Şifremi unuttum";
+    ViewData[Duzen.Ayar.Genislik] = "dar";
 }
-<section class="kart">
-    <h1>Şifremi unuttum</h1>
+<h1>Şifremi unuttum</h1>
 
-    @if (Model.Gonderildi)
-    {
-        <p class="bilgi" role="status">@SifremiUnuttumModel.GonderildiMesaji</p>
-        <p class="ipucu">Bağlantı @Model.Gecerlilik.TotalMinutes.ToString("0") dakika geçerlidir. E-posta gelmediyse bir süre sonra tekrar deneyin.</p>
-        <a class="dugme ikincil" asp-page="/Account/Login">Giriş sayfasına dön</a>
-    }
-    else
-    {
-        <p class="aciklama">
-            Kullanıcı adınızı, öğrenci numaranızı veya e-posta adresinizi yazın. Hesabınıza kayıtlı e-posta adresine
-            şifre sıfırlama bağlantısı gönderilir.
-        </p>
+@if (Model.Gonderildi)
+{
+    <div class="bant bant-bilgi" role="status">
+        @Html.Raw(Simge.Bilgi)
+        <p>@SifremiUnuttumModel.GonderildiMesaji</p>
+    </div>
+    @* Hesap var olsun ya da olmasın aynı sonuç metni (GonderildiMesaji ve bu satır); güvenlik gereği değiştirilmedi. *@
+    <p class="giris-metni">
+        Bağlantı @Model.Gecerlilik.TotalMinutes.ToString("0") dakika geçerlidir. E-posta gelmediyse bir süre sonra tekrar deneyin.
+    </p>
+    <a class="dugme dugme-ikincil" asp-page="/Account/Login">Giriş sayfasına dön</a>
+}
+else
+{
+    <p class="giris-metni">
+        Kullanıcı adını, öğrenci numaranı veya e-posta adresini yaz. Hesabına kayıtlı e-posta adresine şifre sıfırlama
+        bağlantısı gönderilir.
+    </p>
 
+    <partial name="_FormHatalari" />
+
+    <div class="panel">
         <form method="post" class="form">
-            <div asp-validation-summary="ModelOnly" class="hata" role="alert"></div>
+            <div class="alan">
+                <label asp-for="Input.KullaniciAdiVeyaEposta"></label>
+                <input asp-for="Input.KullaniciAdiVeyaEposta" class="metin-alani" type="text" autocomplete="username"
+                       autocapitalize="none" spellcheck="false" autofocus aria-describedby="kullanici-hatasi"
+                       aria-invalid="@Html.AlanHatali("Input.KullaniciAdiVeyaEposta")" />
+                <span asp-validation-for="Input.KullaniciAdiVeyaEposta" id="kullanici-hatasi" class="alan-hatasi"></span>
+            </div>
 
-            <label asp-for="Input.KullaniciAdiVeyaEposta"></label>
-            <input asp-for="Input.KullaniciAdiVeyaEposta" type="text" autocomplete="username" autocapitalize="none"
-                   spellcheck="false" autofocus />
-            <span asp-validation-for="Input.KullaniciAdiVeyaEposta" class="alan-hatasi"></span>
-
-            <button type="submit" class="dugme birincil">Bağlantı gönder</button>
+            <button type="submit" class="dugme dugme-ana dugme-tam">Bağlantı gönder</button>
         </form>
+    </div>
 
-        <p class="ipucu"><a asp-page="/Account/Login">Giriş sayfasına dön</a></p>
-    }
-</section>
+    <p><a asp-page="/Account/Login">Giriş sayfasına dön</a></p>
+}

@@ -1,197 +1,244 @@
-:root {
-    --zemin: #f4f5f7;
-    --yuzey: #ffffff;
-    --metin: #1f2933;
-    --soluk: #5f6b7a;
-    --cizgi: #d9dde3;
-    --vurgu: #2f4b6e;
-    --vurgu-koyu: #233a56;
-    --hata: #a8323e;
-    --hata-zemin: #fbecee;
-    --bilgi-zemin: #eaf0f7;
+/*
+ * Kimlik sunucusuna özel yerleşimler. Renk, yazı, aralık ve köşe değerleri ortak tasarım sisteminin token'larıdır
+ * (_content/Selcuk.Arayuz/css/selcuk.css); burada yeni renk tanımlanmaz.
+ */
+
+/* Giriş ekranı */
+.giris-alt {
+    margin: var(--a6) 0 0;
 }
 
-@media (prefers-color-scheme: dark) {
-    :root {
-        --zemin: #15191e;
-        --yuzey: #1e242b;
-        --metin: #e6e9ed;
-        --soluk: #a3adb9;
-        --cizgi: #333c46;
-        --vurgu: #7ea3cf;
-        --vurgu-koyu: #9bb9dc;
-        --hata: #f08b95;
-        --hata-zemin: #3a2226;
-        --bilgi-zemin: #1f2d3d;
+/* Satır başlığı (uygulama, kapsam, hesap satırları) */
+.satir-baslik {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--a1) var(--a2);
+    margin: 0;
+    font-weight: 700;
+}
+
+.satirlar .ipucu {
+    margin: var(--a1) 0 0;
+}
+
+/* Uygulamalarım: ayırıcı çizgili satırlar; geniş ekranda iki sütun (kart ızgarası değil). */
+.uygulamalar > li {
+    display: grid;
+    grid-template-columns: var(--dokunma) minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--a4);
+}
+
+.uygulama-simge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--dokunma);
+    height: var(--dokunma);
+    font-size: var(--boyut-kucuk);
+    font-weight: 700;
+    color: var(--baglanti);
+    background: var(--firuze-acik);
+    border-radius: var(--kose-kontrol);
+}
+
+@media (min-width: 960px) {
+    .uygulamalar {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: var(--a12);
+    }
+
+    .uygulamalar > li:nth-child(2) {
+        border-top: 0;
     }
 }
 
-* { box-sizing: border-box; }
-
-body {
-    margin: 0;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    background: var(--zemin);
-    color: var(--metin);
-    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-}
-
-.ust {
-    padding: 14px 16px;
-    background: var(--yuzey);
-    border-bottom: 1px solid var(--cizgi);
-}
-
-.marka {
-    color: var(--metin);
-    font-weight: 600;
-    text-decoration: none;
-}
-
-.kap {
-    flex: 1;
-    width: 100%;
-    max-width: 440px;
-    margin: 0 auto;
-    padding: 32px 16px;
-}
-
-.kart {
-    background: var(--yuzey);
-    border: 1px solid var(--cizgi);
-    border-radius: 10px;
-    padding: 24px;
-}
-
-h1 { margin: 0 0 8px; font-size: 1.4rem; }
-
-.aciklama { color: var(--soluk); margin: 0 0 20px; }
-
-.ipucu { color: var(--soluk); font-size: 0.875rem; margin: 20px 0 0; }
-
-.form { display: flex; flex-direction: column; }
-
-label { font-weight: 500; margin: 12px 0 6px; }
-
-input[type="text"], input[type="password"] {
-    width: 100%;
-    padding: 10px 12px;
-    font: inherit;
-    color: var(--metin);
-    background: var(--yuzey);
-    border: 1px solid var(--cizgi);
-    border-radius: 6px;
-}
-
-input:focus-visible, .dugme:focus-visible {
-    outline: 2px solid var(--vurgu);
-    outline-offset: 2px;
-}
-
-.dugme {
-    display: inline-block;
-    padding: 10px 18px;
-    font: inherit;
-    font-weight: 500;
-    text-align: center;
-    text-decoration: none;
-    border-radius: 6px;
-    border: 1px solid transparent;
-    cursor: pointer;
-}
-
-.form .dugme { margin-top: 20px; }
-
-.birincil { background: var(--vurgu); color: var(--yuzey); }
-.birincil:hover { background: var(--vurgu-koyu); }
-
-.ikincil { background: transparent; color: var(--vurgu); border-color: var(--cizgi); }
-
-.dugmeler { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
-.dugmeler .dugme { flex: 1 1 140px; }
-
-.hata {
-    background: var(--hata-zemin);
-    color: var(--hata);
-    border-radius: 6px;
-    padding: 10px 12px;
-}
-.hata ul { margin: 0; padding-left: 18px; }
-.validation-summary-valid { display: none; }
-
-.alan-hatasi { color: var(--hata); font-size: 0.875rem; }
-
-.bilgi {
-    background: var(--bilgi-zemin);
-    color: var(--metin);
-    border-left: 3px solid var(--vurgu);
-    border-radius: 6px;
-    padding: 10px 12px;
-    margin: 0 0 16px;
-}
-
-.uygulamalar { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
-.uygulama {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding: 14px 16px;
-    color: var(--metin);
-    text-decoration: none;
-    border: 1px solid var(--cizgi);
-    border-radius: 8px;
-}
-.uygulama:hover, .uygulama:focus-visible { border-color: var(--vurgu); }
-.uygulama strong { color: var(--vurgu); }
-.uygulama span { color: var(--soluk); font-size: 0.9rem; }
-.uygulama small { color: var(--soluk); font-size: 0.8rem; overflow-wrap: anywhere; }
-.uygulama .etiket {
-    justify-self: start; font-style: normal; font-size: 0.75rem; font-weight: 600; color: var(--vurgu);
-    border: 1px solid var(--vurgu); border-radius: 999px; padding: 0.05rem 0.5rem;
-}
-
-.kapsamlar { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--cizgi); }
-.kapsamlar li {
-    display: flex;
-    flex-direction: column;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--cizgi);
-}
-.kapsamlar span { color: var(--soluk); font-size: 0.9rem; }
-
-h2 { margin: 24px 0 8px; font-size: 1.1rem; }
-
-.secim { display: flex; align-items: center; gap: 8px; font-weight: 400; }
-
-.adimlar { margin: 0 0 16px; padding-left: 20px; }
-.adimlar li { margin-bottom: 4px; }
-
-/* QR kod beyaz zemin üzerinde kalır (koyu temada da okunabilsin). */
-.qr { margin: 0 0 16px; text-align: center; }
-.qr img { background: #ffffff; padding: 8px; border-radius: 6px; }
-
-.anahtar, .kodlar code {
-    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
-    letter-spacing: 0.05em;
-    overflow-wrap: anywhere;
-}
-
-.kodlar {
-    list-style: none;
-    margin: 0;
-    padding: 12px;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-    border: 1px solid var(--cizgi);
-    border-radius: 6px;
-}
-
-.alt {
-    padding: 16px;
-    text-align: center;
+/* Onay ekranı */
+.ust-not {
+    margin: 0 0 var(--a1);
     color: var(--soluk);
-    font-size: 0.8rem;
+}
+
+.hesap-bilgisi {
+    margin-top: var(--a8);
+    padding-top: var(--a4);
+    border-top: 1px solid var(--cizgi);
+}
+
+.hesap-bilgisi p {
+    margin: 0 0 var(--a2);
+}
+
+/* Hesabım: başlık, açıklama ve eylem düğmesi aynı satırda. */
+.eylem-satirlari > li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--a3) var(--a4);
+}
+
+.eylem-satirlari > li > div {
+    flex: 1 1 260px;
+}
+
+/* İki aşamalı doğrulama kurulumu: QR solda, elle girilecek anahtar sağda. QR koyu temada da beyaz zeminde kalır. */
+.qr-blok {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--a6);
+}
+
+.qr {
+    flex: none;
+    padding: var(--a2);
+    background: #FFFFFF;
+    border: 1px solid var(--cizgi);
+    border-radius: var(--kose-kontrol);
+}
+
+.qr-anahtar {
+    flex: 1 1 220px;
+    min-width: 0;
+}
+
+.qr-anahtar .dugmeler {
+    margin: var(--a3) 0 var(--a4);
+}
+
+.qr-anahtar .ipucu {
+    margin: 0 0 var(--a2);
+}
+
+/* Şifre politikası: karşılanan madde işaretlenir (simge ve gizli "karşılandı" metni; yalnızca renge güvenilmez). */
+.sifre-politikasi p {
+    margin: 0 0 var(--a2);
+}
+
+.sifre-politikasi ul {
+    margin: 0 0 var(--a2);
+    padding: 0;
+    list-style: none;
+}
+
+.sifre-politikasi li {
+    display: flex;
+    align-items: center;
+    gap: var(--a2);
+    color: var(--soluk);
+}
+
+.sifre-politikasi li.karsilandi {
+    color: var(--murekkep);
+}
+
+.sifre-politikasi .simge-bos,
+.sifre-politikasi .simge-tamam {
+    display: inline-flex;
+}
+
+.sifre-politikasi .simge-tamam {
+    color: var(--baglanti);
+}
+
+.sifre-politikasi li.karsilandi .simge-bos,
+.sifre-politikasi li:not(.karsilandi) .simge-tamam {
+    display: none;
+}
+
+/* Güvenlik geçmişi: tablo; dar ekranda her olay iki satırlık bir öğe. */
+.gecmis {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--yuzey);
+    border: 1px solid var(--cizgi);
+    border-radius: var(--kose-yuzey);
+}
+
+.gecmis th,
+.gecmis td {
+    padding: var(--a3) var(--a4);
+    text-align: left;
+    vertical-align: top;
+    border-top: 1px solid var(--cizgi);
+}
+
+.gecmis thead th {
+    border-top: 0;
+    color: var(--soluk);
+    font-size: var(--boyut-kucuk);
+}
+
+.gecmis td:first-child {
+    white-space: nowrap;
+}
+
+.gecmis-olay {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--a1) var(--a2);
+}
+
+.gecmis .etiket svg {
+    width: 16px;
+    height: 16px;
+}
+
+@media (max-width: 719.98px) {
+    .gecmis,
+    .gecmis tbody,
+    .gecmis tr,
+    .gecmis td {
+        display: block;
+    }
+
+    .gecmis thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+    }
+
+    .gecmis tr {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0 var(--a4);
+        padding: var(--a3) var(--a4);
+        border-top: 1px solid var(--cizgi);
+    }
+
+    .gecmis tbody tr:first-child {
+        border-top: 0;
+    }
+
+    .gecmis td {
+        padding: 0;
+        border: 0;
+        color: var(--soluk);
+        font-size: var(--boyut-kucuk);
+    }
+
+    .gecmis td.gecmis-olay {
+        order: -1;
+        flex: 1 0 100%;
+        margin-bottom: var(--a1);
+        color: var(--murekkep);
+        font-size: var(--boyut-govde);
+    }
+
+    .gecmis td[data-etiket="Uygulama"]::before,
+    .gecmis td[data-etiket="IP"]::before {
+        content: attr(data-etiket) ": ";
+        font-family: var(--yazi);
+    }
+
+    .gecmis td.bos {
+        display: none;
+    }
 }

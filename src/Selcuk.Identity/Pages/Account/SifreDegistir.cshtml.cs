@@ -26,26 +26,26 @@ public class SifreDegistirModel(
     DenetimKaydedici denetim) : PageModel
 {
     public const string KilitliMesaji =
-        "Çok fazla hatalı deneme yapıldı; hesabınız geçici olarak kilitlendi. Bir süre sonra tekrar deneyin.";
+        "Çok fazla hatalı deneme yapıldı, hesabın geçici olarak kilitlendi. Biraz bekleyip tekrar dene.";
 
     [BindProperty]
     public DegistirmeGirdisi Input { get; set; } = new();
 
     public class DegistirmeGirdisi
     {
-        [Required(ErrorMessage = "Mevcut şifre zorunludur.")]
+        [Required(ErrorMessage = "Mevcut şifreni yaz.")]
         [DataType(DataType.Password)]
         [Display(Name = "Mevcut şifre")]
         public string MevcutSifre { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Yeni şifre zorunludur.")]
+        [Required(ErrorMessage = "Yeni şifreni yaz.")]
         [DataType(DataType.Password)]
         [Display(Name = "Yeni şifre")]
         public string YeniSifre { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Şifre tekrarı zorunludur.")]
+        [Required(ErrorMessage = "Yeni şifreni tekrar yaz.")]
         [DataType(DataType.Password)]
-        [Compare(nameof(YeniSifre), ErrorMessage = "Şifreler aynı değil.")]
+        [Compare(nameof(YeniSifre), ErrorMessage = "Şifreler aynı değil. İki alana da aynı şifreyi yaz.")]
         [Display(Name = "Yeni şifre (tekrar)")]
         public string YeniSifreTekrar { get; set; } = string.Empty;
     }

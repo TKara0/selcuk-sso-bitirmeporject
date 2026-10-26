@@ -54,7 +54,7 @@ public static class Istemciler
     public static OpenIddictApplicationDescriptor DemoObis(string clientSecret)
     {
         var tanim = Tanim(DemoObisClientId, "Demo OBİS", DemoObisAdres,
-            "Notlarınızı görüntüleyin; akademisyenler için ders yönetimi.", clientSecret);
+            "Notlarını görüntüle; akademisyenler için ders yönetimi.", clientSecret);
         // Notlarım sayfası notları Demo API'den (notlar.oku) çeker.
         tanim.Permissions.Add(Permissions.Prefixes.Scope + NotlarOkuKapsami);
         return tanim;

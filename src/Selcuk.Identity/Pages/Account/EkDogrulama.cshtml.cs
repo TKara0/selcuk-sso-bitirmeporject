@@ -36,7 +36,7 @@ public class EkDogrulamaModel(
 
     public class KodGirdisi
     {
-        [Required(ErrorMessage = "Kod zorunludur.")]
+        [Required(ErrorMessage = "Kodu yaz.")]
         [StringLength(32)]
         [Display(Name = "Doğrulama kodu veya kurtarma kodu")]
         public string Kod { get; set; } = string.Empty;

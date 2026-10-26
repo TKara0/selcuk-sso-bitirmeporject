@@ -1,0 +1,25 @@
+@* Üst çubuktaki hesap menüsü: button + aria-expanded, Esc ile kapanır (selcuk.js). Yalnızca bağlantılar; form yok. *@
+@if (User.Identity?.IsAuthenticated == true)
+{
+    var gecerli = ViewContext.RouteData.Values["page"] as string;
+    string? Gecerli(string sayfa) => gecerli == sayfa ? "page" : null;
+
+    <nav class="hesap-menusu" aria-label="Hesap" data-menu>
+        <button type="button" class="hesap-dugmesi" aria-expanded="false" aria-controls="hesap-listesi" data-menu-dugme>
+            @Html.Raw(Simge.Kisi)
+            <span class="gorunmez">Hesap menüsü:</span>
+            <span class="hesap-adi mono">@User.Identity.Name</span>
+            <span class="ok">@Html.Raw(Simge.AsagiOk)</span>
+        </button>
+        <ul class="hesap-listesi" id="hesap-listesi" hidden>
+            <li><a asp-page="/Account/Hesabim" aria-current="@Gecerli("/Account/Hesabim")">Hesabım</a></li>
+            <li><a asp-page="/Account/IkiAdimDogrulama" aria-current="@Gecerli("/Account/IkiAdimDogrulama")">İki aşamalı doğrulama</a></li>
+            <li><a asp-page="/Account/SifreDegistir" aria-current="@Gecerli("/Account/SifreDegistir")">Şifre değiştir</a></li>
+            <li><a asp-page="/Account/GuvenlikGecmisi" aria-current="@Gecerli("/Account/GuvenlikGecmisi")">Güvenlik geçmişi</a></li>
+            <li class="ayirici"><a href="/connect/logout">Çıkış yap</a></li>
+        </ul>
+        <noscript>
+            <a class="dugme dugme-ikincil" asp-page="/Account/Hesabim">Hesabım</a>
+        </noscript>
+    </nav>
+}

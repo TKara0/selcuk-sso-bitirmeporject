@@ -2,31 +2,41 @@
 @model Selcuk.Identity.Pages.Account.SifreDegistirModel
 @{
     ViewData["Title"] = "Şifre değiştir";
+    ViewData[Duzen.Ayar.Genislik] = "dar";
 }
-<section class="kart">
-    <h1>Şifre değiştir</h1>
-    <p class="aciklama">Şifreniz değişince diğer cihaz ve tarayıcılardaki oturumlarınız kapatılır; bu oturum açık kalır.</p>
+<h1>Şifre değiştir</h1>
+<p class="giris-metni">Şifren değişince diğer cihaz ve tarayıcılardaki oturumların kapanır, bu oturum açık kalır.</p>
 
+<partial name="_FormHatalari" />
+
+<div class="panel">
     <form method="post" class="form">
-        <div asp-validation-summary="ModelOnly" class="hata" role="alert"></div>
+        <div class="alan">
+            <label asp-for="Input.MevcutSifre"></label>
+            <input asp-for="Input.MevcutSifre" class="metin-alani" autocomplete="current-password" autofocus
+                   aria-describedby="mevcut-sifre-hatasi" aria-invalid="@Html.AlanHatali("Input.MevcutSifre")" />
+            <span asp-validation-for="Input.MevcutSifre" id="mevcut-sifre-hatasi" class="alan-hatasi"></span>
+        </div>
 
-        <label asp-for="Input.MevcutSifre"></label>
-        <input asp-for="Input.MevcutSifre" autocomplete="current-password" autofocus />
-        <span asp-validation-for="Input.MevcutSifre" class="alan-hatasi"></span>
+        <div class="alan">
+            <label asp-for="Input.YeniSifre"></label>
+            <input asp-for="Input.YeniSifre" class="metin-alani" autocomplete="new-password"
+                   aria-describedby="yeni-sifre-hatasi sifre-kurallari" aria-invalid="@Html.AlanHatali("Input.YeniSifre")" />
+            <span asp-validation-for="Input.YeniSifre" id="yeni-sifre-hatasi" class="alan-hatasi"></span>
+        </div>
 
-        <label asp-for="Input.YeniSifre"></label>
-        <input asp-for="Input.YeniSifre" autocomplete="new-password" />
-        <span asp-validation-for="Input.YeniSifre" class="alan-hatasi"></span>
+        <partial name="_SifrePolitikasi" model="@("Input_YeniSifre")" />
 
-        <label asp-for="Input.YeniSifreTekrar"></label>
-        <input asp-for="Input.YeniSifreTekrar" autocomplete="new-password" />
-        <span asp-validation-for="Input.YeniSifreTekrar" class="alan-hatasi"></span>
-
-        <partial name="_SifrePolitikasi" />
+        <div class="alan">
+            <label asp-for="Input.YeniSifreTekrar"></label>
+            <input asp-for="Input.YeniSifreTekrar" class="metin-alani" autocomplete="new-password"
+                   aria-describedby="sifre-tekrar-hatasi" aria-invalid="@Html.AlanHatali("Input.YeniSifreTekrar")" />
+            <span asp-validation-for="Input.YeniSifreTekrar" id="sifre-tekrar-hatasi" class="alan-hatasi"></span>
+        </div>
 
         <div class="dugmeler">
-            <button type="submit" class="dugme birincil">Şifreyi değiştir</button>
-            <a class="dugme ikincil" asp-page="/Account/Hesabim">Vazgeç</a>
+            <button type="submit" class="dugme dugme-ana">Şifreyi değiştir</button>
+            <a class="dugme dugme-ikincil" asp-page="/Account/Hesabim">Vazgeç</a>
         </div>
     </form>
-</section>
+</div>

@@ -104,7 +104,11 @@ public sealed partial class IkiAdimTests : IDisposable
         Assert.Matches("^([A-Z2-7]{4} )+[A-Z2-7]{1,4}$", IkiAdimIslemleri.AnahtarBicimle(anahtar));
         Assert.Contains($"otpauth://totp/Selcuk%20SSO%20%28Test%29:{kullaniciAdi}?secret={anahtar}" +
                         "&issuer=Selcuk%20SSO%20%28Test%29&digits=6", html);
-        Assert.DoesNotContain("<script", html);
+        // Satır içi betik yok: sayfadaki her <script> yalnızca ortak tasarım sisteminin dosyası (QR sunucuda üretilir,
+        // istemcide QR kütüphanesi yok).
+        Assert.Equal(["/_content/Selcuk.Arayuz/js/selcuk.js"],
+            BetikEtiketi().Matches(html).Select(m => m.Groups[1].Value.Split('?')[0]));
+        Assert.Equal(BetikEtiketi().Matches(html).Count, html.Split("<script").Length - 1);
         var qr = QrKod().Match(html).Groups[1].Value;
         Assert.Contains("<svg", Encoding.UTF8.GetString(Convert.FromBase64String(qr)));
 
@@ -645,4 +649,7 @@ public sealed partial class IkiAdimTests : IDisposable
 
     [GeneratedRegex("src=\"data:image/svg\\+xml;base64,([^\"]+)\"")]
     private static partial Regex QrKod();
+
+    [GeneratedRegex("<script src=\"([^\"]+)\" defer></script>")]
+    private static partial Regex BetikEtiketi();
 }

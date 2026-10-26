@@ -1,0 +1,61 @@
+@*
+    Ortak düzen: üst çubuk (küçük kapı işareti, uygulama adı, sağda hesap menüsü yuvası), içerik ve alt bilgi.
+    ViewData: Title, Duzen.Ayar.* (uygulama adı, genişlik, giriş düzeninde kapı paneli metinleri).
+    Bölümler: "Stiller" (uygulamanın kendi CSS'i), "HesapMenusu" (üst çubuğun sağı; giriş düzeninde gösterilmez).
+*@
+@{
+    var uygulama = ViewData[Duzen.Ayar.UygulamaAdi] as string ?? "Tek Şifre Giriş";
+    var sayfa = ViewData["Title"] as string;
+    var genislik = ViewData[Duzen.Ayar.Genislik] as string;
+    var giris = genislik == "giris";
+}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>@(string.IsNullOrEmpty(sayfa) ? uygulama : $"{sayfa} — {uygulama}")</title>
+    <link rel="preload" href="~/_content/Selcuk.Arayuz/fonts/atkinson-hyperlegible-next-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="~/_content/Selcuk.Arayuz/css/selcuk.css" asp-append-version="true" />
+    @await RenderSectionAsync("Stiller", required: false)
+    <script src="~/_content/Selcuk.Arayuz/js/selcuk.js" asp-append-version="true" defer></script>
+</head>
+<body>
+    <a class="atla" href="#icerik">İçeriğe geç</a>
+    @if (giris)
+    {
+        IgnoreSection("HesapMenusu");
+        <div class="giris-duzeni">
+            <header class="kapi-paneli">
+                @Html.Raw(KapiIsareti.Buyuk)
+                <div>
+                    <p class="kapi-adi">@ViewData[Duzen.Ayar.KapiBasligi]</p>
+                    <p class="kapi-cumlesi">@ViewData[Duzen.Ayar.KapiCumlesi]</p>
+                </div>
+            </header>
+            <div class="giris-sutunu">
+                <main id="icerik" class="giris-icerik">
+                    @RenderBody()
+                </main>
+                <footer class="alt-bilgi"><p>@Duzen.AltBilgi</p></footer>
+            </div>
+        </div>
+    }
+    else
+    {
+        <header class="ust-cubuk">
+            <a class="marka" href="~/">
+                @Html.Raw(KapiIsareti.Kucuk)
+                <span>@uygulama</span>
+                <span class="etiket etiket-notr">Test</span>
+            </a>
+            @await RenderSectionAsync("HesapMenusu", required: false)
+        </header>
+        <main id="icerik" class="icerik@(genislik is "dar" or "genis" ? " icerik-" + genislik : "")">
+            @RenderBody()
+        </main>
+        <footer class="alt-bilgi"><p>@Duzen.AltBilgi</p></footer>
+    }
+</body>
+</html>

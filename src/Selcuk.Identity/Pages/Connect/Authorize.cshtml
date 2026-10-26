@@ -1,37 +1,49 @@
 @page "/connect/authorize"
 @model Selcuk.Identity.Pages.Connect.AuthorizeModel
+@using Microsoft.Extensions.Primitives
 @{
-    ViewData["Title"] = "Erişim onayı";
+    ViewData["Title"] = "Erişim izni";
+    ViewData[Duzen.Ayar.Genislik] = "dar";
+
+    // "Hesabı değiştir": aynı OIDC isteği prompt=login ile yeniden açılır; kimlik sunucusu giriş ekranını gösterir ve
+    // girişten sonra bu isteğe döner (OIDC Core 1.0, 3.1.2.1).
+    var promptlar = Request.Query["prompt"].SelectMany(p => (p ?? string.Empty).Split(' ', StringSplitOptions.RemoveEmptyEntries))
+        .Where(p => p != "login").Append("login");
+    var hesapDegistir = Request.PathBase + Request.Path + QueryString.Create(Request.Query
+        .Where(p => p.Key != "prompt")
+        .Append(KeyValuePair.Create("prompt", new StringValues(string.Join(' ', promptlar)))));
 }
-<section class="kart">
-    <h1>Erişim onayı</h1>
-    <p class="aciklama">
-        <strong>@Model.UygulamaAdi</strong> uygulaması hesabınıza erişmek istiyor.
-        İzin verirseniz aşağıdaki bilgiler bu uygulamayla paylaşılacak:
+<p class="ust-not">Erişim izni</p>
+<h1>@Model.UygulamaAdi</h1>
+<p class="giris-metni">Bu uygulama şunlara erişmek istiyor:</p>
+
+<ul class="satirlar">
+    @foreach (var kapsam in Model.Kapsamlar)
+    {
+        var (baslik, aciklama) = Selcuk.Identity.Pages.Connect.AuthorizeModel.KapsamBilgisi(kapsam);
+        <li><p class="satir-baslik">@baslik</p><p class="ipucu">@aciklama</p></li>
+    }
+</ul>
+
+<form method="post" asp-page="/Connect/Authorize">
+    @* OIDC isteğinin parametreleri onay formuyla birlikte yeniden gönderilir. *@
+    @foreach (var parametre in Request.Query)
+    {
+        foreach (var deger in parametre.Value)
+        {
+            <input type="hidden" name="@parametre.Key" value="@deger" />
+        }
+    }
+    <div class="dugmeler">
+        <button type="submit" name="karar" value="kabul" class="dugme dugme-ana">İzin ver</button>
+        <button type="submit" name="karar" value="red" class="dugme dugme-ikincil">Reddet</button>
+    </div>
+</form>
+
+<div class="hesap-bilgisi">
+    <p>
+        <span class="mono">@User.Identity?.Name</span> olarak giriş yaptın.
+        <a href="@hesapDegistir">Hesabı değiştir</a>
     </p>
-
-    <ul class="kapsamlar">
-        @foreach (var kapsam in Model.Kapsamlar)
-        {
-            var (baslik, aciklama) = Selcuk.Identity.Pages.Connect.AuthorizeModel.KapsamBilgisi(kapsam);
-            <li><strong>@baslik</strong><span>@aciklama</span></li>
-        }
-    </ul>
-
-    <form method="post" asp-page="/Connect/Authorize">
-        @* OIDC isteğinin parametreleri onay formuyla birlikte yeniden gönderilir. *@
-        @foreach (var parametre in Request.Query)
-        {
-            foreach (var deger in parametre.Value)
-            {
-                <input type="hidden" name="@parametre.Key" value="@deger" />
-            }
-        }
-        <div class="dugmeler">
-            <button type="submit" name="karar" value="kabul" class="dugme birincil">İzin ver</button>
-            <button type="submit" name="karar" value="red" class="dugme ikincil">Reddet</button>
-        </div>
-    </form>
-
-    <p class="ipucu">Bu onay her uygulama için bir kez istenir.</p>
-</section>
+    <p class="ipucu">Bu izni her uygulama için bir kez verirsin.</p>
+</div>

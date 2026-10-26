@@ -462,7 +462,9 @@ varsayılanı 30 dakikada bir). Bu yüzden şifre değişince diğer tarayıcıl
 | Testing | Sahte gönderici | Testler e-postaları bellekte yakalar |
 
 E-postalar bir kuyruğa bırakılır ve arka planda gönderilir; sayfanın yanıt süresi e-posta gönderiminden etkilenmez.
-Şablonlar Türkçe, düz metindir, başlıkları "Selçuk Üniversitesi (Test) — Tek Şifre Giriş Sistemi"dir. Gönderen adresi
+Şablonlar Türkçedir; her e-posta düz metin ve aynı içeriğin HTML sürümüyle (multipart/alternative) gider. HTML sürümü
+tasarım sisteminin renklerini kullanır, stilleri satır içidir, harici görsel veya kaynak yoktur. Başlık "Selçuk
+Üniversitesi (Test) — Tek Şifre Giriş Sistemi"dir. Gönderen adresi
 `Eposta:Gonderen` (varsayılan `tek-sifre@test.local`). Alıcı adresi ve e-posta gövdesi (sıfırlama bağlantısı)
 loglanmaz.
 
@@ -885,6 +887,7 @@ scripts/olcum-calistir.ps1        Otomatik ölçüm: derle, uygulamaları ölç�
 scripts/olcum_analiz.py           Ölçüm analizi (Python 3, standart kütüphane; matplotlib varsa PNG)
 tools/Selcuk.Olcum/               Otomatik ölçüm aracı (konsol; yalnızca localhost)
 docs/                             Değerlendirme belgeleri: mimari, güvenlik karşılaştırması, tehdit modeli, test kapsamı
+  tasarim/d1/                     Tasarım D1: token'lar, kontrast tablosu, yazı tipi kaynağı, ekran görüntüleri
   olcumler/                       Ölçüm çıktıları, elle ölçüm şablonu ve protokolü, karşılaştırma
   kullanilabilirlik/              SUS anketi
 araclar/tek-kapi/                 Tek Kapı: yerel kişisel ESSO portalı (Node.js), SSO modu; kendi README ve AGENTS.md'si
@@ -909,6 +912,9 @@ src/Selcuk.Identity/
   Pages/                          Uygulamalarım (Index), Account/Login, IkiAdim, IkiAdimDogrulama, GuvenlikGecmisi,
                                   SifremiUnuttum, SifreSifirla, Hesabim, SifreDegistir, AccessDenied,
                                   Connect/Authorize, Logout
+src/Selcuk.Arayuz/                Ortak tasarım sistemi (Razor Class Library, "Taç kapı"): _content/Selcuk.Arayuz/ altında
+                                  selcuk.css (token'lar, bileşenler), selcuk.js, Atkinson Hyperlegible Next/Mono (OFL);
+                                  _SelcukDuzen düzeni, kapı işareti (SVG), simgeler
 src/Selcuk.Istemci.Ortak/         AddSelcukSSO, güvenlik başlıkları, Back-Channel Logout alıcısı, OturumIptalDeposu
                                   (IDistributedCache), giriş dönüşü hataları, iss doğrulaması, TokenYenileyici
                                   (access token yenileme, çıkışta refresh token iptali)
@@ -1304,6 +1310,10 @@ yakalanır.
 | `Istemci_adresleri_https_veya_yalnizca_http_127_0_0_1_olabiliyor` | Üç tanım kurala uyar; `http://localhost`, `http://192.168.1.10`, `http://127.0.0.1.evil.example`, uzak http redirect ve `http://localhost` back-channel reddedilir; boş izin listesi varsayılana döner |
 | `Aralik_ve_en_az_yas_yapilandirilabilir_en_az_yas_mutlak_oturum_suresinden_kisa_olamaz` | Budama aralığı varsayılan 1 gün, en az yaş 14 gün; ayarla 6 saat; 1 saatlik en az yaş mutlak oturum süresine (12 saat) yükseltilir |
 | `Budama_suresi_dolmus_ve_iptal_edilmis_kayitlari_siliyor_gecerlileri_silmiyor` | 20 günlük kayıtlar: süresi dolmuş, iptal edilmiş, kullanılmış token ve iptal edilmiş yetkilendirmenin token'ı silinir (4); geçerli token ve 2 saatlik süresi dolmuş token kalır; yetim ad-hoc ve iptal edilmiş yetkilendirme silinir (2), token'ı olan oturum yetkilendirmesi ve kalıcı onay kalır |
+| `Yazi_tipleri_css_ve_betik_content_altindan_200_donuyor_ve_csp_disinda_kaynak_yok` | CSP değişmedi (`font-src`/`style-src`/`script-src` yok, `default-src 'self'`); `_content/Selcuk.Arayuz/` altındaki altı woff2 (`font/woff2`, `wOF2` imzası), CSS, betik ve OFL lisansları 200; CSS'teki her `url()` göreli ve listedeki yazı tipi, `@import` ve `http(s)://` yok; sayfadaki stil/betik bağlantıları aynı kökenden |
+| `Giris_sayfasinda_her_alanin_etiketi_ve_tek_h1_var` | Tek `<h1>`, anlamlı `<title>`; gizli olmayan her alanın `label[for]`'u var; göster/gizle düğmesi `aria-label` + `aria-pressed`; kapı işareti `aria-hidden` |
+| `Uygulamalarim_uygulama_yokken_bos_durum_metnini_gosteriyor` | İstemci kayıtlı değilken "Henüz erişebildiğin bir uygulama yok. Yetki için birim yöneticine başvur.", liste yok, tek `<h1>` |
+| `Eposta_html_surumu_ayni_baslikla_harici_kaynaksiz_ve_kodlanmis` | HTML sürümünde aynı başlık; ad HTML-kodlanmış; `<img>`, `<link>`, `<script>`, `url(` yok; tek dış adres sıfırlama bağlantısı |
 | **Selcuk.Istemci.Ortak.Tests** | |
 | `Gecerli_logout_token_oturumu_sonlandiriyor` | 200 (`no-store`); o sid'li oturum sonraki istekte authorize'a yönlenir |
 | `Imzasi_gecersiz_token_reddediliyor` | 400, oturum etkilenmez |
@@ -1365,6 +1375,7 @@ yakalanır.
 | Microsoft.AspNetCore.Identity.EntityFrameworkCore | 10.0.13 |
 | Microsoft.EntityFrameworkCore.SqlServer / .Design | 10.0.13 |
 | QRCoder (2FA QR kodu, SVG; MIT lisanslı) | 1.8.1 |
+| Atkinson Hyperlegible Next / Mono yazı tipleri (fontsource npm paketi, woff2, latin + latin-ext; SIL OFL 1.1; Selcuk.Arayuz) | 5.3.0 / 5.3.0 |
 | Microsoft.AspNetCore.Authentication.OpenIdConnect (Selcuk.Istemci.Ortak) | 10.0.13 |
 | Microsoft.AspNetCore.Authentication.JwtBearer (Selcuk.Demo.Api) | 10.0.13 |
 | System.Security.Cryptography.Pkcs (açık kapatmak için sabitlendi; Identity + Identity.Tests) | 10.0.13 |

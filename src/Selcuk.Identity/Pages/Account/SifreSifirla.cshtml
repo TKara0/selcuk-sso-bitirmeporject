@@ -2,40 +2,54 @@
 @model Selcuk.Identity.Pages.Account.SifreSifirlaModel
 @{
     ViewData["Title"] = "Yeni şifre belirle";
+    ViewData[Duzen.Ayar.Genislik] = "dar";
 }
-<section class="kart">
-    <h1>Yeni şifre belirle</h1>
+<h1>Yeni şifre belirle</h1>
 
-    @if (Model.Tamamlandi)
-    {
-        <p class="bilgi" role="status">@SifreSifirlaModel.TamamlandiMesaji</p>
-        <a class="dugme birincil" asp-page="/Account/Login">Giriş yap</a>
-    }
-    else if (Model.BaglantiGecersiz)
-    {
-        <p class="hata" role="alert">@SifreSifirlaModel.GecersizBaglantiMesaji</p>
-        <div class="dugmeler">
-            <a class="dugme birincil" asp-page="/Account/SifremiUnuttum">Yeni bağlantı iste</a>
-        </div>
-    }
-    else
-    {
+@if (Model.Tamamlandi)
+{
+    <div class="bant bant-bilgi" role="status">
+        @Html.Raw(Simge.Onay)
+        <p>@SifreSifirlaModel.TamamlandiMesaji</p>
+    </div>
+    <a class="dugme dugme-ana" asp-page="/Account/Login">Giriş yap</a>
+}
+else if (Model.BaglantiGecersiz)
+{
+    <div class="bant bant-hata" role="alert">
+        @Html.Raw(Simge.Hata)
+        <p>@SifreSifirlaModel.GecersizBaglantiMesaji</p>
+    </div>
+    <a class="dugme dugme-ana" asp-page="/Account/SifremiUnuttum">Yeni bağlantı iste</a>
+}
+else
+{
+    <p class="giris-metni">Yeni şifreni belirleyince açık oturumların kapanır.</p>
+
+    <partial name="_FormHatalari" />
+
+    <div class="panel">
         <form method="post" class="form">
-            <div asp-validation-summary="ModelOnly" class="hata" role="alert"></div>
             <input type="hidden" asp-for="Input.Kullanici" />
             <input type="hidden" asp-for="Input.Kod" />
 
-            <label asp-for="Input.YeniSifre"></label>
-            <input asp-for="Input.YeniSifre" autocomplete="new-password" autofocus />
-            <span asp-validation-for="Input.YeniSifre" class="alan-hatasi"></span>
+            <div class="alan">
+                <label asp-for="Input.YeniSifre"></label>
+                <input asp-for="Input.YeniSifre" class="metin-alani" autocomplete="new-password" autofocus
+                       aria-describedby="yeni-sifre-hatasi sifre-kurallari" aria-invalid="@Html.AlanHatali("Input.YeniSifre")" />
+                <span asp-validation-for="Input.YeniSifre" id="yeni-sifre-hatasi" class="alan-hatasi"></span>
+            </div>
 
-            <label asp-for="Input.YeniSifreTekrar"></label>
-            <input asp-for="Input.YeniSifreTekrar" autocomplete="new-password" />
-            <span asp-validation-for="Input.YeniSifreTekrar" class="alan-hatasi"></span>
+            <partial name="_SifrePolitikasi" model="@("Input_YeniSifre")" />
 
-            <partial name="_SifrePolitikasi" />
+            <div class="alan">
+                <label asp-for="Input.YeniSifreTekrar"></label>
+                <input asp-for="Input.YeniSifreTekrar" class="metin-alani" autocomplete="new-password"
+                       aria-describedby="sifre-tekrar-hatasi" aria-invalid="@Html.AlanHatali("Input.YeniSifreTekrar")" />
+                <span asp-validation-for="Input.YeniSifreTekrar" id="sifre-tekrar-hatasi" class="alan-hatasi"></span>
+            </div>
 
-            <button type="submit" class="dugme birincil">Şifreyi değiştir</button>
+            <button type="submit" class="dugme dugme-ana dugme-tam">Şifreyi kaydet</button>
         </form>
-    }
-</section>
+    </div>
+}

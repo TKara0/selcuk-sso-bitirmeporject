@@ -60,9 +60,12 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
     gizler; her ret `IstemciErisimiReddedildi` denetim kaydı (`client_id`, `uc=authorize|token`).
   - **EF Core + SQL Server** (geliştirmede LocalDB, veritabanı `SelcukSSO`). Identity, OpenIddict,
     `IstemciOturumlari` ve `DenetimKayitlari` tabloları aynı `ApplicationDbContext` içinde.
-  - **Razor Pages** (Türkçe arayüz): Uygulamalarım (ana sayfa; kartlar `initiate_login_uri?iss=…`), Giriş, Girişin
+  - **Razor Pages** (Türkçe arayüz, `sen` hitabı; düzen `Selcuk.Arayuz`'un `_SelcukDuzen`'i, kimlik sunucusuna özel
+    yerleşimler `wwwroot/css/site.css`'te yalnızca token'larla; üst çubukta hesap menüsü `_HesapMenusu`, form yok):
+    Uygulamalarım (ana sayfa; ayırıcı çizgili satırlar, "Aç" `initiate_login_uri?iss=…`), Giriş, Girişin
     ikinci adımı (2FA), Şifremi unuttum, Şifre sıfırlama, Hesabım, Şifre değiştir, İki aşamalı doğrulama, Ek doğrulama
-    (step-up), Güvenlik geçmişi, Onay, Çıkış, Erişim reddedildi. Tüm yanıtlarda güvenlik
+    (step-up), Güvenlik geçmişi, Onay ("Hesabı değiştir" = aynı istek `prompt=login`), Çıkış, Erişim reddedildi. Giriş
+    ve şifremi unuttum sonuç metinleri hesap var/yok ayırt etmemek için değiştirilmez. Tüm yanıtlarda güvenlik
     başlıkları (`GuvenlikBasliklari.cs`: nosniff, no-referrer, X-Frame-Options DENY, CSP).
   - **Şifre sıfırlama ve değiştirme** (`Hesap/`): Identity'nin yerleşik `DataProtectorTokenProvider`'ı ayrı adla
     (`SifreSifirlamaTokenSaglayici`, 30 dk, güvenlik damgasına bağlı, tek kullanımlık). Bağlantı `OpenIddict:Issuer`
@@ -101,8 +104,18 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
     `X-Forwarded-Proto` yok sayılır; istek sınırı ve denetim kaydı `RemoteIpAddress`'i kullanır.
   - **E-posta** (`Eposta/`): `IEpostaGonderici`; Development'ta `DosyaEpostaGonderici` (`App_Data/eposta/*.eml`,
     .gitignore'da), diğer ortamlarda `SmtpEpostaGonderici` (`Eposta:Smtp`, şifre user-secrets/ortam değişkeni).
-    Sayfalar `EpostaKuyrugu`'na bırakır, `EpostaGonderimHizmeti` arka planda gönderir. Şablonlar düz metin, Türkçe.
+    Sayfalar `EpostaKuyrugu`'na bırakır, `EpostaGonderimHizmeti` arka planda gönderir. Şablonlar Türkçe; düz metin +
+    aynı içeriğin HTML sürümü (`EpostaMesaji.HtmlGovde`, multipart/alternative, satır içi stil, harici kaynak yok).
   - **Oturum süresi**: kimlik sunucusu çerezi `Oturum:Sure` (varsayılan 8 saat, kayan).
+- `src/Selcuk.Arayuz`: ortak tasarım sistemi ("Taç kapı"), Razor Class Library; statik dosyalar
+  `_content/Selcuk.Arayuz/` altında. `css/selcuk.css`: token'lar (renk açık/koyu `prefers-color-scheme`, tipografi,
+  4'ün katı aralık, köşe 6/12px, gölge yok) ve bileşenler (düğme, metin/kod alanı, satır listesi, bant, etiket, adım
+  göstergesi, hesap menüsü); `js/selcuk.js` (çerçevesiz: şifre göster/gizle, menü, kopyala/indir, kod alanı, kurtarma
+  kodu geçişi, şifre kuralları); `fonts/` Atkinson Hyperlegible Next ve Mono woff2 (fontsource 5.3.0, latin +
+  latin-ext, OFL lisansları yanında). `_SelcukDuzen` (üst çubuk + `HesapMenusu` bölümü, alt bilgi; `Duzen = "giris"`
+  ile kapı panelli giriş düzeni), `_FormHatalari`, `KapiIsareti` (elle çizilmiş SVG; örgü animasyonu yalnızca girişte,
+  `prefers-reduced-motion`'da yok), `Simge`, `FormYardimcisi`. CSP gevşetilmedi (satır içi stil/betik yok). Kimlik
+  sunucusu kullanır; demolar ve Tek Kapı henüz kullanmaz (D2).
 - `src/Selcuk.Istemci.Ortak`: alt uygulamaların ortak kütüphanesi. `AddSelcukSSO(configuration)` (Cookie + OIDC,
   code + PKCE, `response_mode=query`, SaveTokens, userinfo, claim eşlemeleri, `DefaultForbidScheme` = cookie),
   `UseSelcukGuvenlikBasliklari()`, `MapSelcukBackChannelLogout()` (POST `/signout-backchannel`: logout_token
@@ -133,7 +146,7 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   değiştirmeden yazarak kurar. `OidcYardimcisi` istemci parametreli (varsayılan
   demo-obis; public istemci için `PublicTokenIsteAsync`).
   Her test kendi adlandırılmış, paylaşımlı önbellekli SQLite in-memory veritabanını kullanır (DbContext başına
-  bağlantı); ortam adı `Testing`; fabrikaya `ayarlar` ile appsettings değeri verilir; her fabrika rastgele bir HMAC
+  bağlantı); ortam adı `Testing` (fabrika `UseStaticWebAssets` ile `_content/` dosyalarını da sunar; `ArayuzTests`); fabrikaya `ayarlar` ile appsettings değeri verilir; her fabrika rastgele bir HMAC
   anahtarı verir (`OzetAnahtari`). Back-Channel Logout POST'ları
   sahte HTTP handler ile, e-postalar `SahteEpostaGonderici` ile yakalanır. TOTP kodlarını `Totp` yardımcısı Identity'nin
   iç `Rfc6238AuthenticationService`'ini yansımayla çağırarak üretir; `Totp.Kodlar` farklı zaman adımlarının kodlarını
@@ -165,7 +178,7 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
 - `tests/Selcuk.Olcum.Tests`: localhost dışı reddi, form ayrıştırma, istatistik; uçtan uca test dört web uygulamasını
   `WebApplicationFactory` ile aynı süreçte çalıştırır (`extern alias` kimlik/obis/yemekhane/api; porta göre TestServer
   yönlendirici, ağ yok).
-- `docs/`: `mimari.md` (Mermaid), `guvenlik-karsilastirma.md`, `tehdit-modeli.md` (STRIDE, gerçek test adları, açık
+- `docs/`: `tasarim/d1/` (token'lar, kontrast tablosu, yazı tipi kaynağı, ekran görüntüleri), `mimari.md` (Mermaid), `guvenlik-karsilastirma.md`, `tehdit-modeli.md` (STRIDE, gerçek test adları, açık
   riskler), `test-kapsami.md` (`--list-tests`, `npm test`, coverlet), `olcumler/` (ölçüm çıktıları, elle ölçüm şablonu
   ve protokolü, Tek Kapı CSV yönergesi, `karsilastirma.md` + PNG), `kullanilabilirlik/sus-anketi.md`. `ornek-` önekli
   dosyalar gerçek veri değildir, analiz okumaz. Belgelere ölçülmemiş sayı yazılmaz ("henüz ölçülmedi").

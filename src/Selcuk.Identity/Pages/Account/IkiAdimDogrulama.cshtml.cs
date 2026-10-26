@@ -26,10 +26,10 @@ public class IkiAdimDogrulamaModel(
     IstemciErisimi istemciErisimi,
     DenetimKaydedici denetim) : PageModel
 {
-    public const string KodHatasiMesaji = "Kod doğrulanamadı. Uygulamadaki güncel 6 haneli kodu girin.";
-    public const string OnayHatasiMesaji = "Şifre veya doğrulama kodu hatalı.";
+    public const string KodHatasiMesaji = "Kod doğrulanamadı. Uygulamadaki güncel 6 haneli kodu gir.";
+    public const string OnayHatasiMesaji = "Şifre veya doğrulama kodu hatalı. İkisini de kontrol edip tekrar dene.";
     public const string KilitliMesaji =
-        "Çok fazla hatalı deneme yapıldı; hesabınız geçici olarak kilitlendi. Bir süre sonra tekrar deneyin.";
+        "Çok fazla hatalı deneme yapıldı, hesabın geçici olarak kilitlendi. Biraz bekleyip tekrar dene.";
 
     [BindProperty(SupportsGet = true)]
     public string? ReturnUrl { get; set; }
@@ -152,7 +152,7 @@ public class IkiAdimDogrulamaModel(
 
         if (await ikiAdim.RolGerektiriyorAsync(user))
         {
-            ModelState.AddModelError(string.Empty, "Rolünüz için iki aşamalı doğrulama zorunludur; kapatılamaz.");
+            ModelState.AddModelError(string.Empty, "Rolün için iki aşamalı doğrulama zorunludur, kapatılamaz.");
             await YukleAsync(user);
             return Page();
         }
