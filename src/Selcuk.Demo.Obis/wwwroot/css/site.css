@@ -1,105 +1,244 @@
+/*
+ * Demo OBİS'e özel yerleşimler. Renk, yazı, aralık ve köşe değerleri ortak tasarım sisteminin token'larıdır
+ * (_content/Selcuk.Arayuz/css/selcuk.css). Burada yalnızca uygulamanın vurgu rengi (lacivert) tanımlanır; firuze
+ * kimlikle ilgili öğelerde kalır. Kontrast tablosu: docs/tasarim/d2/README.md.
+ */
 :root {
-    --zemin: #f5f5f2;
-    --yuzey: #ffffff;
-    --metin: #22262b;
-    --soluk: #5f6670;
-    --cizgi: #dcdcd6;
-    --vurgu: #3b5d50;
-    --vurgu-koyu: #2c473d;
+    --uygulama-vurgu: #2F4F8F;
+    --uygulama-vurgu-acik: #E3E9F5;
 }
 
 @media (prefers-color-scheme: dark) {
     :root {
-        --zemin: #161a18;
-        --yuzey: #1f2421;
-        --metin: #e7e9e6;
-        --soluk: #a4aba6;
-        --cizgi: #343b37;
-        --vurgu: #8fbfa9;
-        --vurgu-koyu: #a9d0be;
+        --uygulama-vurgu: #9DB5E8;
+        --uygulama-vurgu-acik: #1C2A45;
     }
 }
 
-* { box-sizing: border-box; }
-
-body {
+/* Satır listesi başlığı (ana sayfadaki bağlantılar) */
+.satir-baslik {
     margin: 0;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    background: var(--zemin);
-    color: var(--metin);
-    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-weight: 700;
 }
 
-.ust {
-    display: flex;
-    flex-wrap: wrap;
+.satirlar .ipucu {
+    margin: var(--a1) 0 0;
+}
+
+/* Notlarım: harf notu etiketi ortalı; dar ekranda her ders iki satır (kod, ad, harf / kredi, vize, final). */
+.notlar .not-ad {
+    font-weight: 700;
+}
+
+.notlar .not-harf .etiket {
+    min-width: 3em;
+    justify-content: center;
+}
+
+@media (max-width: 719.98px) {
+    .notlar,
+    .notlar tbody,
+    .notlar th,
+    .notlar td {
+        display: block;
+    }
+
+    .notlar thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+    }
+
+    .notlar tr {
+        display: grid;
+        grid-template-columns: auto auto auto minmax(0, 1fr) auto;
+        align-items: baseline;
+        gap: var(--a1) var(--a4);
+        padding: var(--a3) var(--a4);
+        border-top: 1px solid var(--cizgi);
+    }
+
+    .notlar tbody tr:first-child {
+        border-top: 0;
+    }
+
+    .notlar th,
+    .notlar td {
+        padding: 0;
+        border: 0;
+    }
+
+    .notlar .not-kod {
+        grid-row: 1;
+        grid-column: 1;
+        color: var(--soluk);
+    }
+
+    .notlar .not-ad {
+        grid-row: 1;
+        grid-column: 2 / 5;
+    }
+
+    .notlar .not-harf {
+        grid-row: 1 / 3;
+        grid-column: 5;
+        align-self: center;
+    }
+
+    .notlar .not-kredi,
+    .notlar .not-vize,
+    .notlar .not-final {
+        grid-row: 2;
+        color: var(--soluk);
+        font-size: var(--boyut-kucuk);
+        text-align: left;
+    }
+
+    .notlar .not-kredi {
+        grid-column: 1;
+    }
+
+    .notlar .not-vize {
+        grid-column: 2;
+    }
+
+    .notlar .not-final {
+        grid-column: 3;
+    }
+
+    .notlar [data-etiket]::before {
+        content: attr(data-etiket) " ";
+    }
+}
+
+/* Token İnceleme: claim adı ve değeri Mono; uzun değer kırpılır (tam hâli title'da). */
+.token-bolumu h2 {
+    margin-bottom: var(--a1);
+}
+
+.claimler .claim-adi {
+    width: 11em;
+    white-space: nowrap;
+}
+
+.claimler .claim-degeri {
+    width: 24em;
+}
+
+/* Değer tek satırda (uzunsa sunucuda kırpılır, tam hâli title'da); dar ekranda gerekirse kırılır. */
+.claimler .claim-degeri .mono {
+    font-size: var(--boyut-kucuk);
+    letter-spacing: 0;
+    white-space: nowrap;
+}
+
+.claim-zamani {
+    display: block;
+    color: var(--soluk);
+    font-size: var(--boyut-kucuk);
+}
+
+.claimler .claim-aciklamasi {
+    color: var(--soluk);
+}
+
+.claimler .claim-grubu th {
+    padding-top: var(--a4);
+    color: var(--soluk);
+    font-size: var(--boyut-kucuk);
+    font-weight: 700;
+    background: var(--tas);
+}
+
+.claimler tbody + tbody .claim-grubu th {
+    border-top: 1px solid var(--cizgi);
+}
+
+@media (max-width: 719.98px) {
+    .claimler,
+    .claimler tbody,
+    .claimler tr,
+    .claimler th,
+    .claimler td {
+        display: block;
+        width: auto;
+    }
+
+    .claimler thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+    }
+
+    .claimler tr {
+        padding: var(--a3) var(--a4);
+        border-top: 1px solid var(--cizgi);
+    }
+
+    .claimler tbody tr:first-child {
+        border-top: 0;
+    }
+
+    .claimler th,
+    .claimler td {
+        padding: 0;
+        border: 0;
+    }
+
+    .claimler .claim-grubu {
+        padding: var(--a2) var(--a4);
+        background: var(--tas);
+    }
+
+    .claimler .claim-grubu th {
+        padding: 0;
+    }
+
+    .claimler .claim-aciklamasi {
+        font-size: var(--boyut-kucuk);
+    }
+
+    .claimler .claim-adi,
+    .claimler .claim-degeri {
+        width: auto;
+    }
+
+    .claimler .claim-degeri .mono {
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+}
+
+/* Ham hâl (açılır bölüm) */
+.ham {
+    margin: 0 0 var(--a4);
+}
+
+.ham summary {
+    display: inline-flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 8px 16px;
-    padding: 12px 16px;
-    background: var(--yuzey);
-    border-bottom: 1px solid var(--cizgi);
-}
-
-.marka { color: var(--metin); font-weight: 600; text-decoration: none; }
-
-.menu { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
-.menu a, .baglanti { color: var(--vurgu); text-decoration: none; font: inherit; }
-.baglanti { background: none; border: 0; padding: 0; cursor: pointer; }
-.satir-ici { display: inline; margin: 0; }
-
-.kap { flex: 1; width: 100%; max-width: 760px; margin: 0 auto; padding: 32px 16px; }
-
-.kart {
-    background: var(--yuzey);
-    border: 1px solid var(--cizgi);
-    border-radius: 10px;
-    padding: 24px;
-    max-width: 480px;
-    margin: 0 auto;
-}
-.kart.genis { max-width: none; }
-
-h1 { margin: 0 0 8px; font-size: 1.4rem; }
-h2 { margin: 28px 0 4px; font-size: 1.1rem; }
-h3 { margin: 16px 0 6px; font-size: 0.95rem; color: var(--soluk); }
-
-.aciklama { color: var(--soluk); margin: 0 0 20px; }
-.ipucu { color: var(--soluk); font-size: 0.875rem; margin: 4px 0; }
-
-.dugme {
-    display: inline-block;
-    padding: 10px 18px;
-    font: inherit;
-    font-weight: 500;
-    text-decoration: none;
-    border-radius: 6px;
-    border: 1px solid transparent;
+    min-height: var(--dokunma);
+    color: var(--uygulama-vurgu);
     cursor: pointer;
 }
-.birincil { background: var(--vurgu); color: var(--yuzey); }
-.birincil:hover { background: var(--vurgu-koyu); }
-.ikincil { background: transparent; color: var(--vurgu); border-color: var(--cizgi); }
 
-.tablo-kap { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
-th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--cizgi); white-space: nowrap; }
-th { color: var(--soluk); font-weight: 500; }
-
-.bilgiler { display: grid; grid-template-columns: max-content 1fr; gap: 8px 16px; margin: 0; }
-.bilgiler dt { color: var(--soluk); }
-.bilgiler dd { margin: 0; overflow-wrap: anywhere; }
-
-pre {
-    margin: 0;
-    padding: 12px;
-    background: var(--zemin);
-    border: 1px solid var(--cizgi);
-    border-radius: 6px;
-    font-size: 0.8rem;
-    overflow-x: auto;
+.ham h3 {
+    margin: var(--a3) 0 var(--a2);
+    font-size: var(--boyut-kucuk);
+    color: var(--soluk);
 }
 
-.alt { padding: 16px; text-align: center; color: var(--soluk); font-size: 0.8rem; }
+.ham pre {
+    margin: 0;
+    padding: var(--a3) var(--a4);
+    overflow-x: auto;
+    font-family: var(--yazi-mono);
+    font-size: var(--boyut-kucuk);
+    background: var(--yuzey);
+    border: 1px solid var(--cizgi);
+    border-radius: var(--kose-kontrol);
+}

@@ -109,13 +109,21 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   - **Oturum süresi**: kimlik sunucusu çerezi `Oturum:Sure` (varsayılan 8 saat, kayan).
 - `src/Selcuk.Arayuz`: ortak tasarım sistemi ("Taç kapı"), Razor Class Library; statik dosyalar
   `_content/Selcuk.Arayuz/` altında. `css/selcuk.css`: token'lar (renk açık/koyu `prefers-color-scheme`, tipografi,
-  4'ün katı aralık, köşe 6/12px, gölge yok) ve bileşenler (düğme, metin/kod alanı, satır listesi, bant, etiket, adım
-  göstergesi, hesap menüsü); `js/selcuk.js` (çerçevesiz: şifre göster/gizle, menü, kopyala/indir, kod alanı, kurtarma
-  kodu geçişi, şifre kuralları); `fonts/` Atkinson Hyperlegible Next ve Mono woff2 (fontsource 5.3.0, latin +
-  latin-ext, OFL lisansları yanında). `_SelcukDuzen` (üst çubuk + `HesapMenusu` bölümü, alt bilgi; `Duzen = "giris"`
-  ile kapı panelli giriş düzeni), `_FormHatalari`, `KapiIsareti` (elle çizilmiş SVG; örgü animasyonu yalnızca girişte,
-  `prefers-reduced-motion`'da yok), `Simge`, `FormYardimcisi`. CSP gevşetilmedi (satır içi stil/betik yok). Kimlik
-  sunucusu kullanır; demolar ve Tek Kapı henüz kullanmaz (D2).
+  4'ün katı aralık, köşe 6/12px, gölge yok), uygulama vurgu rengi (`--uygulama-vurgu`, `--uygulama-vurgu-acik`;
+  varsayılan firuze, her alt uygulama kendi CSS'inde açık/koyu değerini verir) ve bileşenler (düğme, metin/kod alanı,
+  satır listesi, bant, etiket, adım göstergesi, hesap menüsü, sekmeler, özet sayıları, tablo ve dar ekranda iki satırlık
+  `tablo-yigin`); `js/selcuk.js` (çerçevesiz: şifre göster/gizle, menü, kopyala/indir, kod alanı, kurtarma kodu geçişi
+  ve yer tutucusu, şifre kuralları, `data-duyur` canlı bölge bildirimi); `fonts/` Atkinson Hyperlegible Next ve Mono
+  woff2 (fontsource 5.3.0, latin + latin-ext, OFL lisansları yanında); `img/` kapı SVG'leri (`KapiIsareti.Dosya`;
+  eşitliğini `ArayuzTests` denetler). `_SelcukDuzen` (üst çubuk: kapı işareti veya `Duzen.Ayar.UygulamaSimgesi` ile
+  uygulama simgesi ve başlık şeridi; `HesapMenusu` ve `Sekmeler` bölümleri; alt bilgi `Duzen.Ayar.AltBilgi`;
+  `Duzen = "giris"` ile kapı panelli giriş düzeni), `_FormHatalari`, `_TekSifreGirisi` ("Tek Şifre ile giriş yap"),
+  `_IstemciHesapMenusu` (alt uygulamaların hesap menüsü; çıkış /Cikis'e POST), `_IstemciProfili`, `KapiIsareti`
+  (elle çizilmiş SVG: küçük, büyük "yıldız ve haç" örgülü kapı (animasyon yalnızca girişte, `prefers-reduced-motion`'da
+  yok), hata sayfalarında 48px kapalı kapı), `Simge`, `FormYardimcisi`. Firuze ve kapı işareti yalnızca kimlikle ilgili
+  öğelerde ("Tek Şifre ile giriş yap", hesap menüsü, kimlik sunucusu ekranları, Tek Kapı'nın SSO öğeleri); alt
+  uygulamanın kendi içeriği kendi vurgu rengiyle (`uygulama-icerigi`). CSP gevşetilmedi (satır içi stil/betik yok).
+  Kimlik sunucusu, iki demo ve (kopya olarak) Tek Kapı kullanır. Kontrast tabloları `docs/tasarim/d1` ve `d2`'de.
 - `src/Selcuk.Istemci.Ortak`: alt uygulamaların ortak kütüphanesi. `AddSelcukSSO(configuration)` (Cookie + OIDC,
   code + PKCE, `response_mode=query`, SaveTokens, userinfo, claim eşlemeleri, `DefaultForbidScheme` = cookie),
   `UseSelcukGuvenlikBasliklari()`, `MapSelcukBackChannelLogout()` (POST `/signout-backchannel`: logout_token
@@ -127,16 +135,21 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   ile yeniler (aynı refresh token için tek uçuş, sonuç 1 dk paylaşılır; invalid_grant'te yerel oturum kapanır);
   çıkışta (`OnRedirectToIdentityProviderForSignOut`) önce refresh token'ı iptal eder. Ek kapsamlar
   `Kimlik:EkKapsamlar`. Yeni bir alt uygulama bu kütüphaneyle bağlanır.
-- `src/Selcuk.Demo.Obis` (https://localhost:5101): rol bazlı sayfalar (Notlarım: ogrenci, Ders Yönetimi:
-  akademisyen), Profilim, yalnızca Development'ta Token İnceleme (refresh token yalnızca var/son kullanma),
-  RP-initiated logout. Notlarım notları Demo API'den (`NotlarApiIstemcisi`, `DemoApi:Adres`, oturumdaki access token)
-  çeker; API'ye ulaşılamazsa Türkçe hata. Veriler uydurmadır.
+- `src/Selcuk.Demo.Obis` (https://localhost:5101): ortak düzen (`Selcuk.Arayuz`, simge "DO", vurgu lacivert
+  #2F4F8F / koyu #9DB5E8). Rol bazlı sayfalar (Notlarım: ogrenci, Ders Yönetimi: akademisyen), Profilim, yalnızca
+  Development'ta Token İnceleme (her claim bir satır: Mono ad/değer, Türkçe açıklama `TokenIncelemeModel.Aciklamalar`;
+  ham JSON açılır bölümde; refresh token yalnızca var/son kullanma), RP-initiated logout. Notlarım notları Demo
+  API'den (`NotlarApiIstemcisi`, `DemoApi:Adres`, oturumdaki access token) çeker; toplam kredi ve ağırlıklı ortalama
+  `NotOzeti` ile (krediler OBİS'in kataloğunda, `SahteVeri.Krediler`; API yalnızca not verir); API'ye ulaşılamazsa
+  Türkçe hata bandı. Veriler uydurmadır.
 - `src/Selcuk.Demo.Api` (https://localhost:5201): yalnızca kaynak sunucusu, minimal API. JWT Bearer (Authority
   kimlik sunucusu, JWKS; `aud` = `demo-api`, `typ` = `at+jwt`, `IncludeErrorDetails = false`). `GET /api/notlar`:
   `scope` ⊇ `notlar.oku` ve rol `ogrenci` (yoksa 401/403); yalnızca token'daki `sub`'ın notları (`INotDeposu`).
   Güvenlik başlıkları ve `no-store`.
-- `src/Selcuk.Demo.Yemekhane` (https://localhost:5102): Haftalık menü (herkese açık), Rezervasyonlarım (bellek içi),
-  Yemekhane Yönetimi (personel), Profilim, RP-initiated logout. Veriler uydurmadır.
+- `src/Selcuk.Demo.Yemekhane` (https://localhost:5102): ortak düzen (simge "DY", vurgu nar #9C3D54 / koyu #E99AAE).
+  Haftalık menü (herkese açık; günler sütun, bugün vurgulu), Rezervasyonlarım (bellek içi; gün listesi, durum etiketi,
+  sonuç `TempData` ile bantta ve `data-duyur` ile ekran okuyucuya), Yemekhane Yönetimi (personel), Profilim,
+  RP-initiated logout. Veriler uydurmadır.
 - `tests/Selcuk.Identity.Tests`: xUnit + `WebApplicationFactory` entegrasyon, uçtan uca protokol, tek giriş ve tek
   çıkış, şifre sıfırlama/değiştirme, istek sınırı ve tahmin koruması, 2FA (TOTP tekrar koruması dahil), kilit
   tutarlılığı, denetim kaydı (HMAC özeti, eksik anahtarla açılmama), güvenilen proxy, Tek Kapı (public istemci,
@@ -156,8 +169,10 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   (503), `iss` doğrulaması ve token yenileme/iptal testleri; yerel RSA anahtarı, sahte JWKS ve sahte token/revocation
   uç noktaları (`TestUygulamasi.TokenUcu`).
 - `tests/Selcuk.Demo.Api.Tests`: Demo API token doğrulama ve yetkilendirme; yerel RSA anahtarı, sabit discovery.
-- `tests/Selcuk.Demo.Obis.Tests`, `tests/Selcuk.Demo.Yemekhane.Tests`: yönlendirme, rol ve önbellek (`no-store`) testleri; gerçek kimlik
-  sunucusu yerine sabit discovery bilgisi ve sahte kimlik doğrulama şeması kullanır.
+- `tests/Selcuk.Demo.Obis.Tests`, `tests/Selcuk.Demo.Yemekhane.Tests`: yönlendirme, rol, önbellek (`no-store`), ortak
+  düzen ve `_content` dosyaları, Notlarım özeti ve Token İnceleme (Development, sahte JWT'ler) testleri; gerçek kimlik
+  sunucusu yerine sabit discovery bilgisi ve sahte kimlik doğrulama şeması kullanır (`ObisFactory`: `ortam`,
+  `tokenlar`; fabrikalar `UseStaticWebAssets`).
 - `araclar/tek-kapi` (http://127.0.0.1:4545): Tek Kapı, kullanıcının kendi bilgisayarında çalışan Node.js portalı
   (Express + Playwright; kişisel ESSO, gerçek Selçuk sistemlerine form tabanlı otomatik giriş). Kendi kuralları
   `araclar/tek-kapi/AGENTS.md`'de. Üniversite şifreleri yalnızca yereldeki şifreli kasada (`data/`, git'e girmez).
@@ -165,8 +180,10 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   PKCE S256), erişim iki katmanlı (SSO oturumu + kasa ana şifresi), Back-Channel Logout gelince kasayı kilitler ve
   gerçek site oturumlarını kapatır (jose ile logout_token doğrulama). TLS: `node --use-system-ca` (doğrulama
   kapatılmaz). `SSO_MFA_ZORUNLU` (varsayılan açık): id_token `amr`'si `mfa` içermezse oturum açılmaz. Testleri
-  (`npm test`: bağımsız mod 33 + SSO 14 kontrol) sahte siteler (5600-5606) ve sahte OIDC sağlayıcıyla (5190) çalışır.
-  Node 22.15+ (`engines`), express 4.22.3 (tam sürüm).
+  (`npm test`: bağımsız mod 35 + SSO 14 kontrol) sahte siteler (5600-5606) ve sahte OIDC sağlayıcıyla (5190) çalışır.
+  Node 22.15+ (`engines`), express 4.22.3 (tam sürüm). Arayüz ortak tasarım sistemini kullanır: `public/arayuz/`
+  `src/Selcuk.Arayuz/wwwroot`'un kopyasıdır (`scripts/arayuz-esitle.ps1`; elle değiştirilmez, test SHA-256 ile
+  denetler), yazı tipleri yerelden, CSP'de Google Fonts yok.
 - `tools/Selcuk.Olcum`: otomatik ölçüm aracı (konsol, `FrameworkReference Microsoft.AspNetCore.App`, yeni NuGet yok).
   Yalnızca localhost/127.0.0.1/::1 + https hedefler (`YerelAg.Dogrula`; her istek `YalnizcaYerelHandler`'dan geçer,
   proxy yok). HttpClient + `CookieContainer` ile OIDC akışı (`TarayiciOturumu`: yönlendirme, giriş/onay/çıkış
@@ -178,13 +195,21 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
 - `tests/Selcuk.Olcum.Tests`: localhost dışı reddi, form ayrıştırma, istatistik; uçtan uca test dört web uygulamasını
   `WebApplicationFactory` ile aynı süreçte çalıştırır (`extern alias` kimlik/obis/yemekhane/api; porta göre TestServer
   yönlendirici, ağ yok).
-- `docs/`: `tasarim/d1/` (token'lar, kontrast tablosu, yazı tipi kaynağı, ekran görüntüleri), `mimari.md` (Mermaid), `guvenlik-karsilastirma.md`, `tehdit-modeli.md` (STRIDE, gerçek test adları, açık
+- `docs/`: `tasarim/d1/` (token'lar, kontrast tablosu, yazı tipi kaynağı, ekran görüntüleri), `tasarim/d2/` (uygulama
+  vurgu renkleri ve kontrastı, demolar ve Tek Kapı, ekran görüntüleri), `tez-gorselleri/` (tez için seçilmiş ekranlar),
+  `mimari.md` (Mermaid), `guvenlik-karsilastirma.md`, `tehdit-modeli.md` (STRIDE, gerçek test adları, açık
   riskler), `test-kapsami.md` (`--list-tests`, `npm test`, coverlet), `olcumler/` (ölçüm çıktıları, elle ölçüm şablonu
   ve protokolü, Tek Kapı CSV yönergesi, `karsilastirma.md` + PNG), `kullanilabilirlik/sus-anketi.md`. `ornek-` önekli
   dosyalar gerçek veri değildir, analiz okumaz. Belgelere ölçülmemiş sayı yazılmaz ("henüz ölçülmedi").
 - `scripts/olcum-calistir.ps1`: portlar doluysa durur → build → `run-all.ps1 -TarayiciAcma` (`Olcum__HizSiniriGevset`
   yalnızca başlattığı süreçlere) → ölçüm → yalnızca kendi açtığı pencereleri kapatır. `scripts/olcum_analiz.py`:
   Python 3 standart kütüphane (matplotlib varsa PNG, yoksa uyarı; pip yok), `--self-test`.
+- `scripts/arayuz-esitle.ps1`: `src/Selcuk.Arayuz/wwwroot`'tan `selcuk.css`, `fonts/` ve `img/`'yi
+  `araclar/tek-kapi/public/arayuz/`'a kopyalar (hedefi baştan kurar). `scripts/ekran-goruntuleri.mjs`: Tek Kapı'nın
+  Playwright'ıyla ekran görüntüleri (`docs/tasarim/d2/`, `docs/tez-gorselleri/`); portlar doluysa durur, geçici LocalDB
+  veritabanı ve rastgele test şifreleri (yalnızca ortam değişkeni), `run-all.ps1 -TarayiciAcma`, Tek Kapı geçici
+  `PORTAL_DATA_DIR` ile (gerçek kasa okunmaz, sistem açılmaz), QR/anahtar/kurtarma kodları örnek değerle, sonunda
+  yalnızca kendi süreçlerini durdurur ve veritabanını siler.
 - `scripts/run-all.ps1`: önce `dotnet build SelcukSSO.sln` (başarısızsa durur), sonra kimlik sunucusu, iki demo ve
   Demo API'yi ayrı pencerelerde `dotnet run --no-build` ile başlatır; `-TekKapi` ile Tek Kapı'yı da SSO modunda
   başlatır; `-TarayiciAcma` ile sonda tarayıcı açılmaz.
@@ -231,6 +256,8 @@ dotnet run --project src/Selcuk.Demo.Api                                   # htt
 powershell -ExecutionPolicy Bypass -File scripts\run-all.ps1               # hepsi birlikte
 powershell -ExecutionPolicy Bypass -File scripts\run-all.ps1 -TekKapi      # + Tek Kapı (SSO modu, :4545)
 cd araclar\tek-kapi; npm ci; npm test                                       # Tek Kapı testleri
+powershell -ExecutionPolicy Bypass -File scripts\arayuz-esitle.ps1          # tasarım dosyalarını Tek Kapı'ya kopyala
+node --use-system-ca scripts/ekran-goruntuleri.mjs                          # ekran görüntüleri (docs/tasarim/d2/)
 powershell -ExecutionPolicy Bypass -File scripts\olcum-calistir.ps1         # otomatik ölçüm (docs/olcumler/)
 python scripts/olcum_analiz.py                                              # karsilastirma.md (--self-test)
 dotnet tool restore

@@ -2,28 +2,64 @@
 @model Selcuk.Demo.Obis.Pages.NotlarimModel
 @{
     ViewData["Title"] = "Notlarım";
+    ViewData[Duzen.Ayar.Genislik] = "genis";
+    var tr = System.Globalization.CultureInfo.GetCultureInfo("tr-TR");
 }
-<section class="kart genis">
-    <h1>Notlarım</h1>
-    <p class="aciklama">2026-2027 Güz dönemi (örnek veri)</p>
-    @if (Model.Hata is not null)
-    {
-        <p class="aciklama" role="alert"><strong>@Model.Hata</strong></p>
-    }
-    else
-    {
-        <div class="tablo-kap">
-            <table>
-                <thead>
-                    <tr><th>Kod</th><th>Ders</th><th>Vize</th><th>Final</th><th>Harf</th></tr>
-                </thead>
-                <tbody>
-                    @foreach (var not in Model.Notlar)
-                    {
-                        <tr><td>@not.Kod</td><td>@not.Ad</td><td>@not.Vize</td><td>@not.Final</td><td><strong>@not.Harf</strong></td></tr>
-                    }
-                </tbody>
-            </table>
+<h1>Notlarım</h1>
+<p class="giris-metni">2026-2027 Güz dönemi (örnek veri).</p>
+
+@if (Model.Hata is not null)
+{
+    <div class="bant bant-hata" role="alert">
+        @Html.Raw(Simge.Hata)
+        <div>
+            <p class="bant-baslik">Notlar yüklenemedi</p>
+            <p>@Model.Hata</p>
         </div>
-    }
-</section>
+    </div>
+}
+else
+{
+    <dl class="ozetler">
+        <div class="ozet">
+            <dt>Toplam kredi</dt>
+            <dd>@Model.ToplamKredi</dd>
+        </div>
+        <div class="ozet">
+            <dt>Dönem ağırlıklı ortalaması</dt>
+            <dd>@(Model.Ortalama is { } ortalama ? ortalama.ToString("0.00", tr) : "—")</dd>
+        </div>
+    </dl>
+
+    @* Dar ekranda her ders iki satırlık bir öğe: kod, ad ve harf üstte; kredi, vize ve final altta (site.css). *@
+    <div class="tablo-kabi">
+        <table class="tablo notlar">
+            <caption class="gorunmez">2026-2027 Güz dönemi notları</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Ders kodu</th>
+                    <th scope="col">Ders adı</th>
+                    <th scope="col" class="sayi">Kredi</th>
+                    <th scope="col" class="sayi">Vize</th>
+                    <th scope="col" class="sayi">Final</th>
+                    <th scope="col">Harf</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var not in Model.Notlar)
+                {
+                    var kredi = NotOzeti.Kredi(not);
+                    <tr>
+                        <td class="not-kod">@not.Kod</td>
+                        <th scope="row" class="not-ad">@not.Ad</th>
+                        <td class="sayi not-kredi" data-etiket="Kredi">@(kredi?.ToString(tr) ?? "—")</td>
+                        <td class="sayi not-vize" data-etiket="Vize">@not.Vize</td>
+                        <td class="sayi not-final" data-etiket="Final">@not.Final</td>
+                        <td class="not-harf"><span class="etiket etiket-uygulama">@not.Harf</span></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <p class="ipucu">Ortalama 4'lük sistemde, harf notunun katsayısı ile dersin kredisi çarpılarak hesaplanır.</p>
+}

@@ -27,6 +27,7 @@ public sealed class YemekhaneFactory(bool sahteKimlik = false) : WebApplicationF
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
+        builder.UseStaticWebAssets();
         builder.ConfigureTestServices(services =>
         {
             services.PostConfigure<OpenIdConnectOptions>(OpenIdConnectDefaults.AuthenticationScheme, options =>

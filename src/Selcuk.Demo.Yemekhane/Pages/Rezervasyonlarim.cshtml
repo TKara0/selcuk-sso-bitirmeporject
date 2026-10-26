@@ -3,42 +3,43 @@
 @{
     ViewData["Title"] = "Rezervasyonlarım";
 }
-<section class="kart genis">
-    <h1>Rezervasyonlarım</h1>
-    <p class="aciklama">Öğle yemeği için gün seçip rezervasyon yapın veya iptal edin (veriler bellekte tutulur).</p>
+<h1>Rezervasyonlarım</h1>
+<p class="giris-metni">Önümüzdeki iş günleri için öğle yemeği ayır veya iptal et (veriler bellekte tutulur).</p>
 
-    @if (Model.Bos.Count > 0)
-    {
-        <form method="post" asp-page-handler="Ekle" class="satir-form">
-            <label for="gun">Gün</label>
-            <select id="gun" name="gun">
-                @foreach (var gun in Model.Bos)
-                {
-                    <option value="@gun.ToString("yyyy-MM-dd")">@Takvim.Yaz(gun)</option>
-                }
-            </select>
-            <button type="submit" class="dugme birincil">Rezervasyon yap</button>
-        </form>
-    }
+@if (Model.Bildirim is not null)
+{
+    @* Sayfa yüklendikten sonra canlı bölgeye de yazılır (selcuk.js, data-duyur): ekran okuyucu duyurur. *@
+    <div class="bant bant-uygulama" data-duyur>
+        @Html.Raw(Simge.Onay)
+        <p>@Model.Bildirim</p>
+    </div>
+}
 
-    <h2>Kayıtlı rezervasyonlar</h2>
-    @if (Model.Rezervasyonlar.Count == 0)
+<ul class="satirlar rezervasyonlar">
+    @foreach (var (gun, rezervasyonlu) in Model.Gunler)
     {
-        <p class="ipucu">Henüz rezervasyonunuz yok.</p>
-    }
-    else
-    {
-        <ul class="liste">
-            @foreach (var gun in Model.Rezervasyonlar)
+        var tarih = gun.ToString("yyyy-MM-dd");
+        <li>
+            <div class="rezervasyon-gunu">
+                <p class="rezervasyon-gun-adi">@gun.ToString("dddd", Takvim.Tr)</p>
+                <p class="ipucu">@gun.ToString("dd.MM.yyyy", Takvim.Tr)</p>
+            </div>
+            @if (rezervasyonlu)
             {
-                <li>
-                    <span>@Takvim.Yaz(gun)</span>
-                    <form method="post" asp-page-handler="Iptal" class="satir-ici">
-                        <input type="hidden" name="gun" value="@gun.ToString("yyyy-MM-dd")" />
-                        <button type="submit" class="dugme ikincil">İptal et</button>
-                    </form>
-                </li>
+                <span class="etiket etiket-uygulama">@Html.Raw(Simge.Onay)Rezervasyonlu</span>
+                <form method="post" asp-page-handler="Iptal">
+                    <input type="hidden" name="gun" value="@tarih" />
+                    <button type="submit" class="dugme dugme-ikincil">İptal et<span class="gorunmez">: @Takvim.Yaz(gun)</span></button>
+                </form>
             }
-        </ul>
+            else
+            {
+                <span class="etiket etiket-notr">Rezervasyon yok</span>
+                <form method="post" asp-page-handler="Ekle">
+                    <input type="hidden" name="gun" value="@tarih" />
+                    <button type="submit" class="dugme dugme-uygulama">Rezervasyon yap<span class="gorunmez">: @Takvim.Yaz(gun)</span></button>
+                </form>
+            }
+        </li>
     }
-</section>
+</ul>

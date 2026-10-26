@@ -9,6 +9,7 @@
     Hesabınla ilgili son @GuvenlikGecmisiModel.KayitSayisi güvenlik olayı. Tanımadığın bir giriş veya değişiklik
     görürsen şifreni değiştir ve sistem yöneticisine başvur.
 </p>
+<p class="ipucu gecmis-dilim">Zamanlar @(GuvenlikGecmisiModel.SaatDilimi == "TSİ" ? "Türkiye saatiyle (TSİ)" : "UTC") yazılır.</p>
 
 @if (Model.Satirlar.Count == 0)
 {
@@ -21,7 +22,7 @@ else
         <caption class="gorunmez">Son güvenlik olayları, en yenisi üstte</caption>
         <thead role="rowgroup">
             <tr role="row">
-                <th scope="col" role="columnheader">Zaman</th>
+                <th scope="col" role="columnheader">Zaman (@GuvenlikGecmisiModel.SaatDilimi)</th>
                 <th scope="col" role="columnheader">Olay</th>
                 <th scope="col" role="columnheader">Uygulama</th>
                 <th scope="col" role="columnheader">IP</th>

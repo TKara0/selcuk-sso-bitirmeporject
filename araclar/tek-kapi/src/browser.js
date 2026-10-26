@@ -253,7 +253,7 @@ async function banner(page, text, tone = 'info') {
       background: bg, color: fg, font: '500 14px/1.4 system-ui, sans-serif', padding: '10px 16px',
       borderRadius: '10px', boxShadow: '0 6px 24px rgba(0,0,0,.25)', maxWidth: 'min(380px, 80vw)', cursor: 'pointer',
     });
-    el.textContent = 'Tek Kapı · ' + text;
+    el.textContent = 'Tek Kapı: ' + text;
     el.title = 'Kapatmak için tıkla';
     el.onclick = () => el.remove();
   }, [text, tone]).catch(() => {});

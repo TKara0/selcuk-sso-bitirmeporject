@@ -2,26 +2,65 @@
 @inject TimeProvider Zaman
 @{
     ViewData["Title"] = "Haftalık menü";
-    var menu = Takvim.HaftalikMenu(DateOnly.FromDateTime(Zaman.GetLocalNow().DateTime));
+    ViewData[Duzen.Ayar.Genislik] = "genis";
+    var bugun = DateOnly.FromDateTime(Zaman.GetLocalNow().DateTime);
+    var menu = Takvim.HaftalikMenu(bugun);
+    var girisYapildi = User.Identity?.IsAuthenticated == true;
 }
-<section class="kart genis">
-    <h1>Haftalık menü</h1>
-    <p class="aciklama">Bu haftanın öğle yemeği menüsü (örnek veri).</p>
-    <div class="tablo-kap">
-        <table>
-            <thead>
-                <tr><th>Gün</th><th>Çorba</th><th>Ana yemek</th><th>Yardımcı</th><th>Tatlı / içecek</th></tr>
-            </thead>
-            <tbody>
-                @foreach (var gun in menu)
-                {
-                    <tr><td>@Takvim.Yaz(gun.Gun)</td><td>@gun.Corba</td><td>@gun.AnaYemek</td><td>@gun.Yardimci</td><td>@gun.Tatli</td></tr>
-                }
-            </tbody>
-        </table>
-    </div>
-    @if (User.Identity?.IsAuthenticated != true)
+@if (!girisYapildi)
+{
+    <section class="karsilama">
+        <h1 class="baslik-buyuk">Demo Yemekhane</h1>
+        <p class="giris-metni">Haftalık menüyü gösteren, öğle yemeği rezervasyonu yapılan örnek yemekhane uygulaması.</p>
+        <partial name="_TekSifreGirisi" model="@Url.Page("/Giris")" />
+    </section>
+}
+
+<section class="@(girisYapildi ? null : "bolum")" aria-labelledby="menu-basligi">
+    @if (girisYapildi)
     {
-        <p class="ipucu">Rezervasyon yapmak için <a asp-page="/Giris">giriş yapın</a>.</p>
+        <h1 id="menu-basligi">Haftalık menü</h1>
     }
+    else
+    {
+        <h2 id="menu-basligi">Haftalık menü</h2>
+    }
+    <p class="giris-metni">
+        Bu haftanın öğle yemeği menüsü (örnek veri).
+        @if (girisYapildi)
+        {
+            <a asp-page="/Rezervasyonlarim">Rezervasyonlarım</a><text>'dan öğle yemeği ayırabilirsin.</text>
+        }
+        else
+        {
+            <text>Menü herkese açıktır; rezervasyon için giriş yap.</text>
+        }
+    </p>
+
+    @* Geniş ekranda her gün bir sütun, dar ekranda bir satır (site.css). Bugün uygulamanın renginde vurgulu. *@
+    <ol class="hafta">
+        @foreach (var gun in menu)
+        {
+            var bugunMu = gun.Gun == bugun;
+            <li class="gun@(bugunMu ? " bugun" : "")" aria-current="@(bugunMu ? "date" : null)">
+                @* Her sütunda iki satır: gün adı (bugünse yanında etiket) ve tarih; sütunların satırları hizalı kalır. *@
+                <h3 class="gun-basligi">
+                    <span class="gun-adi">
+                        @gun.Gun.ToString("dddd", Takvim.Tr)
+                        @if (bugunMu)
+                        {
+                            <span class="etiket etiket-uygulama">Bugün</span>
+                        }
+                    </span>
+                    <span class="gun-tarihi">@gun.Gun.ToString("dd.MM.yyyy", Takvim.Tr)</span>
+                </h3>
+                <dl class="yemekler">
+                    <div><dt>Çorba</dt><dd>@gun.Corba</dd></div>
+                    <div><dt>Ana yemek</dt><dd>@gun.AnaYemek</dd></div>
+                    <div><dt>Yardımcı yemek</dt><dd>@gun.Yardimci</dd></div>
+                    <div><dt>Tatlı / içecek</dt><dd>@gun.Tatli</dd></div>
+                </dl>
+            </li>
+        }
+    </ol>
 </section>

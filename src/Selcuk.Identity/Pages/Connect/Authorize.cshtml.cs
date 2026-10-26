@@ -42,7 +42,7 @@ public class AuthorizeModel(
     public static (string Baslik, string Aciklama) KapsamBilgisi(string kapsam) => kapsam switch
     {
         Scopes.OpenId => ("Kimlik", "Hesabına ait benzersiz kimlik numarası"),
-        Scopes.Profile => ("Profil", "Ad soyadın, kullanıcı adın veya öğrenci numaran, fakülte ve bölüm bilgin"),
+        Scopes.Profile => ("Profil", "Adın, fakülte ve bölüm bilgilerin"),
         Scopes.Email => ("E-posta", "E-posta adresin"),
         Scopes.Roles => ("Rol", "Rolün (öğrenci, akademisyen veya personel)"),
         Scopes.OfflineAccess => ("Erişimi yenileme",

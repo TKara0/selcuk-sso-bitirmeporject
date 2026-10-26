@@ -19,7 +19,9 @@ src/browser.js   Playwright kalıcı profil (data/browser-profile), sekme izleme
                  ölçüm (attempt -> onMeasure), logoutAll (site çerezleri + sekmeler), focus
 src/sites.js     Site adaptörleri: { id, startUrl, origins, appOrigins?, mode: 'auto'|'assist', userSteps?, needs, loginPage: { match, detect, fill } }
                  appOrigins: "giriş tamam" sayılacak kökenler (ör. yemekhane için SSO'nun ara sayfaları sayılmaz)
-public/          Portal arayüzü (index.html, app.js, style.css)
+public/          Portal arayüzü (index.html, app.js, style.css). public/arayuz/: ortak tasarım sisteminin kopyası
+                 (src/Selcuk.Arayuz/wwwroot: selcuk.css, yazı tipleri, kapı SVG'leri); elle değiştirilmez, kökten
+                 scripts/arayuz-esitle.ps1 ile kopyalanır, e2e testi SHA-256 ile kaynakla eşitliğini denetler
 src/sso.js       İsteğe bağlı SSO modu (SSO_ISSUER): OIDC public istemci (PKCE S256), iki katmanlı erişim
                  (SSO oturumu + kasa ana şifresi), Back-Channel Logout (jose ile logout_token doğrulama)
 test/            mock-sites.js (gerçek formları taklit eden sahte siteler, 5600-5606) + e2e.js (uçtan uca test, bağımsız mod)
@@ -77,7 +79,7 @@ Her değişiklikten sonra:
 npm test
 ```
 
-Bağımsız modda 33 (`test/e2e.js`) ve SSO modunda 14 (`test/sso.js`) kontrolün hepsi geçmeli. Yeni bir davranış
+Bağımsız modda 35 (`test/e2e.js`) ve SSO modunda 14 (`test/sso.js`) kontrolün hepsi geçmeli. Yeni bir davranış
 eklediysen ilgili test dosyasına onu doğrulayan bir kontrol ekle. Testi geçmeyen bir değişikliği "bitti" diye raporlama.
 
 ## Çıktı biçimi

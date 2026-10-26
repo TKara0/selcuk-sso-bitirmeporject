@@ -801,15 +801,21 @@ yolun aynı işi yaptığı kodda doğrulandı:
 
 ## Demo uygulamalar
 
+İki demo da ortak tasarım sistemini (`Selcuk.Arayuz`, Tasarım D2) kullanır: üst çubukta uygulama simgesi (baş harfler)
+ve adı, uygulamanın renginde başlık şeridi ve sekme altı çizgisi; sağda hesap menüsü (küçük kapı işareti, Profilim,
+Çıkış yap). Firuze ve kapı işareti yalnızca kimlikle ilgili öğelerdedir ("Tek Şifre ile giriş yap", hesap menüsü);
+her uygulamanın kendi içeriği kendi rengini kullanır (OBİS lacivert, Yemekhane nar; `--uygulama-vurgu`). Ortak
+sayfalar (Profilim, Erişim reddedildi, Giriş hatası, Hata, Çıkış) iki uygulamada aynı görünür.
+
 ### Demo OBİS (`src/Selcuk.Demo.Obis`, https://localhost:5101)
 
 | Sayfa | Erişim |
 |---|---|
-| Ana sayfa (`/`) | Herkese açık, "Giriş yap" butonu |
-| Notlarım (`/Notlarim`) | Yalnızca `ogrenci`. Notlar sunucu tarafında **Demo API'den** (`GET /api/notlar`, oturumdaki access token ile) çekilir; API'ye ulaşılamazsa "Not bilgileri şu an alınamıyor" |
-| Ders Yönetimi (`/DersYonetimi`) | Yalnızca `akademisyen` |
-| Profilim (`/Profilim`) | Giriş yapmış herkes: ad soyad, rol, fakülte, bölüm |
-| Token İnceleme (`/TokenInceleme`) | Yalnızca Development: id_token ve access_token'ın header/payload'u (imza hariç), son kullanma zamanı; refresh token'ın yalnızca var olduğu ve (yaklaşık) son kullanma zamanı, değeri gösterilmez |
+| Ana sayfa (`/`) | Herkese açık: uygulama adı, tek cümle ve "Tek Şifre ile giriş yap"; giriş yapınca sayfa bağlantıları |
+| Notlarım (`/Notlarim`) | Yalnızca `ogrenci`. Notlar sunucu tarafında **Demo API'den** (`GET /api/notlar`, oturumdaki access token ile) çekilir; tablo (ders kodu, ders adı, kredi, vize, final, harf etiketi), üstünde toplam kredi ve dönem ağırlıklı ortalaması (4'lük sistem; krediler OBİS'in ders kataloğundan, `SahteVeri.Krediler`; API değişmedi). Dar ekranda her ders iki satır. API'ye ulaşılamazsa hata bandında "Not bilgileri şu an alınamıyor" |
+| Ders Yönetimi (`/DersYonetimi`) | Yalnızca `akademisyen`, aynı tablo dili |
+| Profilim (`/Profilim`) | Giriş yapmış herkes: ad soyad, kullanıcı adı, rol, fakülte, bölüm, e-posta |
+| Token İnceleme (`/TokenInceleme`) | Yalnızca Development: id_token ve access_token için ayrı bölümler; her başlık alanı ve claim bir satır (ad ve değer Mono, uzun değer kırpılır ve tam hâli `title`'da, Türkçe kısa açıklama); access token bölümünde "kişisel bilgi içermez" bandı; ham JSON "Ham hâlini göster" ile açılır; token'ın kendisi ve imzası gösterilmez; refresh token'ın yalnızca var olduğu ve (yaklaşık) son kullanma zamanı |
 | Erişim reddedildi (`/ErisimReddedildi`) | Yetkisiz rol buraya yönlendirilir |
 | Çıkış (`/Cikis`) | Yerel çerezi siler, kimlik sunucusunun end-session uç noktasına gider, dönüşte ana sayfa |
 
@@ -817,9 +823,9 @@ yolun aynı işi yaptığı kodda doğrulandı:
 
 | Sayfa | Erişim |
 |---|---|
-| Haftalık menü (`/`) | Herkese açık, bu haftanın uydurma menüsü |
-| Rezervasyonlarım (`/Rezervasyonlarim`) | Giriş yapmış herkes: sonraki 5 iş gününden seçip rezervasyon ekleme ve iptal (bellek içi) |
-| Yemekhane Yönetimi (`/YemekhaneYonetimi`) | Yalnızca `personel`: günlük rezervasyon sayıları |
+| Haftalık menü (`/`) | Herkese açık, bu haftanın uydurma menüsü: günler sütun (dar ekranda satır), her günde çorba, ana yemek, yardımcı yemek, tatlı/içecek; bugün vurgulu. Girişsiz kullanıcıya üstte "Tek Şifre ile giriş yap" |
+| Rezervasyonlarım (`/Rezervasyonlarim`) | Giriş yapmış herkes: sonraki 5 iş gününün listesi, her günde durum etiketi ve "Rezervasyon yap" / "İptal et" (bellek içi); işlem sonucu bantta gösterilir ve ekran okuyucuya duyurulur (`aria-live`) |
+| Yemekhane Yönetimi (`/YemekhaneYonetimi`) | Yalnızca `personel`: günlük rezervasyon sayıları tablosu |
 | Profilim, Erişim reddedildi, Çıkış | OBİS'teki gibi |
 
 ### Demo API (`src/Selcuk.Demo.Api`, https://localhost:5201)
@@ -885,9 +891,13 @@ dotnet-tools.json                 dotnet-ef yerel aracı
 scripts/run-all.ps1               Dört uygulamayı ayrı pencerelerde başlatır (-TekKapi: Tek Kapı da, SSO modunda)
 scripts/olcum-calistir.ps1        Otomatik ölçüm: derle, uygulamaları ölçüm modunda başlat, ölç, durdur
 scripts/olcum_analiz.py           Ölçüm analizi (Python 3, standart kütüphane; matplotlib varsa PNG)
+scripts/arayuz-esitle.ps1         Ortak tasarım dosyalarını (selcuk.css, yazı tipleri, kapı SVG'leri) Tek Kapı'ya kopyalar
+scripts/ekran-goruntuleri.mjs     Ekran görüntüleri (Playwright; geçici veritabanı ve Tek Kapı veri klasörü)
 tools/Selcuk.Olcum/               Otomatik ölçüm aracı (konsol; yalnızca localhost)
 docs/                             Değerlendirme belgeleri: mimari, güvenlik karşılaştırması, tehdit modeli, test kapsamı
   tasarim/d1/                     Tasarım D1: token'lar, kontrast tablosu, yazı tipi kaynağı, ekran görüntüleri
+  tasarim/d2/                     Tasarım D2: uygulama vurgu renkleri (kontrast), demolar ve Tek Kapı, ekran görüntüleri
+  tez-gorselleri/                 Tez için seçilmiş ekran görüntüleri (açık tema, 1440px)
   olcumler/                       Ölçüm çıktıları, elle ölçüm şablonu ve protokolü, karşılaştırma
   kullanilabilirlik/              SUS anketi
 araclar/tek-kapi/                 Tek Kapı: yerel kişisel ESSO portalı (Node.js), SSO modu; kendi README ve AGENTS.md'si
@@ -913,8 +923,10 @@ src/Selcuk.Identity/
                                   SifremiUnuttum, SifreSifirla, Hesabim, SifreDegistir, AccessDenied,
                                   Connect/Authorize, Logout
 src/Selcuk.Arayuz/                Ortak tasarım sistemi (Razor Class Library, "Taç kapı"): _content/Selcuk.Arayuz/ altında
-                                  selcuk.css (token'lar, bileşenler), selcuk.js, Atkinson Hyperlegible Next/Mono (OFL);
-                                  _SelcukDuzen düzeni, kapı işareti (SVG), simgeler
+                                  selcuk.css (token'lar, uygulama vurgu rengi, bileşenler, tablo), selcuk.js,
+                                  Atkinson Hyperlegible Next/Mono (OFL), img/ (kapı SVG'leri); _SelcukDuzen (uygulama
+                                  adı, simgesi, sekmeler, hesap menüsü), _TekSifreGirisi, _IstemciHesapMenusu,
+                                  _IstemciProfili; kapı işareti (küçük, büyük, kapalı), simgeler
 src/Selcuk.Istemci.Ortak/         AddSelcukSSO, güvenlik başlıkları, Back-Channel Logout alıcısı, OturumIptalDeposu
                                   (IDistributedCache), giriş dönüşü hataları, iss doğrulaması, TokenYenileyici
                                   (access token yenileme, çıkışta refresh token iptali)
@@ -1027,6 +1039,35 @@ dotnet run --project src/Selcuk.Demo.Yemekhane    # https://localhost:5102
 
 Kimlik sunucusu açılışta rolleri (yoksa) oluşturur. Development'ta test kullanıcılarını ve iki demo istemciyi de
 ekler.
+
+### Ekran görüntüleri
+
+`scripts/ekran-goruntuleri.mjs` kimlik sunucusu, iki demo ve Tek Kapı ekranlarını Playwright ile çeker
+(`araclar/tek-kapi`'deki Playwright kullanılır, yeni paket kurulmaz; bir kez `cd araclar\tek-kapi; npm ci`):
+
+```powershell
+node --use-system-ca scripts/ekran-goruntuleri.mjs
+```
+
+- 4545, 5001, 5101, 5102, 5201 portlarından biri doluysa durur; çalışan uygulamalara dokunmaz.
+- Kimlik sunucusu için geçici bir LocalDB veritabanı (`SelcukSSO_Ekran_<rastgele>`) kurar (`dotnet ef database update`,
+  bağlantı ortam değişkeniyle); test kullanıcılarının şifreleri ve demo istemci sırrı o çalıştırma için rastgele
+  üretilir, yalnızca bellekte ve başlatılan süreçlerin ortam değişkenlerinde durur. user-secrets'taki şifre ve sırların
+  yerine geçer, onları değiştirmez.
+- Uygulamaları `scripts\run-all.ps1 -TarayiciAcma` ile başlatır; Tek Kapı'yı geçici bir veri klasörüyle
+  (`PORTAL_DATA_DIR`) SSO modunda kendisi başlatır. Gerçek kasa (`araclar/tek-kapi/data`) kullanılmaz; Tek Kapı'da
+  yalnızca portal ekranları çekilir (hiçbir sistem açılmaz, gerçek sitelere istek gitmez), kasaya
+  `test/mock-sites.js`'teki sahte bilgiler girilir.
+- 2FA kurulumunda ve girişin ikinci adımında doğrulayıcı uygulamanın yerine betik TOTP kodunu üretir (Node `crypto`
+  HMAC-SHA1, RFC 6238; kod tekrar korumasına takılmamak için her seferinde yeni zaman adımı beklenir). Ek doğrulama
+  (step-up) ekranı, "Bu cihazı hatırla" ile girip çıkıp yalnızca şifreyle yeniden girilen oturumda Tek Kapı açılınca
+  çekilir. QR kod, anahtar ve kurtarma kodları çekimden önce örnek değerlerle değiştirilir; her çekimden önce sayfada
+  o çalıştırmanın sırlarından biri var mı diye bakılır.
+- Çıktı: `docs/tasarim/d2/` (her ekranın açık ve koyu 1280 × 800 ile 390px mobil hâli) ve `docs/tez-gorselleri/`
+  (tez için seçilmiş on ekran, açık tema, 1440px). Sonda 390px'te yatay taşma, konsol/CSP hatası ve açıklaması olmayan
+  claim varsa listelenir.
+- Bitince yalnızca kendi başlattığı pencereleri ve Tek Kapı sürecini durdurur, geçici veritabanını ve veri klasörünü
+  siler. Kimlik sunucusunun Development e-postaları her zamanki gibi `App_Data/eposta/`'ya yazılır (git'e girmez).
 
 ## Elle deneme
 
@@ -1314,6 +1355,10 @@ yakalanır.
 | `Giris_sayfasinda_her_alanin_etiketi_ve_tek_h1_var` | Tek `<h1>`, anlamlı `<title>`; gizli olmayan her alanın `label[for]`'u var; göster/gizle düğmesi `aria-label` + `aria-pressed`; kapı işareti `aria-hidden` |
 | `Uygulamalarim_uygulama_yokken_bos_durum_metnini_gosteriyor` | İstemci kayıtlı değilken "Henüz erişebildiğin bir uygulama yok. Yetki için birim yöneticine başvur.", liste yok, tek `<h1>` |
 | `Eposta_html_surumu_ayni_baslikla_harici_kaynaksiz_ve_kodlanmis` | HTML sürümünde aynı başlık; ad HTML-kodlanmış; `<img>`, `<link>`, `<script>`, `url(` yok; tek dış adres sıfırlama bağlantısı |
+| `Kapi_isaretlerinin_svg_dosyalari_koddaki_isaretlerle_ayni_ve_sunuluyor` | `_content/Selcuk.Arayuz/img/` altındaki üç SVG (küçük, büyük, kapalı kapı) 200, `image/svg+xml` ve `KapiIsareti`'nin ürettiğiyle birebir aynı (Tek Kapı bu dosyaları kopyalar) |
+| `Giris_onay_ve_hata_sayfalari_D1_duzeltmeleriyle_ciziliyor` | Kapı panelinde "Fakültedeki bütün uygulamalar için tek hesap."; onayda profil açıklaması "Adın, fakülte ve bölüm bilgilerin"; Erişim reddedildi ve Hata sayfalarında başlığın üstünde 48px kapalı kapı (`aria-hidden`) |
+| `Iki_adim_sayfasinda_yardim_cumlesi_yok_kod_alani_yer_tutuculu` | Girişin ikinci adımında "Telefonun yanında değilse…" yok; kod alanında `000 000` yer tutucusu, kurtarma modu için `XXXXX-XXXXX`; "Kurtarma kodu kullan" bağlantısı var |
+| `Guvenlik_gecmisinde_saat_dilimi_yalnizca_sutun_basliginda` | Sütun başlığı "Zaman (TSİ)"; satırlarda yalnızca `gg.aa.yyyy SS:dd`; tabloda dilim bir kez |
 | **Selcuk.Istemci.Ortak.Tests** | |
 | `Gecerli_logout_token_oturumu_sonlandiriyor` | 200 (`no-store`); o sid'li oturum sonraki istekte authorize'a yönlenir |
 | `Imzasi_gecersiz_token_reddediliyor` | 400, oturum etkilenmez |
@@ -1334,8 +1379,14 @@ yakalanır.
 | `Cikista_once_refresh_token_iptal_ediliyor_sonra_end_sessiona_gidiliyor` | Çıkış: revocation isteği (token, `token_type_hint`, client kimlik bilgileri), sonra end-session'a yönlendirme |
 | **Selcuk.Demo.Obis.Tests** | |
 | `Girissiz_kullanici_Notlarim_icin_kimlik_sunucusuna_yonlendiriliyor` | 302 → `https://localhost:5001/connect/authorize`, `code_challenge` + `S256`, kapsamlar `openid profile email roles offline_access notlar.oku` |
-| `Notlarim_Demo_APIden_gelen_veriyi_access_token_ile_gosteriyor` | Sahte Demo API: `GET https://localhost:5201/api/notlar`, `Authorization: Bearer <oturumdaki access token>`, sorgu parametresi yok; sayfada API'den gelen satır |
-| `Demo_API_kapaliyken_Turkce_hata_mesaji_gosteriliyor_500_donmuyor` | API'ye bağlanılamaz: 200, "Not bilgileri şu an alınamıyor", tablo yok |
+| `Notlarim_Demo_APIden_gelen_veriyi_access_token_ile_gosteriyor` | Sahte Demo API: `GET https://localhost:5201/api/notlar`, `Authorization: Bearer <oturumdaki access token>`, sorgu parametresi yok; sayfada API'den gelen satır (kod, ad, kredi: katalogda yoksa —, vize, final, harf etiketi) |
+| `Demo_API_kapaliyken_Turkce_hata_mesaji_gosteriliyor_500_donmuyor` | API'ye bağlanılamaz: 200, hata bandında (`role="alert"`) "Not bilgileri şu an alınamıyor", tablo ve özet yok |
+| `Notlarim_toplam_krediyi_ve_donem_agirlikli_ortalamasini_veriden_hesapliyor` | Demo API'nin örnek notlarıyla: toplam kredi 17, dönem ağırlıklı ortalaması 3,03 (51,5 / 17); satırda kataloğun kredisi |
+| `Katalogda_olmayan_ders_ve_bilinmeyen_harf_ozete_girmiyor` | Kredisi katalogda olmayan ders ve katsayısı olmayan harf (DZ) sayılmaz; FF 0 katsayıyla sayılır; hiç ders sayılmazsa ortalama yok |
+| `Her_claim_Turkce_aciklamasiyla_bir_satirda_gosteriliyor` | Development: kimlik sunucusunun id_token ve access_token'larındaki her başlık ve claim alanı kendi satırında, adı Mono, yanında Türkçe açıklama (ör. `iss` "Token'ı veren kimlik sunucusu", `aud`, `sid`, `amr`); "açıklama yok" hiçbir satırda yok |
+| `Access_token_bandi_ham_hal_ve_kirpilmis_deger_var_token_ve_refresh_token_degeri_yok` | Access token bölümünde "Bu token kişisel bilgi içermez…" bandı; iki "Ham hâlini göster" bölümü; uzun değer kırpılır (tam hâli `title`'da); token'ların kendisi, imza ve refresh token değeri sayfada yok |
+| `Ortak_css_betik_ve_yazi_tipleri_content_altindan_200_donuyor` | Demo OBİS: `_content/Selcuk.Arayuz/` altındaki CSS, betik ve altı woff2 200 (`wOF2` imzası); `/css/site.css` 200 ve `--uygulama-vurgu` tanımlı |
+| `Sayfalar_ortak_duzenle_ve_ayni_kokenden_kaynaklarla_ciziliyor` | Ana sayfa (girişsiz), Notlarım ve Profilim ortak düzenle (başlık şeridi), tek `<h1>`, stil/betik bağlantıları aynı kökenden |
 | `Ogrenci_Notlarim_acilir_Ders_Yonetimi_reddedilir` | ogrenci: Notlarım 200, Ders Yönetimi → Erişim reddedildi |
 | `Akademisyen_Ders_Yonetimi_acilir_Notlarim_reddedilir` | akademisyen: Ders Yönetimi 200, Notlarım → Erişim reddedildi |
 | `Token_Inceleme_Development_disinda_kapali` | Development dışında 404 |
@@ -1347,11 +1398,13 @@ yakalanır.
 | `Dis_donus_adresine_yonlendirilmiyor` (×3) | State'te `https://evil.example`, `//evil.example`, `/\evil.example`: yönlendirme `/`'a |
 | `Korumali_sayfalarda_no_store_var_ana_sayfa_ve_statik_dosyada_yok` | Profilim, Notlarım, Ders Yönetimi ve girişsiz korumalı sayfanın yönlendirmesi `no-store`; ana sayfa ve CSS'te yok |
 | **Selcuk.Demo.Yemekhane.Tests** | |
-| `Haftalik_menu_herkese_acik` | Girişsiz 200, başlıkta "Demo Yemekhane — test uygulaması" |
+| `Haftalik_menu_herkese_acik` | Girişsiz 200; üst çubukta uygulama simgesi (DY), "Demo Yemekhane" ve "Test" etiketi; menü görünür; "Tek Şifre ile giriş yap" |
 | `Girissiz_kullanici_Rezervasyonlarim_icin_kimlik_sunucusuna_yonlendiriliyor` | 302 → authorize, `client_id=demo-yemekhane`, `code_challenge` + `S256` |
 | `Ogrenci_Yemekhane_Yonetimi_erisim_reddedildi` | ogrenci: Yönetim → Erişim reddedildi; Rezervasyonlarım 200 |
 | `Personel_Yemekhane_Yonetimi_aciliyor` | personel: Yönetim 200 |
 | `Korumali_sayfalarda_no_store_var_haftalik_menude_yok` | Rezervasyonlarım, Profilim, Yemekhane Yönetimi ve girişsiz yönlendirme `no-store`; haftalık menü ve CSS'te yok |
+| `Ortak_css_betik_ve_yazi_tipleri_content_altindan_200_donuyor` | Demo Yemekhane: OBİS'teki gibi (`_content` altında CSS, betik, yazı tipleri; `/css/site.css`) |
+| `Sayfalar_ortak_duzenle_ve_ayni_kokenden_kaynaklarla_ciziliyor` | Haftalık menü (girişsiz), Yemekhane Yönetimi ve Profilim ortak düzenle, tek `<h1>`, kaynaklar aynı kökenden |
 | **Selcuk.Demo.Api.Tests** | |
 | `Gecerli_token_200_eksik_veya_hatali_token_401_yetkisiz_kapsam_ve_rol_403` | Geçerli token 200 (`no-store`, `nosniff`); token yok, yanlış imza, `aud` demo-obis, süresi dolmuş, `typ` JWT → 401; `notlar.oku` yok, rol akademisyen → 403; hata gövdesi ve `WWW-Authenticate` ayrıntısı yok |
 | `Yalnizca_tokendaki_subin_notlari_donuyor_parametreyle_baskasi_istenemiyor` | `?sub=` / `?ogrenci=` yok sayılır; A'nın token'ı her zaman A'nın notlarını, B'ninki B'ninkini döndürür |

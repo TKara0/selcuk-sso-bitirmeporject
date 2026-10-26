@@ -14,8 +14,12 @@ public sealed class YetkilendirmeTests
 
         Assert.Equal(HttpStatusCode.OK, yanit.StatusCode);
         var html = WebUtility.HtmlDecode(await yanit.Content.ReadAsStringAsync());
-        Assert.Contains("Demo Yemekhane — test uygulaması", html);
+        // Üst çubukta uygulama adı ve "Test" etiketi; girişsiz kullanıcıya menü ve "Tek Şifre ile giriş yap".
+        Assert.Matches(@"<a class=""marka"" href=""/"">\s*<span class=""uygulama-simgesi"" aria-hidden=""true"">DY</span>\s*" +
+            @"<span>Demo Yemekhane</span>\s*<span class=""etiket etiket-notr"">Test</span>", html);
         Assert.Contains("Haftalık menü", html);
+        Assert.Contains("Mercimek çorbası", html);
+        Assert.Contains("<span>Tek Şifre ile giriş yap</span>", html);
     }
 
     [Fact]

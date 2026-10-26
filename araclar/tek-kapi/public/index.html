@@ -3,122 +3,170 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
   <title>Tek Kapı</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Ortak tasarım sistemi: src/Selcuk.Arayuz/wwwroot'tan kopya (scripts/arayuz-esitle.ps1), elle değiştirilmez -->
+  <link rel="preload" href="arayuz/fonts/atkinson-hyperlegible-next-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="arayuz/css/selcuk.css">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="top">
-    <div class="brand">
-      <span class="mark" aria-hidden="true">TK</span>
+  <a class="atla" href="#icerik">İçeriğe geç</a>
+
+  <!-- Kilit ve kurulum ekranında kapı paneli düzeni (solda panel); kasa açıkken üst çubuk ve geniş içerik (app.js) -->
+  <div class="duzen giris-duzeni" id="duzen">
+    <header class="kapi-paneli" id="kapiPaneli">
+      <span class="isaret isaret-buyuk" aria-hidden="true"></span>
       <div>
-        <div class="brand-name">Tek Kapı</div>
-        <div class="brand-sub">Selçuk otomasyonları, tek şifre</div>
+        <p class="kapi-adi">Tek Kapı</p>
+        <p class="kapi-cumlesi">Selçuk sistemlerine tek ana şifreyle, kendi bilgisayarından.</p>
       </div>
+    </header>
+
+    <div class="sutun giris-sutunu" id="sutun">
+      <header class="ust-cubuk" id="ustCubuk">
+        <a class="marka" href="/">
+          <span class="isaret isaret-kucuk" aria-hidden="true"></span>
+          <span>Tek Kapı</span>
+          <span class="etiket etiket-notr">Yerel</span>
+        </a>
+        <div class="ust-sag">
+          <p class="etiket kasa-durumu" id="kasaDurumu" data-durum="kilitli">
+            <svg class="simge-kilitli" viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="9" width="12" height="9" rx="1.5"/><path d="M6.5 9V6.5a3.5 3.5 0 0 1 7 0V9"/></svg>
+            <svg class="simge-acik" viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="9" width="12" height="9" rx="1.5"/><path d="M6.5 9V6.5a3.5 3.5 0 0 1 6.8-1.2"/></svg>
+            <span id="kasaMetni">Kasa kilitli</span>
+          </p>
+          <!-- SSO modu: giriş yapan kişi ve kimlik sunucusundan çıkış -->
+          <div class="sso-cubugu" id="ssoBar" hidden>
+            <p class="sso-kisi"><span class="isaret isaret-kucuk" aria-hidden="true"></span><span class="gorunmez">Tek Şifre ile giriş yapan: </span><span id="ssoName"></span></p>
+            <button class="dugme dugme-ikincil" id="btnSsoLogout" title="Kasayı kilitler, tüm Selçuk oturumlarını kapatır ve Tek Şifre Giriş Sistemi'nden çıkar">SSO'dan çık</button>
+          </div>
+          <nav class="ust-eylemler" id="topActions" aria-label="Kasa" hidden>
+            <button class="dugme dugme-ikincil" id="btnSettings">Ayarlar</button>
+            <button class="dugme dugme-ikincil" id="btnLock">Kilitle</button>
+          </nav>
+        </div>
+      </header>
+
+      <main id="icerik" class="giris-icerik">
+        <!-- İlk kurulum -->
+        <section id="viewSetup" hidden>
+          <h1 class="baslik-buyuk">Kasanı oluştur</h1>
+          <p class="giris-metni">Bir ana şifre belirle. Site şifrelerin bununla şifrelenip yalnızca bu bilgisayarda saklanır. Ana şifreyi unutursan kasa açılamaz.</p>
+          <form id="formSetup" class="form">
+            <div class="alan">
+              <label for="setupMaster">Ana şifre</label>
+              <input class="metin-alani" id="setupMaster" type="password" name="master" autocomplete="new-password" minlength="6" required aria-describedby="setupHata">
+            </div>
+            <div class="alan">
+              <label for="setupMaster2">Ana şifre (tekrar)</label>
+              <input class="metin-alani" id="setupMaster2" type="password" name="master2" autocomplete="new-password" minlength="6" required aria-describedby="setupHata">
+            </div>
+            <p class="alan-hatasi error" id="setupHata" role="alert"></p>
+            <button class="dugme dugme-ana dugme-tam" type="submit">Kasayı oluştur</button>
+          </form>
+        </section>
+
+        <!-- Kilit ekranı -->
+        <section id="viewLocked" hidden>
+          <h1 class="baslik-buyuk">Kasanı aç</h1>
+          <p class="giris-metni">Tüm sistemlere girmek için tek ana şifre.</p>
+          <form id="formUnlock" class="form">
+            <div class="alan">
+              <label for="unlockMaster">Ana şifre</label>
+              <input class="metin-alani" id="unlockMaster" type="password" name="master" autocomplete="current-password" required autofocus aria-describedby="unlockHata">
+            </div>
+            <p class="alan-hatasi error" id="unlockHata" role="alert"></p>
+            <button class="dugme dugme-ana dugme-tam" type="submit">Kasayı aç</button>
+          </form>
+        </section>
+
+        <!-- Ana ekran -->
+        <section id="viewHome" hidden>
+          <div class="bolum-basligi">
+            <h1>Sistemler</h1>
+            <button class="dugme dugme-tehlikeli-ikincil" id="btnLogoutAll" title="Tek Kapı penceresindeki tüm Selçuk oturumlarını kapatır">Hepsinden çık</button>
+          </div>
+          <p class="giris-metni">Aç'a bas; site Tek Kapı penceresinde açılır ve giriş kendiliğinden yapılır. CAPTCHA ve iki aşamalı doğrulama sende kalır.</p>
+          <div class="bant bant-uyari" id="setupNotice" hidden>
+            <svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 2.5 18 17H2Z"/><path d="M10 8v4M10 14.4v.1"/></svg>
+            <p>Bazı sistemler için bilgilerin eksik. <button class="dugme-baglanti" id="btnNoticeSettings">Ayarlar'dan ekle</button></p>
+          </div>
+          <div class="bant bant-hata" id="homeError" role="alert" hidden><p></p></div>
+          <div class="bant bant-bilgi" id="homeInfo" role="status" hidden><p></p></div>
+          <ul class="satirlar sistemler" id="tiles"></ul>
+
+          <section class="bolum" aria-labelledby="sonIslemlerBasligi">
+            <h2 id="sonIslemlerBasligi">Son işlemler</h2>
+            <div class="tablo-kabi">
+              <table class="tablo tablo-yigin olaylar">
+                <thead><tr><th scope="col">Saat</th><th scope="col">Kaynak</th><th scope="col">İşlem</th></tr></thead>
+                <tbody id="events"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="bolum" aria-labelledby="olcumlerBasligi">
+            <div class="bolum-basligi">
+              <h2 id="olcumlerBasligi">Ölçümler</h2>
+              <a class="dugme dugme-ikincil" id="lnkCsv" href="/export/metrics.csv" download>CSV indir</a>
+            </div>
+            <p class="ipucu">Aç'a bastığın andan sitenin içine girene kadar geçen süre. Yarı otomatik sitelerde senin harcadığın süre ayrıca gösterilir. Şifre veya kullanıcı adı kaydedilmez.</p>
+            <div class="tablo-kabi">
+              <table class="tablo tablo-yigin olcumler" id="metricsTable">
+                <thead><tr><th scope="col">Sistem</th><th scope="col" class="sayi">Giriş</th><th scope="col" class="sayi">Ort. giriş süresi</th><th scope="col" class="sayi">Bunun senin payın</th><th scope="col" class="sayi">Oturum hatırlandı</th><th scope="col" class="sayi">Başarısız</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <!-- Ayarlar: tek sütun, en fazla 560px -->
+        <section id="viewSettings" class="ayarlar" hidden>
+          <h1>Hesap bilgileri</h1>
+          <p class="giris-metni">Şifre alanlarını boş bırakırsan kayıtlı olan korunur. Kayıtlı şifreler bu ekranda bile gösterilmez.</p>
+          <form id="formCreds" class="form">
+            <fieldset class="panel">
+              <legend>OBİS ve UZEM</legend>
+              <div class="alan">
+                <label for="ogrNo">Öğrenci numarası</label>
+                <input class="metin-alani mono" id="ogrNo" name="ogrNo" inputmode="numeric" autocomplete="off">
+              </div>
+              <div class="alan">
+                <label for="obisPass">Öğrenci not sistemi (OBİS) şifresi</label>
+                <input class="metin-alani" id="obisPass" type="password" name="obisPass" autocomplete="off" placeholder="değiştirmek için yaz" aria-describedby="obisPassDurum">
+                <p class="ipucu" id="obisPassDurum" data-has="obisPass"></p>
+              </div>
+            </fieldset>
+            <fieldset class="panel">
+              <legend>E-posta ve Selçuk SSO</legend>
+              <div class="alan">
+                <label for="ogrMail">Öğrenci e-postası</label>
+                <input class="metin-alani" id="ogrMail" type="email" name="ogrMail" autocomplete="off" placeholder="ornek@ogr.selcuk.edu.tr">
+              </div>
+              <div class="alan">
+                <label for="mailPass">E-posta şifresi</label>
+                <input class="metin-alani" id="mailPass" type="password" name="mailPass" autocomplete="off" placeholder="değiştirmek için yaz" aria-describedby="mailPassDurum">
+                <p class="ipucu" id="mailPassDurum" data-has="mailPass"></p>
+              </div>
+              <div class="alan">
+                <label for="ssoPass">SSO şifresi (yalnızca e-posta şifrenden farklıysa)</label>
+                <input class="metin-alani" id="ssoPass" type="password" name="ssoPass" autocomplete="off" placeholder="boş: e-posta şifresi kullanılır" aria-describedby="ssoPassDurum">
+                <p class="ipucu" id="ssoPassDurum" data-has="ssoPass"></p>
+              </div>
+            </fieldset>
+            <p class="alan-hatasi error" role="alert"></p>
+            <div class="dugmeler">
+              <button class="dugme dugme-ana" type="submit">Kaydet</button>
+              <button class="dugme dugme-ikincil" type="button" id="btnBack">Geri dön</button>
+            </div>
+          </form>
+        </section>
+      </main>
+
+      <footer class="alt-bilgi"><p>Şifreler bu bilgisayarda AES-256-GCM ile şifreli durur, hiçbir sunucuya gönderilmez. CAPTCHA ve iki aşamalı doğrulama her zaman sende kalır.</p></footer>
     </div>
-    <div class="top-actions">
-      <nav class="top-actions" id="topActions" hidden>
-        <button class="ghost" id="btnLogoutAll" title="Tek Kapı penceresindeki tüm Selçuk oturumlarını kapatır">Hepsinden çık</button>
-        <button class="ghost" id="btnSettings">Ayarlar</button>
-        <button class="ghost" id="btnLock">Kilitle</button>
-      </nav>
-      <!-- SSO modu: giriş yapan kişi ve kimlik sunucusundan çıkış -->
-      <nav class="top-actions" id="ssoBar" hidden>
-        <span class="sso-who" id="ssoName"></span>
-        <button class="ghost" id="btnSsoLogout" title="Kasayı kilitler, tüm Selçuk oturumlarını kapatır ve Tek Şifre Giriş Sistemi'nden çıkar">SSO'dan çık</button>
-      </nav>
-    </div>
-  </header>
-
-  <main>
-    <!-- İlk kurulum -->
-    <section class="auth" id="viewSetup" hidden>
-      <h1>Kasanı oluştur</h1>
-      <p class="lead">Bir ana şifre belirle. Site şifrelerin bununla şifrelenip yalnızca bu bilgisayarda saklanır. Ana şifreyi unutursan kasa açılamaz.</p>
-      <form id="formSetup" class="stack">
-        <label>Ana şifre <input type="password" name="master" autocomplete="new-password" minlength="6" required></label>
-        <label>Ana şifre (tekrar) <input type="password" name="master2" autocomplete="new-password" minlength="6" required></label>
-        <button class="primary" type="submit">Kasayı oluştur</button>
-        <p class="error" role="alert"></p>
-      </form>
-    </section>
-
-    <!-- Kilit ekranı -->
-    <section class="auth" id="viewLocked" hidden>
-      <h1>Kilidi aç</h1>
-      <p class="lead">Tüm sistemlere girmek için tek şifre.</p>
-      <form id="formUnlock" class="stack">
-        <label>Ana şifre <input type="password" name="master" autocomplete="current-password" required autofocus></label>
-        <button class="primary" type="submit">Aç</button>
-        <p class="error" role="alert"></p>
-      </form>
-    </section>
-
-    <!-- Ana ekran -->
-    <section id="viewHome" hidden>
-      <div class="home-head">
-        <h1>Nereye gidiyoruz?</h1>
-        <p class="lead">Karta tıkla, site Tek Kapı penceresinde açılıp kendiliğinden giriş yapsın.</p>
-      </div>
-      <div class="notice" id="setupNotice" hidden>
-        Bazı sistemler için bilgilerin eksik. <button class="link" id="btnNoticeSettings">Ayarlar'dan ekle</button>
-      </div>
-      <p class="error" id="homeError" role="alert"></p>
-      <p class="info" id="homeInfo" role="status"></p>
-      <div class="grid" id="tiles"></div>
-
-      <section class="activity">
-        <h2>Son işlemler</h2>
-        <ol id="events"></ol>
-      </section>
-
-      <section class="metrics">
-        <div class="metrics-head">
-          <h2>Ölçümler</h2>
-          <a class="ghost small" id="lnkCsv" href="/export/metrics.csv" download>CSV indir</a>
-        </div>
-        <p class="hint">Karta tıkladığın andan sitenin içine girene kadar geçen süre. Yarı otomatik sitelerde senin harcadığın süre ayrıca gösterilir. Şifre veya kullanıcı adı kaydedilmez.</p>
-        <div class="table-wrap">
-          <table id="metricsTable">
-            <thead><tr><th>Sistem</th><th>Giriş</th><th>Ort. giriş süresi</th><th>Bunun senin payın</th><th>Oturum hatırlandı</th><th>Başarısız</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </section>
-    </section>
-
-    <!-- Ayarlar -->
-    <section id="viewSettings" hidden>
-      <div class="home-head">
-        <h1>Hesap bilgileri</h1>
-        <p class="lead">Şifre alanlarını boş bırakırsan kayıtlı olan korunur. Kayıtlı şifreler bu ekranda bile gösterilmez.</p>
-      </div>
-      <form id="formCreds" class="settings">
-        <fieldset>
-          <legend>OBİS ve UZEM</legend>
-          <label>Öğrenci numarası <input name="ogrNo" inputmode="numeric" autocomplete="off"></label>
-          <label>Öğrenci not sistemi (OBİS) şifresi <input type="password" name="obisPass" autocomplete="off" placeholder="değiştirmek için yaz"></label>
-          <p class="hint" data-has="obisPass"></p>
-        </fieldset>
-        <fieldset>
-          <legend>E-posta ve Selçuk SSO</legend>
-          <label>Öğrenci e-postası <input type="email" name="ogrMail" autocomplete="off" placeholder="ornek@ogr.selcuk.edu.tr"></label>
-          <label>E-posta şifresi <input type="password" name="mailPass" autocomplete="off" placeholder="değiştirmek için yaz"></label>
-          <p class="hint" data-has="mailPass"></p>
-          <label>SSO şifresi (yalnızca e-posta şifrenden farklıysa) <input type="password" name="ssoPass" autocomplete="off" placeholder="boş: e-posta şifresi kullanılır"></label>
-          <p class="hint" data-has="ssoPass"></p>
-        </fieldset>
-        <div class="row">
-          <button class="primary" type="submit">Kaydet</button>
-          <button class="ghost" type="button" id="btnBack">Geri dön</button>
-        </div>
-        <p class="error" role="alert"></p>
-      </form>
-    </section>
-  </main>
-
-  <footer class="foot">Şifreler bu bilgisayarda AES-256-GCM ile şifreli durur, hiçbir sunucuya gönderilmez. CAPTCHA ve iki aşamalı doğrulama her zaman sende kalır.</footer>
+  </div>
 
   <script src="app.js"></script>
 </body>

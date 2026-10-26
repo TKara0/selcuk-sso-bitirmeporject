@@ -22,6 +22,9 @@ public class GuvenlikGecmisiModel(
 
     public List<Satir> Satirlar { get; } = [];
 
+    /// <summary>Zaman sütununun başlığındaki saat dilimi ("TSİ"); satırlarda tekrar edilmez.</summary>
+    public static string SaatDilimi => EpostaSablonlari.SaatDilimi;
+
     public async Task OnGetAsync()
     {
         var iptal = HttpContext.RequestAborted;
@@ -45,7 +48,7 @@ public class GuvenlikGecmisiModel(
         }
 
         Satirlar.AddRange(kayitlar.Select(k => new Satir(
-            EpostaSablonlari.Bicimle(new DateTimeOffset(DateTime.SpecifyKind(k.ZamanUtc, DateTimeKind.Utc))),
+            EpostaSablonlari.DilimsizBicimle(new DateTimeOffset(DateTime.SpecifyKind(k.ZamanUtc, DateTimeKind.Utc))),
             DenetimOlaylari.Ad(k.OlayTuru, k.Sonuc),
             k.IstemciId is null ? null : uygulamaAdlari[k.IstemciId],
             k.IpAdresi,

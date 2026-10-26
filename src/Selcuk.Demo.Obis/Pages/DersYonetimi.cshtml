@@ -2,21 +2,32 @@
 @model Selcuk.Demo.Obis.Pages.DersYonetimiModel
 @{
     ViewData["Title"] = "Ders Yönetimi";
+    ViewData[Duzen.Ayar.Genislik] = "genis";
 }
-<section class="kart genis">
-    <h1>Ders Yönetimi</h1>
-    <p class="aciklama">Verdiğiniz dersler (örnek veri)</p>
-    <div class="tablo-kap">
-        <table>
-            <thead>
-                <tr><th>Kod</th><th>Ders</th><th>Dönem</th><th>Öğrenci</th></tr>
-            </thead>
-            <tbody>
-                @foreach (var ders in SahteVeri.Dersler)
-                {
-                    <tr><td>@ders.Kod</td><td>@ders.Ad</td><td>@ders.Donem</td><td>@ders.OgrenciSayisi</td></tr>
-                }
-            </tbody>
-        </table>
-    </div>
-</section>
+<h1>Ders Yönetimi</h1>
+<p class="giris-metni">Bu dönem verdiğin dersler (örnek veri).</p>
+
+<div class="tablo-kabi">
+    <table class="tablo tablo-yigin">
+        <caption class="gorunmez">Verdiğin dersler</caption>
+        <thead>
+            <tr>
+                <th scope="col">Ders kodu</th>
+                <th scope="col">Ders adı</th>
+                <th scope="col">Dönem</th>
+                <th scope="col" class="sayi">Öğrenci</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var ders in SahteVeri.Dersler)
+            {
+                <tr>
+                    <td data-etiket="Ders kodu">@ders.Kod</td>
+                    <th scope="row" class="yigin-baslik">@ders.Ad</th>
+                    <td>@ders.Donem</td>
+                    <td class="sayi" data-etiket="Öğrenci">@ders.OgrenciSayisi</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

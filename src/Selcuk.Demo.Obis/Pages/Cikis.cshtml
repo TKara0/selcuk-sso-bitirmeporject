@@ -1,12 +1,16 @@
 @page
 @model Selcuk.Demo.Obis.Pages.CikisModel
 @{
-    ViewData["Title"] = "Çıkış";
+    ViewData["Title"] = "Çıkış yap";
+    ViewData[Duzen.Ayar.Genislik] = "dar";
 }
-<section class="kart">
-    <h1>Çıkış</h1>
-    <p class="aciklama">Demo OBİS oturumunuz ve kimlik sunucusundaki oturumunuz kapatılacak.</p>
+<div class="durum-sayfasi">
+    <h1>Çıkış yap</h1>
+    <p class="giris-metni">
+        Demo OBİS oturumun ve kimlik sunucusundaki oturumun kapanır. Tek şifreyle girdiğin diğer uygulamalardan da çıkış
+        yapılır.
+    </p>
     <form method="post">
-        <button type="submit" class="dugme birincil">Çıkış yap</button>
+        <button type="submit" class="dugme dugme-ana">Çıkış yap</button>
     </form>
-</section>
+</div>

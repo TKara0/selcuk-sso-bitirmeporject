@@ -93,7 +93,7 @@ public static class HizSiniri
 
     // Ortak düzenle (Selcuk.Arayuz/_SelcukDuzen) aynı görünüm; dinamik içerik yok. İstek sınırı Razor'dan önce
     // çalıştığı için sayfa sabit metindir; kapı işareti, alt bilgi ve stil dosyası ortak kütüphaneden gelir.
-    private const string CokFazlaIstekSayfasi = $$"""
+    private static readonly string CokFazlaIstekSayfasi = $$"""
         <!DOCTYPE html>
         <html lang="tr">
         <head>
@@ -111,6 +111,7 @@ public static class HizSiniri
             </header>
             <main id="icerik" class="icerik icerik-dar">
                 <div class="durum-sayfasi">
+                    {{KapiIsareti.Kapali}}
                     <h1>Çok fazla deneme</h1>
                     <p class="giris-metni">Kısa sürede çok fazla istek geldi. Bir dakika bekleyip tekrar dene.</p>
                     <a class="dugme dugme-ana" href="/Account/Login">Giriş sayfasına dön</a>

@@ -49,9 +49,9 @@ function recordMetric(m) {
     if (!fs.existsSync(METRICS_FILE)) fs.writeFileSync(METRICS_FILE, '\ufeff' + METRIC_COLS.join(',') + '\n');
     fs.appendFileSync(METRICS_FILE, METRIC_COLS.map((k) => csvCell(m[k])).join(',') + '\n');
   } catch (e) { console.error('Ölçüm yazılamadı:', e.message); }
-  const sn = (m.toplamMs / 1000).toFixed(1);
+  const sn = (m.toplamMs / 1000).toFixed(1).replace('.', ',');
   const label = { giris: 'Giriş tamamlandı', 'oturum-hatirlandi': 'Oturum hatırlandı', basarisiz: 'Giriş başarısız' }[m.sonuc] || m.sonuc;
-  log(m.site, `${label} · ${sn} sn ölçüldü`);
+  log(m.site, `${label}, ${sn} sn ölçüldü`);
 }
 function readMetrics() {
   if (!fs.existsSync(METRICS_FILE)) return [];
@@ -106,7 +106,7 @@ app.use((req, res, next) => {
     'X-Frame-Options': 'DENY',
     'Referrer-Policy': 'no-referrer',
     'Cache-Control': 'no-store',
-    'Content-Security-Policy': "default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; frame-ancestors 'none'",
+    'Content-Security-Policy': "default-src 'self'; img-src 'self' data:; frame-ancestors 'none'",
   });
   next();
 });

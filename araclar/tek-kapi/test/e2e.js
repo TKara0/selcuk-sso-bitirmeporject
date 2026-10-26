@@ -4,6 +4,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const assert = require('assert/strict');
+const crypto = require('crypto');
 const mock = require('./mock-sites');
 
 const PORT = 4646;
@@ -34,6 +35,16 @@ async function waitFor(fn, label, ms = 15000) {
 const pageWith = async (part) => (await api('/_debug/pages')).data.find((p) => p.url.includes(part));
 function ok(name) { passed++; console.log('  ✓ ' + name); }
 
+// Ortak tasarım sistemi (src/Selcuk.Arayuz/wwwroot) ve Tek Kapı'daki kopyası (public/arayuz, scripts/arayuz-esitle.ps1)
+const ARAYUZ_KAYNAK = path.join(__dirname, '..', '..', '..', 'src', 'Selcuk.Arayuz', 'wwwroot');
+const ARAYUZ_KOPYA = path.join(__dirname, '..', 'public', 'arayuz');
+const ozet = (dosya) => crypto.createHash('sha256').update(fs.readFileSync(dosya)).digest('hex');
+function arayuzDosyalari(kok, kaynakMi) {
+  const liste = (alt) => fs.readdirSync(path.join(kok, alt)).filter((f) => fs.statSync(path.join(kok, alt, f)).isFile()).map((f) => alt + '/' + f);
+  const css = kaynakMi ? ['css/selcuk.css'] : liste('css');
+  return [...css, ...liste('fonts'), ...liste('img')].sort();
+}
+
 (async () => {
   await mock.start();
   const srv = spawn(process.execPath, [path.join(__dirname, '..', 'src', 'server.js')], {
@@ -56,7 +67,23 @@ function ok(name) { passed++; console.log('  ✓ ' + name); }
       require('http').get({ host: '127.0.0.1', port: PORT, path: '/', headers: { host: 'evil.example:4646' } }, (r) => resolve(r.statusCode));
     });
     assert.equal(badHost, 421); ok('Yabancı Host başlığı reddediliyor (DNS rebinding)');
+    const portal = await fetch(BASE + '/');
+    const csp = portal.headers.get('content-security-policy');
+    assert.ok(csp.includes("default-src 'self'") && csp.includes("frame-ancestors 'none'"));
+    assert.ok(!/fonts\.googleapis\.com|fonts\.gstatic\.com/.test(csp));
+    assert.ok(!/https?:\/\//.test(await portal.text()));
+    ok("CSP'de Google Fonts yok; portal sayfası dış kaynak yüklemiyor");
     assert.equal((await api('/sites')).status, 401); ok('Oturum olmadan siteler gizli');
+
+    console.log('Arayüz');
+    const kaynaklar = arayuzDosyalari(ARAYUZ_KAYNAK, true);
+    assert.deepEqual(arayuzDosyalari(ARAYUZ_KOPYA, false), kaynaklar, 'public/arayuz dosya listesi kaynakla aynı değil: scripts/arayuz-esitle.ps1');
+    for (const f of kaynaklar) assert.equal(ozet(path.join(ARAYUZ_KOPYA, f)), ozet(path.join(ARAYUZ_KAYNAK, f)), f + ' kaynakla aynı değil: scripts/arayuz-esitle.ps1');
+    for (const [f, tur] of [['css/selcuk.css', 'text/css'], ['fonts/atkinson-hyperlegible-next-latin-400-normal.woff2', 'font/woff2'], ['img/kapi-kucuk.svg', 'image/svg+xml']]) {
+      const r = await fetch(BASE + '/arayuz/' + f);
+      assert.equal(r.status, 200, f); assert.ok(r.headers.get('content-type').startsWith(tur), f);
+    }
+    ok(`Arayüz kopyaları (${kaynaklar.length} dosya) src/Selcuk.Arayuz ile birebir aynı (SHA-256) ve sunuluyor`);
 
     console.log('Kasa');
     assert.equal((await api('/setup', { method: 'POST', body: { master: 'kisa' } })).status, 400); ok('Kısa ana şifre reddediliyor');

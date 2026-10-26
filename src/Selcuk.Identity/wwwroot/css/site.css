@@ -177,6 +177,16 @@
     white-space: nowrap;
 }
 
+/* IP adresi Mono, harf aralığı yok. */
+.gecmis td.mono {
+    letter-spacing: 0;
+}
+
+/* Saat dilimi geniş ekranda sütun başlığında; dar ekranda başlık gizlendiği için tablonun üstünde bir kez. */
+.gecmis-dilim {
+    display: none;
+}
+
 .gecmis-olay {
     display: flex;
     flex-wrap: wrap;
@@ -240,5 +250,10 @@
 
     .gecmis td.bos {
         display: none;
+    }
+
+    .gecmis-dilim {
+        display: block;
+        margin: calc(-1 * var(--a4)) 0 var(--a4);
     }
 }

@@ -19,9 +19,14 @@ namespace Selcuk.Demo.Obis.Tests;
 /// OpenID Connect challenge'ı ağ isteği yapmadan üretilir. sahteKimlik açıkken kullanıcı,
 /// istekteki X-Test-Rol başlığından oluşturulur (gerçek kimlik sunucusu yerine); oturumda sahte bir access token
 /// (<see cref="SahteAccessToken"/>) bulunur. Demo API'ye istekler demoApi işleyicisine gider; verilmezse API kapalıdır
-/// (bağlantı hatası), testler ağa çıkmaz.
+/// (bağlantı hatası), testler ağa çıkmaz. ortam verilirse (ör. Development: Token İnceleme) o ortamda çalışır;
+/// tokenlar verilirse oturumdaki token'lar onlardır.
 /// </summary>
-public sealed class ObisFactory(bool sahteKimlik = false, HttpMessageHandler? demoApi = null) : WebApplicationFactory<Program>
+public sealed class ObisFactory(
+    bool sahteKimlik = false,
+    HttpMessageHandler? demoApi = null,
+    string ortam = "Testing",
+    IReadOnlyList<AuthenticationToken>? tokenlar = null) : WebApplicationFactory<Program>
 {
     public const string RolBasligi = "X-Test-Rol";
     public const string SahteAccessToken = "test-erisim-tokeni";
@@ -30,9 +35,13 @@ public sealed class ObisFactory(bool sahteKimlik = false, HttpMessageHandler? de
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.UseEnvironment("Testing");
+        builder.UseEnvironment(ortam);
+        builder.UseStaticWebAssets();
         builder.ConfigureTestServices(services =>
         {
+            services.AddSingleton(new SahteTokenlar(tokenlar
+                ?? [new AuthenticationToken { Name = "access_token", Value = SahteAccessToken }]));
+
             services.PostConfigure<OpenIdConnectOptions>(OpenIdConnectDefaults.AuthenticationScheme, options =>
             {
                 options.Configuration = new OpenIdConnectConfiguration
@@ -79,8 +88,10 @@ public sealed class ObisFactory(bool sahteKimlik = false, HttpMessageHandler? de
         return client;
     }
 
+    private sealed record SahteTokenlar(IReadOnlyList<AuthenticationToken> Liste);
+
     private sealed class SahteKimlikHandler(
-        IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder)
+        IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder, SahteTokenlar tokenlar)
         : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
     {
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -98,7 +109,7 @@ public sealed class ObisFactory(bool sahteKimlik = false, HttpMessageHandler? de
             ], Scheme.Name, "name", "role");
 
             var ozellikler = new AuthenticationProperties();
-            ozellikler.StoreTokens([new AuthenticationToken { Name = "access_token", Value = SahteAccessToken }]);
+            ozellikler.StoreTokens(tokenlar.Liste);
             return Task.FromResult(AuthenticateResult.Success(
                 new AuthenticationTicket(new ClaimsPrincipal(identity), ozellikler, Scheme.Name)));
         }

@@ -105,7 +105,7 @@ else if (Model.Etkin)
                 <div class="alan">
                     <label for="yenile-kod">Uygulamadaki 6 haneli kod</label>
                     <input asp-for="Onay.Kod" id="yenile-kod" class="metin-alani kod-alani" type="text"
-                           inputmode="numeric" autocomplete="one-time-code" spellcheck="false" data-kod-alani />
+                           inputmode="numeric" autocomplete="one-time-code" spellcheck="false" data-kod-alani placeholder="000 000" />
                 </div>
                 <div class="dugmeler">
                     <button type="submit" class="dugme dugme-ana">Kodları yenile</button>
@@ -132,7 +132,7 @@ else if (Model.Etkin)
                     <div class="alan">
                         <label for="kapat-kod">Uygulamadaki 6 haneli kod</label>
                         <input asp-for="Onay.Kod" id="kapat-kod" class="metin-alani kod-alani" type="text"
-                               inputmode="numeric" autocomplete="one-time-code" spellcheck="false" data-kod-alani />
+                               inputmode="numeric" autocomplete="one-time-code" spellcheck="false" data-kod-alani placeholder="000 000" />
                     </div>
                     <div class="dugmeler">
                         <button type="submit" class="dugme dugme-tehlikeli">İki aşamalı doğrulamayı kapat</button>
@@ -179,7 +179,7 @@ else if (Model.Anahtar is not null)
                 <div class="alan">
                     <label for="Etkinlestirme_Kod">Uygulamanın gösterdiği 6 haneli kod</label>
                     <input asp-for="Etkinlestirme.Kod" class="metin-alani kod-alani" type="text" inputmode="numeric"
-                           autocomplete="one-time-code" spellcheck="false" data-kod-alani
+                           autocomplete="one-time-code" spellcheck="false" data-kod-alani placeholder="000 000"
                            aria-describedby="@(Html.FormHatasiVar() ? "form-hatasi" : null)" />
                 </div>
                 <div class="dugmeler">

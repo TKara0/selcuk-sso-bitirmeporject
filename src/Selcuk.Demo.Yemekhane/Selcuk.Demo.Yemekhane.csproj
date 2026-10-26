@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <ItemGroup>
+    <ProjectReference Include="..\Selcuk.Arayuz\Selcuk.Arayuz.csproj" />
     <ProjectReference Include="..\Selcuk.Istemci.Ortak\Selcuk.Istemci.Ortak.csproj" />
   </ItemGroup>
 

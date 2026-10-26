@@ -1,10 +1,15 @@
 @*
-    Ortak düzen: üst çubuk (küçük kapı işareti, uygulama adı, sağda hesap menüsü yuvası), içerik ve alt bilgi.
-    ViewData: Title, Duzen.Ayar.* (uygulama adı, genişlik, giriş düzeninde kapı paneli metinleri).
-    Bölümler: "Stiller" (uygulamanın kendi CSS'i), "HesapMenusu" (üst çubuğun sağı; giriş düzeninde gösterilmez).
+    Ortak düzen: üst çubuk (küçük kapı işareti veya uygulama simgesi, uygulama adı, sağda hesap menüsü yuvası),
+    isteğe bağlı sekmeler, içerik ve alt bilgi.
+    ViewData: Title, Duzen.Ayar.* (uygulama adı ve simgesi, genişlik, alt bilgi, giriş düzeninde kapı paneli metinleri).
+    Bölümler: "Stiller" (uygulamanın kendi CSS'i), "HesapMenusu" (üst çubuğun sağı), "Sekmeler" (üst çubuğun altında;
+    <nav class="sekmeler"><ul><li><a>…; gösterilecek sekme yoksa bölüm boş kalır); son ikisi giriş düzeninde
+    gösterilmez.
 *@
 @{
     var uygulama = ViewData[Duzen.Ayar.UygulamaAdi] as string ?? "Tek Şifre Giriş";
+    var simge = ViewData[Duzen.Ayar.UygulamaSimgesi] as string;
+    var altBilgi = ViewData[Duzen.Ayar.AltBilgi] as string ?? Duzen.AltBilgi;
     var sayfa = ViewData["Title"] as string;
     var genislik = ViewData[Duzen.Ayar.Genislik] as string;
     var giris = genislik == "giris";
@@ -26,6 +31,11 @@
     @if (giris)
     {
         IgnoreSection("HesapMenusu");
+        if (IsSectionDefined("Sekmeler"))
+        {
+            IgnoreSection("Sekmeler");
+        }
+
         <div class="giris-duzeni">
             <header class="kapi-paneli">
                 @Html.Raw(KapiIsareti.Buyuk)
@@ -38,24 +48,32 @@
                 <main id="icerik" class="giris-icerik">
                     @RenderBody()
                 </main>
-                <footer class="alt-bilgi"><p>@Duzen.AltBilgi</p></footer>
+                <footer class="alt-bilgi"><p>@altBilgi</p></footer>
             </div>
         </div>
     }
     else
     {
-        <header class="ust-cubuk">
+        <header class="ust-cubuk@(simge is null ? "" : " uygulama-cubugu")">
             <a class="marka" href="~/">
-                @Html.Raw(KapiIsareti.Kucuk)
+                @if (simge is null)
+                {
+                    @Html.Raw(KapiIsareti.Kucuk)
+                }
+                else
+                {
+                    <span class="uygulama-simgesi" aria-hidden="true">@simge</span>
+                }
                 <span>@uygulama</span>
                 <span class="etiket etiket-notr">Test</span>
             </a>
             @await RenderSectionAsync("HesapMenusu", required: false)
         </header>
-        <main id="icerik" class="icerik@(genislik is "dar" or "genis" ? " icerik-" + genislik : "")">
+        @await RenderSectionAsync("Sekmeler", required: false)
+        <main id="icerik" class="icerik@(genislik is "dar" or "genis" ? " icerik-" + genislik : "")@(simge is null ? "" : " uygulama-icerigi")">
             @RenderBody()
         </main>
-        <footer class="alt-bilgi"><p>@Duzen.AltBilgi</p></footer>
+        <footer class="alt-bilgi"><p>@altBilgi</p></footer>
     }
 </body>
 </html>

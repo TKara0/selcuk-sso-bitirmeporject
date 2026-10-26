@@ -2,16 +2,6 @@
 @model Selcuk.Demo.Yemekhane.Pages.ProfilimModel
 @{
     ViewData["Title"] = "Profilim";
-    var roller = User.FindAll("role").Select(c => c.Value).ToList();
+    ViewData[Duzen.Ayar.Genislik] = "dar";
 }
-<section class="kart">
-    <h1>Profilim</h1>
-    <dl class="bilgiler">
-        <dt>Ad soyad</dt><dd>@(User.Identity?.Name ?? "—")</dd>
-        <dt>Kullanıcı adı</dt><dd>@(User.FindFirst("preferred_username")?.Value ?? "—")</dd>
-        <dt>Rol</dt><dd>@(roller.Count > 0 ? string.Join(", ", roller) : "—")</dd>
-        <dt>Fakülte</dt><dd>@(User.FindFirst("fakulte")?.Value ?? "—")</dd>
-        <dt>Bölüm</dt><dd>@(User.FindFirst("bolum")?.Value ?? "—")</dd>
-        <dt>E-posta</dt><dd>@(User.FindFirst("email")?.Value ?? "—")</dd>
-    </dl>
-</section>
+<partial name="_IstemciProfili" />

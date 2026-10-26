@@ -18,6 +18,15 @@ public static class Duzen
         /// <summary>Üst çubukta ve sayfa başlığında uygulama adı (varsayılan "Tek Şifre Giriş").</summary>
         public const string UygulamaAdi = "UygulamaAdi";
 
+        /// <summary>
+        /// Alt uygulamanın simgesi (baş harfler, ör. "OB"). Verilirse üst çubukta kapı işareti yerine uygulamanın
+        /// renginde (--uygulama-vurgu) simge, üstte başlık şeridi; içerik uygulamanın renginde (uygulama-icerigi).
+        /// </summary>
+        public const string UygulamaSimgesi = "UygulamaSimgesi";
+
+        /// <summary>Alt bilgi metni (varsayılan <see cref="Duzen.AltBilgi"/>).</summary>
+        public const string AltBilgi = "AltBilgi";
+
         /// <summary>İçerik genişliği: "dar" (560px), "genis" (1040px), "giris" (kapı panelli giriş) veya boş (720px).</summary>
         public const string Genislik = "Duzen";
 

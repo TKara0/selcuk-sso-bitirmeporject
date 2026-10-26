@@ -1,0 +1,47 @@
+@*
+    Alt uygulamaların üst çubuğundaki hesap menüsü (kimlikle ilgili öğe: firuze ve küçük kapı işareti). Model: menüdeki
+    bağlantılar. Çıkış, uygulamanın /Cikis sayfasına POST (antiforgery'li form; RP-initiated logout). Girişsiz
+    kullanıcıya "Giriş yap" bağlantısı (/Giris). Menü davranışı selcuk.js'te (Esc kapatır).
+*@
+@model IReadOnlyList<HesapMenusuBaglantisi>
+@if (User.Identity?.IsAuthenticated == true)
+{
+    var kullaniciAdi = User.FindFirst("preferred_username")?.Value;
+
+    <nav class="hesap-menusu" aria-label="Hesap" data-menu>
+        <button type="button" class="hesap-dugmesi" aria-expanded="false" aria-controls="hesap-listesi" data-menu-dugme>
+            @Html.Raw(KapiIsareti.Kucuk)
+            <span class="gorunmez">Hesap menüsü:</span>
+            <span class="hesap-adi">@User.Identity.Name</span>
+            <span class="ok">@Html.Raw(Simge.AsagiOk)</span>
+        </button>
+        <ul class="hesap-listesi" id="hesap-listesi" hidden>
+            <li class="hesap-basligi">
+                <p><strong>@User.Identity.Name</strong></p>
+                @if (!string.IsNullOrEmpty(kullaniciAdi))
+                {
+                    <p class="ipucu mono">@kullaniciAdi</p>
+                }
+                <p class="ipucu">Tek Şifre ile giriş yapıldı</p>
+            </li>
+            @foreach (var baglanti in Model)
+            {
+                <li><a href="@baglanti.Adres" aria-current="@(baglanti.Gecerli ? "page" : null)">@baglanti.Metin</a></li>
+            }
+            <li class="ayirici">
+                <form method="post" asp-page="/Cikis">
+                    <button type="submit">Çıkış yap</button>
+                </form>
+            </li>
+        </ul>
+        <noscript>
+            <form method="post" asp-page="/Cikis">
+                <button type="submit" class="dugme dugme-ikincil">Çıkış yap</button>
+            </form>
+        </noscript>
+    </nav>
+}
+else
+{
+    <a class="dugme dugme-ikincil" href="/Giris">Giriş yap</a>
+}

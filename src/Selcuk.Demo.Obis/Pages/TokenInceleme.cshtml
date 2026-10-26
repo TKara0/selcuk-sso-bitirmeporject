@@ -2,50 +2,122 @@
 @model Selcuk.Demo.Obis.Pages.TokenIncelemeModel
 @{
     ViewData["Title"] = "Token İnceleme";
+    ViewData[Duzen.Ayar.Genislik] = "genis";
+    var tr = System.Globalization.CultureInfo.GetCultureInfo("tr-TR");
+    string Zaman(DateTimeOffset zaman) => zaman.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss", tr);
+    string Kalan(DateTimeOffset bitis) => bitis > DateTimeOffset.UtcNow
+        ? $"{(int)(bitis - DateTimeOffset.UtcNow).TotalMinutes} dk kaldı"
+        : "süresi doldu";
 }
-<section class="kart genis">
-    <h1>Token İnceleme</h1>
-    <p class="aciklama">
-        Yalnızca Development ortamında görünür. Token'ların çözülmüş header ve payload kısımları gösterilir;
-        imza kısmı gösterilmez.
-    </p>
+<h1>Token İnceleme</h1>
+<p class="giris-metni">
+    Yalnızca geliştirme ortamında görünür. Oturumdaki token'ların başlık ve içerik alanları çözülüp gösterilir; token'ın
+    kendisi ve imzası gösterilmez.
+</p>
 
-    @foreach (var token in Model.Tokenlar)
-    {
-        <h2>@token.Ad</h2>
-        @if (token.Bitis is { } bitis)
-        {
-            <p class="ipucu">
-                Son kullanma: <strong>@bitis.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")</strong>
-                (@(bitis > DateTimeOffset.UtcNow ? $"{(int)(bitis - DateTimeOffset.UtcNow).TotalMinutes} dk kaldı" : "süresi doldu"))
-            </p>
-        }
-        <h3>Header</h3>
-        <pre>@token.Header</pre>
-        <h3>Payload</h3>
-        <pre>@token.Payload</pre>
-    }
+@if (Model.Tokenlar.Count == 0)
+{
+    <p>Oturumda kayıtlı token bulunamadı.</p>
+}
 
-    <h2>refresh_token</h2>
-    @if (Model.RefreshTokenVar)
-    {
-        <p class="ipucu">
-            Oturumda bir refresh token <strong>var</strong> (değeri gösterilmez; kimlik sunucusunca şifrelenmiştir, istemci
-            içeriğini okuyamaz). Access token süresi dolmak üzereyken istek sırasında bununla yenilenir.
-            @if (Model.RefreshTokenBitis is { } rtBitis)
+@foreach (var token in Model.Tokenlar)
+{
+    var accessToken = token.Ad == "access_token";
+    <section class="bolum token-bolumu" aria-labelledby="baslik-@token.Ad">
+        <h2 id="baslik-@token.Ad" class="mono">@token.Ad</h2>
+        <p class="soluk">
+            @(accessToken
+                ? "Demo API'ye gönderilen erişim anahtarı (Authorization: Bearer). Kısa ömürlü; süresi dolmadan yenilenir."
+                : "Kimlik sunucusunun bu uygulamaya \"kullanıcı kim, nasıl giriş yaptı\" bilgisini verdiği token.")
+            @if (token.Bitis is { } bitis)
             {
-                <br />
-                <span>Son kullanma (yaklaşık): <strong>@rtBitis.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")</strong></span>
+                <span>Son kullanma: <strong>@Zaman(bitis)</strong> (@Kalan(bitis)).</span>
             }
         </p>
-    }
-    else
-    {
-        <p class="ipucu">Oturumda refresh token yok.</p>
-    }
 
-    @if (Model.Tokenlar.Count == 0)
-    {
-        <p>Oturumda kayıtlı token bulunamadı.</p>
-    }
+        @if (accessToken)
+        {
+            <div class="bant bant-uygulama">
+                @Html.Raw(Simge.Bilgi)
+                <p>Bu token kişisel bilgi içermez. Ad, e-posta, fakülte ve bölüm yalnızca id_token'da ve userinfo'da bulunur.</p>
+            </div>
+        }
+
+        <div class="tablo-kabi">
+            <table class="tablo claimler">
+                <caption class="gorunmez">@token.Ad içindeki alanlar</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Claim</th>
+                        <th scope="col">Değer</th>
+                        <th scope="col">Açıklama</th>
+                    </tr>
+                </thead>
+                @foreach (var (grup, satirlar) in new[] { ("Başlık (header)", token.Baslik), ("İçerik (payload)", token.Claimler) })
+                {
+                <tbody>
+                    <tr class="claim-grubu"><th scope="rowgroup" colspan="3">@grup</th></tr>
+                    @foreach (var claim in satirlar)
+                    {
+                        <tr>
+                            <th scope="row" class="claim-adi mono">@claim.Ad</th>
+                            <td class="claim-degeri"><span class="mono" title="@claim.TamDeger">@claim.Deger</span>@if (claim.Zaman is { } zaman)
+                                {
+                                    <span class="claim-zamani">@Zaman(zaman)</span>
+                                }</td>
+                            <td class="claim-aciklamasi">@claim.Aciklama</td>
+                        </tr>
+                    }
+                </tbody>
+                }
+            </table>
+        </div>
+
+        <details class="ham">
+            <summary>Ham hâlini göster</summary>
+            <h3>Başlık</h3>
+            <pre>@token.HamBaslik</pre>
+            <h3>İçerik</h3>
+            <pre>@token.HamYuk</pre>
+        </details>
+    </section>
+}
+
+<section class="bolum token-bolumu" aria-labelledby="baslik-refresh_token">
+    <h2 id="baslik-refresh_token" class="mono">refresh_token</h2>
+    <dl class="tanimlar">
+        <div>
+            <dt>Durum</dt>
+            <dd>
+                @if (Model.RefreshTokenVar)
+                {
+                    <span class="etiket etiket-uygulama">Var</span>
+                }
+                else
+                {
+                    <span class="etiket etiket-notr">Yok</span>
+                }
+            </dd>
+        </div>
+        @if (Model.RefreshTokenVar && Model.RefreshTokenBitis is { } rtBitis)
+        {
+            <div>
+                <dt>Son kullanma (yaklaşık)</dt>
+                <dd>@Zaman(rtBitis)</dd>
+            </div>
+        }
+    </dl>
+    <p class="soluk">
+        @if (Model.RefreshTokenVar)
+        {
+            <text>
+                Değeri gösterilmez: kimlik sunucusunca şifrelenmiştir, uygulama içeriğini okuyamaz. Access token'ın süresi
+                dolmak üzereyken istek sırasında bununla yenilenir.
+            </text>
+        }
+        else
+        {
+            <text>Oturumda refresh token yok.</text>
+        }
+    </p>
 </section>

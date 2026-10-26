@@ -144,8 +144,8 @@
         });
     }
 
-    // Kurtarma kodu geçişi: aynı alan iki biçimde; etiket, ipucu, klavye türü ve düğme metni değişir.
-    // <button data-kod-modu="alan-id" data-etiket-id data-ipucu-id data-*-kurtarma hidden>
+    // Kurtarma kodu geçişi: aynı alan iki biçimde; etiket, ipucu, yer tutucu, klavye türü ve düğme metni değişir.
+    // Boş ipucu gizlenir. <button data-kod-modu="alan-id" data-etiket-id data-ipucu-id data-*-kurtarma hidden>
     function kodModu(dugme) {
         var alan = document.getElementById(dugme.getAttribute("data-kod-modu"));
         var etiket = document.getElementById(dugme.getAttribute("data-etiket-id"));
@@ -155,10 +155,14 @@
         }
 
         var modlar = [
-            { etiket: etiket.textContent, ipucu: ipucu.textContent, dugme: dugme.textContent, klavye: "numeric", otomatik: "one-time-code" },
+            {
+                etiket: etiket.textContent, ipucu: ipucu.textContent, dugme: dugme.textContent,
+                yerTutucu: alan.getAttribute("placeholder") || "", klavye: "numeric", otomatik: "one-time-code"
+            },
             {
                 etiket: dugme.getAttribute("data-etiket-kurtarma"), ipucu: dugme.getAttribute("data-ipucu-kurtarma"),
-                dugme: dugme.getAttribute("data-dugme-kurtarma"), klavye: "text", otomatik: "off"
+                dugme: dugme.getAttribute("data-dugme-kurtarma"),
+                yerTutucu: dugme.getAttribute("data-yer-tutucu-kurtarma") || "", klavye: "text", otomatik: "off"
             }
         ];
         var sira = 0;
@@ -168,7 +172,9 @@
             var mod = modlar[sira];
             etiket.textContent = mod.etiket;
             ipucu.textContent = mod.ipucu;
+            ipucu.hidden = !mod.ipucu;
             dugme.textContent = mod.dugme;
+            alan.setAttribute("placeholder", mod.yerTutucu);
             alan.setAttribute("inputmode", mod.klavye);
             alan.setAttribute("autocomplete", mod.otomatik);
             alan.value = "";
@@ -213,6 +219,12 @@
         alan.addEventListener("input", denetle);
     }
 
+    // İşlem sonucu bandı: sayfa yüklendikten sonra canlı bölgeye yazılır (yükleme anında var olan metin duyurulmaz).
+    // <div data-duyur>…</div>
+    function duyuru(oge) {
+        duyur(oge.textContent.replace(/\s+/g, " ").trim());
+    }
+
     function hepsi(secici, islev) {
         Array.prototype.forEach.call(document.querySelectorAll(secici), islev);
     }
@@ -224,4 +236,5 @@
     hepsi("[data-kod-alani]", kodAlani);
     hepsi("[data-kod-modu]", kodModu);
     hepsi("[data-sifre-politikasi]", sifrePolitikasi);
+    hepsi("[data-duyur]", duyuru);
 })();

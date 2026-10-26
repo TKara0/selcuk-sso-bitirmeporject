@@ -95,6 +95,12 @@
     --kapi-metin: #E6EEF0;
     --kapi-soluk: #B9C9CF;
 
+    /* Uygulama vurgu rengi: alt uygulamanın kendi içeriği (başlık şeridi, sekme altı çizgisi, tablo vurguları,
+       kendi düğme ve bağlantıları). Her uygulama kendi CSS'inde açık ve koyu tema için verir. Varsayılan firuze
+       (metin tonu, --baglanti: taş ve yüzey zemininde AA). Kontrast tablosu: docs/tasarim/d2/README.md. */
+    --uygulama-vurgu: var(--baglanti);
+    --uygulama-vurgu-acik: var(--firuze-acik);
+
     /* Yazı */
     --yazi: "Atkinson Hyperlegible Next", system-ui, -apple-system, "Segoe UI", sans-serif;
     --yazi-mono: "Atkinson Hyperlegible Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
@@ -373,11 +379,12 @@ svg {
     line-height: 1.25;
 }
 
+/* Cümle panel genişliğine göre doğal kırılır: geniş panelde tek satır, darda kelime sınırından iki satır. */
 .kapi-cumlesi {
-    margin: 0;
-    max-width: 32ch;
+    margin: 0 auto;
+    max-width: 26em;
     color: var(--kapi-soluk);
-    text-wrap: balance;
+    text-wrap: pretty;
 }
 
 .giris-sutunu {
@@ -769,6 +776,11 @@ svg {
     border-radius: var(--kose-kontrol);
 }
 
+.etiket svg {
+    width: 16px;
+    height: 16px;
+}
+
 .etiket-tehlike {
     color: var(--kiremit);
     background: var(--kiremit-acik);
@@ -1011,6 +1023,47 @@ svg {
     }
 }
 
+/* Alt uygulamalardaki hesap menüsü: düğmede küçük kapı işareti (firuze: hesap Tek Şifre'den), listede başlık ve
+   çıkış formunun düğmesi bağlantı satırı görünümünde. */
+.hesap-dugmesi .kapi-kucuk {
+    flex: none;
+    width: 18px;
+    height: 21px;
+    color: var(--firuze);
+}
+
+.hesap-basligi {
+    margin: 0 0 var(--a2);
+    padding: var(--a2) var(--a4) var(--a3);
+    border-bottom: 1px solid var(--cizgi);
+}
+
+.hesap-basligi p {
+    margin: 0;
+}
+
+.hesap-listesi form {
+    margin: 0;
+}
+
+.hesap-listesi button {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: var(--dokunma);
+    padding: var(--a2) var(--a4);
+    font: inherit;
+    color: var(--murekkep);
+    text-align: left;
+    background: none;
+    border: 0;
+    cursor: pointer;
+}
+
+.hesap-listesi button:hover {
+    background: var(--firuze-acik);
+}
+
 /* ---------- Tek eylemli durum sayfaları (hata, erişim reddedildi, çıkış, 429) ---------- */
 
 .durum-sayfasi {
@@ -1021,11 +1074,290 @@ svg {
     margin-bottom: var(--a8);
 }
 
+/* Kapalı kapı (48px): başlığın üstünde; kimlik sunucusunda firuze, alt uygulamada uygulamanın rengi. */
+.kapi-kapali {
+    display: block;
+    flex: none;
+    margin: 0 0 var(--a4);
+    color: var(--uygulama-vurgu);
+}
+
+/* ---------- Alt uygulamalar: uygulama adı, simgesi, sekmeler ve vurgu rengi ---------- */
+
+/* Başlık şeridi: üst çubuğun üstünde uygulamanın renginde ince bir şerit. */
+.uygulama-cubugu {
+    border-top: 4px solid var(--uygulama-vurgu);
+}
+
+/* Uygulama simgesi: baş harfler, uygulamanın renginde. */
+.uygulama-simgesi {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 32px;
+    height: 32px;
+    font-size: var(--boyut-kucuk);
+    font-weight: 700;
+    line-height: 1;
+    color: var(--uygulama-vurgu);
+    background: var(--uygulama-vurgu-acik);
+    border-radius: var(--kose-kontrol);
+}
+
+/* Sekmeler: üst çubuğun altında; geçerli sayfanın altı uygulamanın renginde çizgili. Dar ekranda sekme satırı
+   kendi içinde kayar (sayfa yatay kaymaz). */
+.sekmeler {
+    background: var(--yuzey);
+    border-bottom: 1px solid var(--cizgi);
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+
+.sekmeler ul {
+    display: flex;
+    gap: var(--a6);
+    margin: 0;
+    padding: 0 var(--a4);
+    list-style: none;
+}
+
+.sekmeler a {
+    display: flex;
+    align-items: center;
+    min-height: var(--dokunma);
+    padding: var(--a2) 0 calc(var(--a2) - 3px);
+    color: var(--soluk);
+    white-space: nowrap;
+    text-decoration: none;
+    border-bottom: 3px solid transparent;
+}
+
+.sekmeler a:hover {
+    color: var(--murekkep);
+    border-bottom-color: var(--cizgi);
+}
+
+.sekmeler a[aria-current="page"] {
+    color: var(--murekkep);
+    font-weight: 700;
+    border-bottom-color: var(--uygulama-vurgu);
+}
+
+.sekmeler a:focus-visible {
+    outline-offset: -2px;
+}
+
+/* Alt uygulamanın kendi içeriğinde bağlantı, ikincil düğme ve odak halkası uygulamanın renginde. "Tek Şifre ile giriş
+   yap" (kimlikle ilgili) firuze kalır. */
+.uygulama-icerigi a:not(.dugme) {
+    color: var(--uygulama-vurgu);
+}
+
+.uygulama-icerigi :focus-visible,
+.sekmeler :focus-visible {
+    outline-color: var(--uygulama-vurgu);
+}
+
+.uygulama-icerigi .dugme-ikincil {
+    color: var(--uygulama-vurgu);
+}
+
+.uygulama-icerigi .dugme-ikincil:hover {
+    background: var(--uygulama-vurgu-acik);
+}
+
+.dugme-uygulama {
+    background: var(--uygulama-vurgu);
+    color: var(--yuzey);
+}
+
+.dugme-uygulama:hover {
+    background: color-mix(in srgb, var(--uygulama-vurgu) 80%, var(--murekkep));
+}
+
+.bant-uygulama {
+    background: var(--uygulama-vurgu-acik);
+    border-left-color: var(--uygulama-vurgu);
+}
+
+.bant-uygulama > svg {
+    color: var(--uygulama-vurgu);
+}
+
+.etiket-uygulama {
+    color: var(--uygulama-vurgu);
+    background: var(--uygulama-vurgu-acik);
+}
+
+/* "Tek Şifre ile giriş yap": küçük kapı işareti ve metin, firuze (kimlikle ilgili öğe). */
+.tek-sifre-girisi .kapi-kucuk {
+    width: 18px;
+    height: 21px;
+}
+
+.uygulama-icerigi .tek-sifre-girisi:focus-visible {
+    outline-color: var(--firuze);
+}
+
+.dugme-buyuk {
+    min-height: 52px;
+    padding: var(--a3) var(--a6);
+}
+
+/* Giriş yapılmamış ana sayfa: uygulama adı, tek cümle ve giriş düğmesi. */
+.karsilama {
+    padding: var(--a8) 0 var(--a4);
+}
+
+.karsilama .giris-metni {
+    max-width: 52ch;
+}
+
+/* ---------- Özet sayıları ---------- */
+
+.ozetler {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--a4);
+    margin: 0 0 var(--a6);
+}
+
+.ozet {
+    flex: 1 1 200px;
+    padding: var(--a3) var(--a5);
+    background: var(--yuzey);
+    border: 1px solid var(--cizgi);
+    border-left: 4px solid var(--uygulama-vurgu);
+    border-radius: var(--kose-kontrol);
+}
+
+.ozet dt {
+    color: var(--soluk);
+    font-size: var(--boyut-kucuk);
+}
+
+.ozet dd {
+    margin: 0;
+    font-size: var(--boyut-b2);
+    font-weight: 700;
+    line-height: 1.3;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Tablo ---------- */
+
+/* Yüzey zeminli, ayırıcı çizgili tablo; başlık satırının altı uygulamanın renginde. Sayılar sağa hizalı ve eşit
+   genişlikli rakamlarla (.sayi). Dar ekranda .tablo-yigin her satırı iki satırlık bir öğeye çevirir: başlık hücresi
+   (.yigin-baslik) üstte, diğerleri altta, data-etiket başlığıyla. */
+.tablo-kabi {
+    margin: 0 0 var(--a6);
+}
+
+.tablo {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--yuzey);
+    border: 1px solid var(--cizgi);
+    border-radius: var(--kose-yuzey);
+}
+
+.tablo th,
+.tablo td {
+    padding: var(--a3) var(--a4);
+    text-align: left;
+    vertical-align: middle;
+    border-top: 1px solid var(--cizgi);
+}
+
+.tablo thead th {
+    color: var(--soluk);
+    font-size: var(--boyut-kucuk);
+    font-weight: 700;
+    white-space: nowrap;
+    border-top: 0;
+    border-bottom: 2px solid var(--uygulama-vurgu);
+}
+
+.tablo tbody tr:first-child > * {
+    border-top: 0;
+}
+
+.tablo tbody th {
+    font-weight: 400;
+}
+
+.tablo .sayi {
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 719.98px) {
+    .tablo-yigin,
+    .tablo-yigin tbody,
+    .tablo-yigin tr,
+    .tablo-yigin th,
+    .tablo-yigin td {
+        display: block;
+    }
+
+    .tablo-yigin thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+    }
+
+    .tablo-yigin tr {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: var(--a1) var(--a4);
+        padding: var(--a3) var(--a4);
+        border-top: 1px solid var(--cizgi);
+    }
+
+    .tablo-yigin tbody tr:first-child {
+        border-top: 0;
+    }
+
+    .tablo-yigin th,
+    .tablo-yigin td {
+        padding: 0;
+        border: 0;
+        color: var(--soluk);
+        font-size: var(--boyut-kucuk);
+    }
+
+    .tablo-yigin .sayi {
+        text-align: left;
+    }
+
+    .tablo-yigin .yigin-baslik {
+        order: -1;
+        flex: 1 0 100%;
+        color: var(--murekkep);
+        font-size: var(--boyut-govde);
+    }
+
+    .tablo-yigin [data-etiket]::before {
+        content: attr(data-etiket) " ";
+    }
+}
+
 /* ---------- Dar ekran ---------- */
 
 @media (max-width: 479.98px) {
     .ust-cubuk {
         padding: var(--a2) var(--a3);
+    }
+
+    .sekmeler ul {
+        gap: var(--a5);
+        padding: 0 var(--a3);
     }
 
     .icerik {
@@ -1057,5 +1389,9 @@ svg {
 @media (min-width: 768px) {
     .ust-cubuk {
         padding: var(--a2) var(--a6);
+    }
+
+    .sekmeler ul {
+        padding: 0 var(--a6);
     }
 }

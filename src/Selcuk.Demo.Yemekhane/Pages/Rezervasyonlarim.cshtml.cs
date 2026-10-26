@@ -8,23 +8,31 @@ namespace Selcuk.Demo.Yemekhane.Pages;
 [Authorize]
 public class RezervasyonlarimModel(RezervasyonDeposu depo, TimeProvider zaman) : PageModel
 {
-    public IReadOnlyList<DateOnly> Rezervasyonlar { get; private set; } = [];
+    /// <summary>Listelenen günler: rezervasyon yapılabilecek günler ve (varsa) bunların dışındaki kayıtlı rezervasyonlar.</summary>
+    public IReadOnlyList<(DateOnly Gun, bool Rezervasyonlu)> Gunler { get; private set; } = [];
 
-    /// <summary>Henüz rezervasyon yapılmamış, seçilebilir günler.</summary>
-    public IReadOnlyList<DateOnly> Bos { get; private set; } = [];
+    /// <summary>Son işlemin sonucu (yönlendirmeden sonra bir kez gösterilir ve ekran okuyucuya duyurulur).</summary>
+    [TempData]
+    public string? Bildirim { get; set; }
 
     private string Kullanici => User.FindFirst("sub")?.Value ?? User.Identity!.Name!;
 
-    private IReadOnlyList<DateOnly> Gunler => Takvim.RezervasyonGunleri(DateOnly.FromDateTime(zaman.GetLocalNow().DateTime));
+    private IReadOnlyList<DateOnly> SecilebilirGunler =>
+        Takvim.RezervasyonGunleri(DateOnly.FromDateTime(zaman.GetLocalNow().DateTime));
 
-    public void OnGet() => Doldur();
+    public void OnGet()
+    {
+        var rezervasyonlar = depo.Listele(Kullanici);
+        Gunler = [.. SecilebilirGunler.Union(rezervasyonlar).Order().Select(g => (g, rezervasyonlar.Contains(g)))];
+    }
 
     public IActionResult OnPostEkle(DateOnly gun)
     {
         // Yalnızca listelenen günlere rezervasyon yapılabilir.
-        if (Gunler.Contains(gun))
+        if (SecilebilirGunler.Contains(gun))
         {
             depo.Ekle(Kullanici, gun);
+            Bildirim = $"{Takvim.Yaz(gun)} için rezervasyon yapıldı.";
         }
 
         return RedirectToPage();
@@ -32,13 +40,11 @@ public class RezervasyonlarimModel(RezervasyonDeposu depo, TimeProvider zaman) :
 
     public IActionResult OnPostIptal(DateOnly gun)
     {
-        depo.IptalEt(Kullanici, gun);
-        return RedirectToPage();
-    }
+        if (depo.IptalEt(Kullanici, gun))
+        {
+            Bildirim = $"{Takvim.Yaz(gun)} rezervasyonu iptal edildi.";
+        }
 
-    private void Doldur()
-    {
-        Rezervasyonlar = depo.Listele(Kullanici);
-        Bos = [.. Gunler.Except(Rezervasyonlar)];
+        return RedirectToPage();
     }
 }

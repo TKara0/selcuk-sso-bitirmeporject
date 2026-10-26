@@ -1,6 +1,11 @@
 using System.Net;
 using System.Text.RegularExpressions;
+using Selcuk.Arayuz;
+using Selcuk.Identity.Data;
+using Selcuk.Identity.Denetim;
 using Selcuk.Identity.Eposta;
+using Selcuk.Identity.Pages.Account;
+using Selcuk.Identity.Pages.Connect;
 
 namespace Selcuk.Identity.Tests;
 
@@ -132,6 +137,77 @@ public sealed partial class ArayuzTests : IDisposable
         Assert.DoesNotContain("url(", html);
         Assert.All(DisAdres().Matches(html), m => Assert.StartsWith("https://localhost:5001/Account/SifreSifirla?", m.Value));
     }
+
+    [Fact]
+    public async Task Kapi_isaretlerinin_svg_dosyalari_koddaki_isaretlerle_ayni_ve_sunuluyor()
+    {
+        // Tek Kapı bu dosyaları kopyalar (scripts/arayuz-esitle.ps1); kaynak KapiIsareti'dir.
+        var client = _factory.HttpsIstemcisi();
+        foreach (var (dosya, svg) in new[]
+        {
+            ("kapi-kucuk.svg", KapiIsareti.Kucuk), ("kapi-buyuk.svg", KapiIsareti.Buyuk), ("kapi-kapali.svg", KapiIsareti.Kapali),
+        })
+        {
+            var yanit = await client.GetAsync(Kok + "img/" + dosya);
+            Assert.Equal(HttpStatusCode.OK, yanit.StatusCode);
+            Assert.Equal("image/svg+xml", yanit.Content.Headers.ContentType?.MediaType);
+            Assert.Equal(KapiIsareti.Dosya(svg), (await yanit.Content.ReadAsStringAsync()).ReplaceLineEndings("\n"));
+        }
+    }
+
+    [Fact]
+    public async Task Giris_onay_ve_hata_sayfalari_D1_duzeltmeleriyle_ciziliyor()
+    {
+        var client = _factory.HttpsIstemcisi();
+
+        var giris = WebUtility.HtmlDecode(await (await client.GetAsync("/Account/Login")).Content.ReadAsStringAsync());
+        Assert.Contains("<p class=\"kapi-cumlesi\">Fakültedeki bütün uygulamalar için tek hesap.</p>", giris);
+        Assert.Equal(("Profil", "Adın, fakülte ve bölüm bilgilerin"), AuthorizeModel.KapsamBilgisi("profile"));
+
+        // Hata sayfalarında başlığın üstünde 48px kapalı kapı işareti.
+        foreach (var sayfa in new[] { "/Account/AccessDenied", "/Hata" })
+        {
+            var html = await (await client.GetAsync(sayfa)).Content.ReadAsStringAsync();
+            Assert.Matches(new Regex(
+                @"<div class=""durum-sayfasi"">\s*<svg class=""kapi-kapali"" viewBox=""0 0 48 48"" width=""48"" height=""48""[^>]* aria-hidden=""true"""), html);
+        }
+    }
+
+    [Fact]
+    public async Task Iki_adim_sayfasinda_yardim_cumlesi_yok_kod_alani_yer_tutuculu()
+    {
+        var (kullaniciAdi, sifre) = await _factory.KullaniciOlusturAsync();
+        await _factory.IkiAdimAcAsync(kullaniciAdi);
+        var client = _factory.HttpsIstemcisi();
+
+        var giris = await SelcukIdentityFactory.GirisYapAsync(client, kullaniciAdi, sifre);
+        var html = WebUtility.HtmlDecode(await (await client.GetAsync(giris.Headers.Location)).Content.ReadAsStringAsync());
+
+        Assert.DoesNotContain("Telefonun yanında değilse", html);
+        Assert.Contains("placeholder=\"000 000\"", html);
+        Assert.Contains("data-yer-tutucu-kurtarma=\"XXXXX-XXXXX\"", html);
+        Assert.Contains(">Kurtarma kodu kullan</button>", html);
+    }
+
+    [Fact]
+    public async Task Guvenlik_gecmisinde_saat_dilimi_yalnizca_sutun_basliginda()
+    {
+        var (kullaniciAdi, sifre) = await _factory.KullaniciOlusturAsync();
+        var client = _factory.HttpsIstemcisi();
+        await SelcukIdentityFactory.GirisYapAsync(client, kullaniciAdi, sifre);
+        var kullaniciId = (await _factory.KullaniciAsync(kullaniciAdi)).Id;
+        await _factory.DenetimKayitlariAsync(k => k.Any(x => x.KullaniciId == kullaniciId && x.OlayTuru == DenetimOlayi.GirisBasarili));
+
+        var html = WebUtility.HtmlDecode(await (await client.GetAsync("/Account/GuvenlikGecmisi")).Content.ReadAsStringAsync());
+
+        var dilim = GuvenlikGecmisiModel.SaatDilimi;
+        Assert.Contains($"<th scope=\"col\" role=\"columnheader\">Zaman ({dilim})</th>", html);
+        Assert.Matches(new Regex(@"<td role=""cell"" data-etiket=""Zaman"">\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}</td>"), html);
+        Assert.Single(Regex.Matches(GecmisTablosu().Match(html).Value, Regex.Escape($"({dilim})")));
+    }
+
+    [GeneratedRegex("<table class=\"gecmis\".*?</table>", RegexOptions.Singleline)]
+    private static partial Regex GecmisTablosu();
 
     [GeneratedRegex(@"https?://[^\s""<]+")]
     private static partial Regex DisAdres();

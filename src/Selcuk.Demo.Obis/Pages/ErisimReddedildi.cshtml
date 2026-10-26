@@ -1,12 +1,11 @@
 @page
 @{
     ViewData["Title"] = "Erişim reddedildi";
+    ViewData[Duzen.Ayar.Genislik] = "dar";
 }
-<section class="kart">
+<div class="durum-sayfasi">
+    @Html.Raw(KapiIsareti.Kapali)
     <h1>Erişim reddedildi</h1>
-    <p class="aciklama">
-        Bu sayfayı görüntüleme yetkiniz yok. Sayfa yalnızca ilgili role sahip kullanıcılara açıktır
-        (ör. Notlarım öğrencilere, Ders Yönetimi akademisyenlere).
-    </p>
-    <a class="dugme ikincil" href="/">Ana sayfaya dön</a>
-</section>
+    <p class="giris-metni">Bu sayfayı açma yetkin yok. Notlarım yalnızca öğrencilere, Ders Yönetimi yalnızca akademisyenlere açıktır.</p>
+    <a class="dugme dugme-uygulama" href="/">Ana sayfaya dön</a>
+</div>

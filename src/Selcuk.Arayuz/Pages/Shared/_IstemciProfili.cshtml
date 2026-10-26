@@ -1,0 +1,42 @@
+@* Alt uygulamaların Profilim sayfası: kimlik sunucusundan gelen claim'ler (id_token ve userinfo). *@
+@{
+    string Rol(string rol) => rol switch
+    {
+        "ogrenci" => "Öğrenci",
+        "akademisyen" => "Akademisyen",
+        "personel" => "Personel",
+        _ => rol,
+    };
+
+    var roller = User.FindAll("role").Select(c => Rol(c.Value)).ToList();
+    var kullaniciAdi = User.FindFirst("preferred_username")?.Value;
+}
+<h1>Profilim</h1>
+<p class="giris-metni">Bu bilgiler Tek Şifre Giriş Sistemi'nden gelir; değişiklik için birim yöneticine başvur.</p>
+
+<dl class="tanimlar">
+    <div>
+        <dt>Ad soyad</dt>
+        <dd>@(User.Identity?.Name ?? "—")</dd>
+    </div>
+    <div>
+        <dt>Kullanıcı adı</dt>
+        <dd>@if (kullaniciAdi is null) { <span>—</span> } else { <span class="mono">@kullaniciAdi</span> }</dd>
+    </div>
+    <div>
+        <dt>Rol</dt>
+        <dd>@(roller.Count > 0 ? string.Join(", ", roller) : "—")</dd>
+    </div>
+    <div>
+        <dt>Fakülte</dt>
+        <dd>@(User.FindFirst("fakulte")?.Value ?? "—")</dd>
+    </div>
+    <div>
+        <dt>Bölüm</dt>
+        <dd>@(User.FindFirst("bolum")?.Value ?? "—")</dd>
+    </div>
+    <div>
+        <dt>E-posta</dt>
+        <dd>@(User.FindFirst("email")?.Value ?? "—")</dd>
+    </div>
+</dl>

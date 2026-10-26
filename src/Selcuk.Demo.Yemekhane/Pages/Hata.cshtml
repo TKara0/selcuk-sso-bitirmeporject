@@ -2,9 +2,11 @@
 @attribute [Microsoft.AspNetCore.Mvc.IgnoreAntiforgeryToken]
 @{
     ViewData["Title"] = "Hata";
+    ViewData[Duzen.Ayar.Genislik] = "dar";
 }
-<section class="kart">
+<div class="durum-sayfasi">
+    @Html.Raw(KapiIsareti.Kapali)
     <h1>Bir hata oluştu</h1>
-    <p class="aciklama">İsteğiniz işlenemedi. Lütfen daha sonra tekrar deneyin.</p>
-    <a class="dugme ikincil" href="/">Ana sayfaya dön</a>
-</section>
+    <p class="giris-metni">İsteğin işlenemedi. Birkaç dakika sonra tekrar dene.</p>
+    <a class="dugme dugme-uygulama" href="/">Ana sayfaya dön</a>
+</div>

@@ -70,11 +70,22 @@ public static class EpostaSablonlari
 
     private const string OtomatikSatiri = "Bu e-posta otomatik gönderildi, yanıtlama.";
 
-    /// <summary>Türkiye saatiyle "gg.aa.yyyy SS:dd (TSİ)"; güvenlik geçmişi sayfası da kullanır.</summary>
-    internal static string Bicimle(DateTimeOffset zaman) =>
-        TimeZoneInfo.TryFindSystemTimeZoneById("Europe/Istanbul", out var tsi)
-            ? TimeZoneInfo.ConvertTime(zaman, tsi).ToString("dd.MM.yyyy HH:mm", Turkce) + " (TSİ)"
-            : zaman.UtcDateTime.ToString("dd.MM.yyyy HH:mm", Turkce) + " (UTC)";
+    /// <summary>Türkiye saatiyle "gg.aa.yyyy SS:dd (TSİ)".</summary>
+    internal static string Bicimle(DateTimeOffset zaman) => $"{DilimsizBicimle(zaman)} ({SaatDilimi})";
+
+    /// <summary>
+    /// Saat dilimi eki olmadan "gg.aa.yyyy SS:dd"; güvenlik geçmişi sayfası dilimi sütun başlığında yazar
+    /// (<see cref="SaatDilimi"/>).
+    /// </summary>
+    internal static string DilimsizBicimle(DateTimeOffset zaman) =>
+        (Tsi is { } tsi ? TimeZoneInfo.ConvertTime(zaman, tsi).DateTime : zaman.UtcDateTime)
+            .ToString("dd.MM.yyyy HH:mm", Turkce);
+
+    /// <summary>"TSİ"; sistemde Europe/Istanbul yoksa zamanlar UTC yazılır.</summary>
+    internal static string SaatDilimi => Tsi is null ? "UTC" : "TSİ";
+
+    private static TimeZoneInfo? Tsi =>
+        TimeZoneInfo.TryFindSystemTimeZoneById("Europe/Istanbul", out var tsi) ? tsi : null;
 
     // Gövde blokları: paragraf veya (yalnızca şifre sıfırlamada) bağlantı.
     private sealed record Blok(string Metin, Uri? Adres = null);

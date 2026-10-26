@@ -50,13 +50,19 @@ function ayarlariOku(dataDir) {
 
 const kacis = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
-// Portal tasarımıyla aynı stil dosyasını kullanan küçük Türkçe bilgi sayfası (CSP: satır içi stil/betik yok)
+// Portal tasarımıyla aynı stil dosyalarını kullanan küçük Türkçe bilgi sayfası: üst çubuk, kapalı kapı işareti, başlık
+// ve metin (CSP: satır içi stil/betik yok)
 function sayfa(res, durum, baslik, metin, tekrarDene = true) {
   res.status(durum).type('html').send(`<!doctype html>
 <html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tek Kapı</title><link rel="stylesheet" href="/style.css"></head>
-<body><main><section class="auth"><h1>${kacis(baslik)}</h1><p class="lead">${kacis(metin)}</p>
-${tekrarDene ? '<a class="ghost" href="/auth/login">Tekrar giriş yap</a>' : ''}</section></main></body></html>`);
+<meta name="color-scheme" content="light dark"><title>Tek Kapı</title>
+<link rel="stylesheet" href="/arayuz/css/selcuk.css"><link rel="stylesheet" href="/style.css"></head>
+<body><header class="ust-cubuk"><a class="marka" href="/"><span class="isaret isaret-kucuk" aria-hidden="true"></span><span>Tek Kapı</span>
+<span class="etiket etiket-notr">Yerel</span></a></header>
+<main class="icerik icerik-dar"><div class="durum-sayfasi"><span class="isaret isaret-kapali" aria-hidden="true"></span>
+<h1>${kacis(baslik)}</h1><p class="giris-metni">${kacis(metin)}</p>
+${tekrarDene ? '<a class="dugme dugme-ana" href="/auth/login">Tekrar giriş yap</a>' : ''}</div></main>
+<footer class="alt-bilgi"><p>Şifreler bu bilgisayarda AES-256-GCM ile şifreli durur, hiçbir sunucuya gönderilmez.</p></footer></body></html>`);
 }
 
 function cerezOku(req, ad) {

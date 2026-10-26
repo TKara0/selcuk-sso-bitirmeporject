@@ -18,14 +18,15 @@
             <label for="Input_Kod" id="kod-etiketi">Doğrulama kodu</label>
             <input asp-for="Input.Kod" class="metin-alani kod-alani" type="text" inputmode="numeric"
                    autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" autofocus data-kod-alani
+                   placeholder="000 000"
                    aria-describedby="@("kod-ipucu kod-hatasi" + formHatasi)" aria-invalid="@Html.AlanHatali("Input.Kod")" />
-            <p class="ipucu" id="kod-ipucu">Telefonun yanında değilse kurtarma kodlarından birini de yazabilirsin.</p>
+            <p class="ipucu" id="kod-ipucu" hidden></p>
             <span asp-validation-for="Input.Kod" id="kod-hatasi" class="alan-hatasi"></span>
             <div>
                 <button type="button" class="dugme-baglanti" data-kod-modu="Input_Kod" data-etiket-id="kod-etiketi"
                         data-ipucu-id="kod-ipucu" data-etiket-kurtarma="Kurtarma kodu"
                         data-ipucu-kurtarma="Kurtarma kodları XXXXX-XXXXX biçimindedir, her biri bir kez kullanılır."
-                        data-dugme-kurtarma="Doğrulama kodu kullan" hidden>Kurtarma kodu kullan</button>
+                        data-dugme-kurtarma="Doğrulama kodu kullan" data-yer-tutucu-kurtarma="XXXXX-XXXXX" hidden>Kurtarma kodu kullan</button>
             </div>
         </div>
 

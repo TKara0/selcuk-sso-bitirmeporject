@@ -1,20 +1,46 @@
 @page
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Ortam
 @{
     ViewData["Title"] = "Ana sayfa";
 }
-<section class="kart">
-    <h1>Demo OBİS</h1>
-    <p class="aciklama">
-        Merkezi kimlik sunucusuna OpenID Connect ile bağlanan örnek öğrenci bilgi sistemi.
-        Tek kullanıcı adı ve şifrenizle giriş yapın.
-    </p>
-    @if (User.Identity?.IsAuthenticated == true)
-    {
-        <p>Hoş geldiniz, <strong>@User.Identity.Name</strong>.</p>
-        <a class="dugme ikincil" asp-page="/Profilim">Profilim</a>
-    }
-    else
-    {
-        <a class="dugme birincil" asp-page="/Giris">Giriş yap</a>
-    }
-</section>
+@if (User.Identity?.IsAuthenticated != true)
+{
+    <section class="karsilama">
+        <h1 class="baslik-buyuk">Demo OBİS</h1>
+        <p class="giris-metni">Notlarını ve derslerini gösteren örnek öğrenci bilgi sistemi. Fakültenin tek hesabıyla girilir.</p>
+        <partial name="_TekSifreGirisi" model="@Url.Page("/Giris")" />
+    </section>
+}
+else
+{
+    <h1>Hoş geldin, @User.Identity.Name</h1>
+    <p class="giris-metni">Demo OBİS'e Tek Şifre ile giriş yaptın; diğer uygulamalara şifre sormadan geçebilirsin.</p>
+
+    <ul class="satirlar">
+        @if (User.IsInRole(Roller.Ogrenci))
+        {
+            <li>
+                <p class="satir-baslik"><a asp-page="/Notlarim">Notlarım</a></p>
+                <p class="ipucu">Bu dönemin notları, toplam kredi ve ağırlıklı ortalama.</p>
+            </li>
+        }
+        @if (User.IsInRole(Roller.Akademisyen))
+        {
+            <li>
+                <p class="satir-baslik"><a asp-page="/DersYonetimi">Ders Yönetimi</a></p>
+                <p class="ipucu">Bu dönem verdiğin dersler ve öğrenci sayıları.</p>
+            </li>
+        }
+        <li>
+            <p class="satir-baslik"><a asp-page="/Profilim">Profilim</a></p>
+            <p class="ipucu">Kimlik sunucusundan gelen ad, rol, fakülte ve bölüm bilgilerin.</p>
+        </li>
+        @if (Ortam.IsDevelopment())
+        {
+            <li>
+                <p class="satir-baslik"><a asp-page="/TokenInceleme">Token İnceleme</a></p>
+                <p class="ipucu">id_token ve access_token içeriği (yalnızca geliştirme ortamında).</p>
+            </li>
+        }
+    </ul>
+}

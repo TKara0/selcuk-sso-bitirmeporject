@@ -1,37 +1,32 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>@ViewData["Title"] · Demo Yemekhane</title>
+@* Demo Yemekhane'nin düzeni: ortak düzen (Selcuk.Arayuz) + uygulama adı, simgesi, sekmeler ve hesap menüsü. *@
+@{
+    Layout = "_SelcukDuzen";
+    ViewData[Duzen.Ayar.UygulamaAdi] = "Demo Yemekhane";
+    ViewData[Duzen.Ayar.UygulamaSimgesi] = "DY";
+    ViewData[Duzen.Ayar.AltBilgi] = "Demo Yemekhane yalnızca test amaçlıdır, veriler uydurmadır. Giriş Tek Şifre Giriş Sistemi ile yapılır.";
+
+    var gecerli = ViewContext.RouteData.Values["page"] as string;
+    string? Gecerli(string sayfa) => gecerli == sayfa ? "page" : null;
+}
+@section Stiller {
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-</head>
-<body>
-    <header class="ust">
-        <a class="marka" href="/">Demo Yemekhane — test uygulaması</a>
-        <nav class="menu">
-            <a asp-page="/Index">Haftalık menü</a>
-            @if (User.Identity?.IsAuthenticated == true)
-            {
-                <a asp-page="/Rezervasyonlarim">Rezervasyonlarım</a>
+}
+@section HesapMenusu {
+    <partial name="_IstemciHesapMenusu" model="@(new[] { new HesapMenusuBaglantisi("Profilim", Url.Page("/Profilim")!, gecerli == "/Profilim") })" />
+}
+@section Sekmeler {
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <nav class="sekmeler" aria-label="@ViewData[Duzen.Ayar.UygulamaAdi]">
+            <ul>
+                <li><a asp-page="/Index" aria-current="@Gecerli("/Index")">Haftalık menü</a></li>
+                <li><a asp-page="/Rezervasyonlarim" aria-current="@Gecerli("/Rezervasyonlarim")">Rezervasyonlarım</a></li>
                 @if (User.IsInRole(Roller.Personel))
                 {
-                    <a asp-page="/YemekhaneYonetimi">Yemekhane Yönetimi</a>
+                    <li><a asp-page="/YemekhaneYonetimi" aria-current="@Gecerli("/YemekhaneYonetimi")">Yemekhane Yönetimi</a></li>
                 }
-                <a asp-page="/Profilim">Profilim</a>
-                <form method="post" asp-page="/Cikis" class="satir-ici">
-                    <button type="submit" class="baglanti">Çıkış</button>
-                </form>
-            }
-            else
-            {
-                <a asp-page="/Giris">Giriş yap</a>
-            }
+            </ul>
         </nav>
-    </header>
-    <main class="kap">
-        @RenderBody()
-    </main>
-    <footer class="alt">Bu uygulama yalnızca test amaçlıdır; veriler uydurmadır.</footer>
-</body>
-</html>
+    }
+}
+@RenderBody()

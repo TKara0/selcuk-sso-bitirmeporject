@@ -17,10 +17,18 @@ async function api(path, opts = {}) {
   return data;
 }
 
+// Kilit ve kurulum ekranı kapı paneli düzeninde (solda panel), ana ekran ve ayarlar üst çubuklu geniş düzende.
 function show(id) {
   views.forEach((v) => { $('#' + v).hidden = v !== id; });
   const inside = id === 'viewHome' || id === 'viewSettings';
   $('#topActions').hidden = !inside;
+  $('#duzen').classList.toggle('giris-duzeni', !inside);
+  $('#sutun').classList.toggle('giris-sutunu', !inside);
+  $('#kapiPaneli').hidden = inside;
+  $('#icerik').className = inside ? 'icerik icerik-genis' : 'giris-icerik';
+  const kasa = $('#kasaDurumu');
+  kasa.dataset.durum = inside ? 'acik' : 'kilitli';
+  $('#kasaMetni').textContent = inside ? 'Kasa açık' : 'Kasa kilitli';
   const f = $('#' + id).querySelector('input');
   if (f && id !== 'viewHome') f.focus();
 }
@@ -49,43 +57,54 @@ async function route() {
   pollTimer = setInterval(() => { refreshEvents(); }, 2000);
 }
 
-const GLYPHS = { obis: 'OB', posta: '@', uzem: 'UZ', sinav: 'US', yemek: 'YM' };
+const GLYPHS = { obis: 'OB', posta: 'EP', uzem: 'UZ', sinav: 'US', yemek: 'YM' };
+// Yarı otomatik sistemlerde kullanıcıda kalan adım
+const ASSIST = { obis: 'CAPTCHA sende', yemek: 'Giriş Yap ve 2FA sende' };
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
 
 async function renderHome() {
   const sites = await api('/sites');
-  const grid = $('#tiles');
-  grid.innerHTML = '';
+  const list = $('#tiles');
+  list.innerHTML = '';
   $('#setupNotice').hidden = sites.every((s) => s.ready);
   for (const s of sites) {
-    const b = document.createElement('button');
-    b.className = 'tile';
+    const li = el('li', 'sistem');
+    const glyph = el('span', 'uygulama-simgesi sistem-simgesi', GLYPHS[s.id] || s.name.slice(0, 2));
+    glyph.setAttribute('aria-hidden', 'true');
+    const info = el('div', 'sistem-bilgisi');
+    // Alan adı dar ekranda yalnızca noktalardan sonra kırılsın
+    const host = el('p', 'ipucu mono sistem-alani');
+    s.host.split('.').forEach((parca, i, hepsi) => {
+      host.append(parca + (i < hepsi.length - 1 ? '.' : ''));
+      if (i < hepsi.length - 1) host.appendChild(document.createElement('wbr'));
+    });
+    info.append(el('p', 'sistem-adi', s.name), host);
+    const tags = el('div', 'sistem-etiketleri');
+    const tag = el('span', s.mode === 'auto' ? 'etiket' : 'etiket etiket-notr',
+      s.mode === 'auto' ? 'Otomatik' : (ASSIST[s.id] || 'Yarı otomatik'));
+    if (s.mode === 'assist' && s.assistNote) tag.title = s.assistNote;
+    tags.appendChild(tag);
+    if (!s.ready) tags.appendChild(el('span', 'etiket etiket-tehlike', 'Bilgi eksik'));
+    else if (s.failed) tags.appendChild(el('span', 'etiket etiket-tehlike', 'Giriş başarısız, şifreni kontrol et'));
+    const b = el('button', 'dugme dugme-ana');
+    b.type = 'button';
+    b.append('Aç', el('span', 'gorunmez', ': ' + s.name));
     b.disabled = !s.ready;
     b.title = s.ready ? `${s.name} sitesini aç` : 'Önce Ayarlar\'dan bilgilerini ekle';
-    b.innerHTML = `
-      <div class="tile-head">
-        <span class="glyph" aria-hidden="true"></span>
-        <div><div class="tile-name"></div><div class="tile-host"></div></div>
-      </div>
-      <p class="tile-desc"></p>
-      <div class="chips"></div>
-      <p class="tile-note"></p>`;
-    b.querySelector('.glyph').textContent = GLYPHS[s.id] || s.name.slice(0, 2);
-    b.querySelector('.tile-name').textContent = s.name;
-    b.querySelector('.tile-host').textContent = s.host;
-    b.querySelector('.tile-desc').textContent = s.desc;
-    const chips = b.querySelector('.chips');
-    const chip = (cls, txt) => { const c = document.createElement('span'); c.className = 'chip ' + cls; c.textContent = txt; chips.appendChild(c); };
-    if (!s.ready) chip('missing', 'Bilgi eksik');
-    else if (s.failed) chip('failed', 'Giriş başarısız, şifreni kontrol et');
-    else chip(s.mode === 'auto' ? 'auto' : 'assist', s.mode === 'auto' ? 'Otomatik giriş' : 'Yarı otomatik');
-    b.querySelector('.tile-note').textContent = s.mode === 'assist' ? s.assistNote : '';
     b.addEventListener('click', async () => {
       b.disabled = true;
       try { await api('/open/' + s.id, { method: 'POST' }); }
       catch (e) { alertInline(e.message); }
       finally { setTimeout(() => { b.disabled = !s.ready; }, 1200); }
     });
-    grid.appendChild(b);
+    li.append(glyph, info, tags, b);
+    list.appendChild(li);
   }
   await refreshEvents(true);
   await renderMetrics();
@@ -98,6 +117,7 @@ async function renderMetrics() {
   try { data = await api('/metrics/summary'); } catch { return; }
   const tbody = $('#metricsTable tbody');
   tbody.innerHTML = '';
+  const heads = ['Sistem', 'Giriş', 'Ort. giriş süresi', 'Bunun senin payın', 'Oturum hatırlandı', 'Başarısız'];
   for (const s of data.sites) {
     const tr = document.createElement('tr');
     const cells = [
@@ -105,29 +125,31 @@ async function renderMetrics() {
       String(s.giris),
       fmtSec(s.ortGirisMs),
       s.mode === 'assist' ? fmtSec(s.ortKullaniciMs) : 'otomatik',
-      s.oturumHatirlandi ? `${s.oturumHatirlandi} kez · ${fmtSec(s.ortHatirlandiMs)}` : '0',
+      s.oturumHatirlandi ? `${s.oturumHatirlandi} kez, ort. ${fmtSec(s.ortHatirlandiMs)}` : '0',
       String(s.basarisiz),
     ];
     cells.forEach((v, i) => {
-      const td = document.createElement('td');
-      td.textContent = v;
-      if (i > 0) td.className = 'num';
-      if (v === '–' || v === '0' || v === 'otomatik') td.classList.add('muted');
+      const td = el(i === 0 ? 'th' : 'td', i === 0 ? 'yigin-baslik' : 'sayi', v);
+      if (i === 0) td.scope = 'row';
+      else td.dataset.etiket = heads[i];
+      if (v === '–' || v === '0' || v === 'otomatik') td.classList.add('soluk');
       tr.appendChild(td);
     });
     tbody.appendChild(tr);
   }
 }
 
-function infoInline(msg) {
-  $('#homeInfo').textContent = msg;
-  setTimeout(() => { $('#homeInfo').textContent = ''; }, 6000);
+function bant(sel, msg) {
+  const b = $(sel);
+  b.querySelector('p').textContent = msg;
+  b.hidden = false;
+  clearTimeout(b._zaman);
+  b._zaman = setTimeout(() => { b.hidden = true; b.querySelector('p').textContent = ''; }, 6000);
 }
 
-function alertInline(msg) {
-  $('#homeError').textContent = msg;
-  setTimeout(() => { $('#homeError').textContent = ''; }, 6000);
-}
+function infoInline(msg) { bant('#homeInfo', msg); }
+
+function alertInline(msg) { bant('#homeError', msg); }
 
 async function refreshEvents(reset = false) {
   if (reset) { lastEventId = 0; $('#events').innerHTML = ''; }
@@ -136,21 +158,24 @@ async function refreshEvents(reset = false) {
   const list = $('#events');
   for (const e of evs) {
     lastEventId = Math.max(lastEventId, e.id);
-    const li = document.createElement('li');
-    const t = document.createElement('time');
-    t.textContent = new Date(e.at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-    const src = document.createElement('span'); src.className = 'src'; src.textContent = e.source;
-    const txt = document.createElement('span'); txt.textContent = e.text;
-    li.append(t, src, txt);
-    list.prepend(li);
+    const tr = document.createElement('tr');
+    const t = el('td');
+    const time = el('time', null, new Date(e.at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }));
+    time.dateTime = new Date(e.at).toISOString();
+    t.appendChild(time);
+    tr.append(t, el('td', 'kaynak', e.source), el('td', 'yigin-baslik', e.text));
+    list.prepend(tr);
     if (!reset && /başarısız|güncellendi/i.test(e.text)) setTimeout(renderHome, 0);
     else if (!reset && /ölçüldü/.test(e.text)) setTimeout(renderMetrics, 0);
   }
+  list.querySelectorAll('.bos-satir').forEach((x) => x.remove());
   while (list.children.length > 12) list.lastChild.remove();
   if (!list.children.length) {
-    const li = document.createElement('li'); li.className = 'empty'; li.textContent = 'Henüz bir işlem yok.'; list.appendChild(li);
-  } else {
-    list.querySelectorAll('.empty').forEach((x) => x.remove());
+    const tr = el('tr', 'bos-satir');
+    const td = el('td', 'bos', 'Henüz bir işlem yok.');
+    td.colSpan = 3;
+    tr.appendChild(td);
+    list.appendChild(tr);
   }
 }
 
@@ -162,7 +187,7 @@ async function openSettings() {
   f.ogrMail.value = c.ogrMail;
   f.querySelectorAll('[data-has]').forEach((p) => {
     const has = c.has[p.dataset.has];
-    p.textContent = has ? 'Kayıtlı ✓' : (p.dataset.has === 'ssoPass' ? 'Ayrı SSO şifresi kayıtlı değil' : 'Henüz kayıtlı değil');
+    p.textContent = has ? 'Kayıtlı' : (p.dataset.has === 'ssoPass' ? 'Ayrı SSO şifresi kayıtlı değil' : 'Henüz kayıtlı değil');
     p.classList.toggle('ok', has);
   });
   f.querySelector('.error').textContent = '';

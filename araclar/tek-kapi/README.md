@@ -1,7 +1,7 @@
 # Tek Kapı
 
 Selçuk Üniversitesi otomasyonlarına tek ana şifreyle giriş yapan, **kendi bilgisayarında çalışan** web portalı.
-Portala bir kere giriyorsun; OBİS, öğrenci e-postası, UZEM ve Yemekhane kartlarına tıklayınca site
+Portala bir kere giriyorsun; OBİS, öğrenci e-postası, UZEM ve Yemekhane satırlarındaki **Aç**'a basınca site
 Tek Kapı penceresinde açılıyor ve giriş kendiliğinden yapılıyor.
 
 | Sistem | Adres | Kullanılan bilgi | Giriş türü |
@@ -46,7 +46,13 @@ Ayarlar:
 
 ## Özellikler
 
-- **Tek tıkla giriş:** Kartlara tıklayınca site Tek Kapı penceresinde açılır ve giriş yapılır.
+- **Tek tıkla giriş:** Bir sistemin satırındaki **Aç**'a basınca site Tek Kapı penceresinde açılır ve giriş yapılır.
+  Her satırda sistem adı, alan adı, giriş türü ("Otomatik", "CAPTCHA sende", "Giriş Yap ve 2FA sende") ve bilgi
+  eksikse uyarı etiketi görünür; üst çubukta kasanın durumu ("Kasa kilitli" / "Kasa açık").
+- **Görünüm:** ortak tasarım sistemi (kimlik sunucusuyla aynı üst çubuk, yazı tipi ve renkler; kilit ve kurulum
+  ekranında kapı paneli). `public/arayuz/` `src/Selcuk.Arayuz/wwwroot`'un kopyasıdır; elle değiştirilmez, reponun
+  kökünden `powershell -ExecutionPolicy Bypass -File scripts\arayuz-esitle.ps1` ile güncellenir (`npm test` kopyaların
+  kaynakla birebir aynı olduğunu denetler). Yazı tipleri yerelden yüklenir; dış kaynak (Google Fonts vb.) yok.
 - **Hepsinden çık:** Üst menüdeki buton, Tek Kapı penceresindeki tüm Selçuk sekmelerini kapatır ve bu sitelere ait oturum çerezlerini siler.
   Bir sonraki tıklamada siteler yeniden giriş ister. Bu **yerel** bir çıkıştır: sunucu tarafındaki oturumlar kendi süreleri dolunca kapanır
   (gerçek SSO'daki tek çıkışla, yani SLO ile arasındaki fark tez için iyi bir karşılaştırma noktası).
@@ -62,7 +68,7 @@ Sıradan bir web sitesi, başka bir sitenin (ör. OBİS'in) formunu dolduramaz; 
 Ayrıca bu sitelerin hepsinde oturuma bağlı tokenlar (`login_csrf`, `logintoken`, `__RequestVerificationToken`) veya CAPTCHA var,
 bu yüzden "arka planda form POST etmek" de işe yaramaz. Tek Kapı bu nedenle iki parçadan oluşur:
 
-1. **Portal (web arayüzü):** Kartlar, ayarlar, son işlemler. `public/`
+1. **Portal (web arayüzü):** Sistemler, ayarlar, son işlemler, ölçümler. `public/`
 2. **Yerel sunucu + yönetilen tarayıcı:** Express sunucusu (`src/server.js`) Playwright ile kalıcı profili olan bir tarayıcı penceresi açar.
    O penceredeki her sekmeyi izler; bilinen bir giriş sayfası yüklendiğinde ilgili **site adaptörü** (`src/sites.js`) alanları doldurur.
 
@@ -177,7 +183,7 @@ Ayarlar'dan bilgiler yeniden girilir. Eski kasa `Desktop\tek-kapi\data\` altınd
 2. Açılan `https://localhost:5001`'de **203011001** ile giriş yapın → Uygulamalarım → **Tek Kapı** kartı.
 3. Kimlik sunucusunun onay ekranında **İzin ver** → Tek Kapı'ya dönülür, üst menüde adınız ve "SSO'dan çık" görünür.
 4. Kasa ana şifresi (ilk seferde kasayı oluşturun ve Ayarlar'dan bilgilerinizi girin) → ana ekran.
-5. **OBİS** kartı → gerçek OBİS Tek Kapı penceresinde açılır (CAPTCHA'yı siz yazarsınız).
+5. **OBİS** satırında **Aç** → gerçek OBİS Tek Kapı penceresinde açılır (CAPTCHA'yı siz yazarsınız).
 6. Kimlik sunucusundan (Uygulamalarım → Çıkış yap) veya Demo OBİS'ten çıkış yapın.
 7. Tek Kapı penceresine dönün: kasa kilitlenmiş, gerçek site sekmeleri kapanmış olmalı; portal bir sonraki yoklamada
    SSO girişine döner. Son işlemlerde "SSO'dan çıkış yapıldı, kasa kilitlendi" görünür.
@@ -189,7 +195,7 @@ npm test
 ```
 
 `test/mock-sites.js` gerçek giriş sayfalarının alan adlarını, oturuma bağlı tokenlarını, CAPTCHA ve 2FA adımlarını taklit eden sahte siteler kurar.
-`test/e2e.js` bunlara karşı bağımsız modda 33 kontrol çalıştırır: kasa şifrelemesi, otomatik ve yarı otomatik girişler, hatırlanan oturumlar, ölçüm kaydı, hesap kilitletmeme koruması, "Hepsinden çık", CSV dışa aktarma, tek kopya başlatma, kilit ekranı, Host/CSRF korumaları, günlüklerde ve ölçümlerde kimlik bilgisi olmaması.
+`test/e2e.js` bunlara karşı bağımsız modda 35 kontrol çalıştırır: kasa şifrelemesi, otomatik ve yarı otomatik girişler, hatırlanan oturumlar, ölçüm kaydı, hesap kilitletmeme koruması, "Hepsinden çık", CSV dışa aktarma, tek kopya başlatma, kilit ekranı, Host/CSRF korumaları, CSP'de Google Fonts olmaması, `public/arayuz/` kopyalarının kaynakla aynı olması (SHA-256), günlüklerde ve ölçümlerde kimlik bilgisi olmaması.
 
 `test/sso.js` SSO modunu 14 kontrolle dener. Gerçek kimlik sunucusuna bağlanmaz: `test/fake-oidc.js` jose ile anahtar
 üreten, PKCE'yi gerçekten doğrulayan sahte bir OIDC sağlayıcı (yalnızca HTTP, yalnızca test) kurar. Kontroller:
