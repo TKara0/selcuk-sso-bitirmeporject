@@ -1,0 +1,12 @@
+@page
+@model Selcuk.Otomasyon.Ortak.Pages.ErisimReddedildiModel
+@{
+    ViewData["Title"] = "Erişim reddedildi";
+    ViewData[Duzen.Ayar.Genislik] = "dar";
+}
+<div class="durum-sayfasi">
+    @Html.Raw(KapiIsareti.Kapali)
+    <h1>Bu ekrana erişim yetkin yok</h1>
+    <p class="giris-metni">Bu ekran yalnızca ilgili rollere açıktır. Görebildiğin ekranlar menüde listelenir.</p>
+    <a class="dugme dugme-uygulama" href="/">Ana sayfaya dön</a>
+</div>

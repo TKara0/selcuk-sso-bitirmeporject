@@ -44,7 +44,10 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
     `openid profile roles`, adresler `http://127.0.0.1:4545/...` (RFC 8252 loopback); izinli kullanıcılar
     `Istemciler:TekKapi:IzinliKullaniciAdlari` (appsettings.Development.json; boşsa varsayılan `["203011001"]`).
     Özel ayarlar (`backchannel_logout_uri`, `client_uri`, `initiate_login_uri`, `aciklama`, `izinliRoller`,
-    `izinliKullaniciAdlari`) OpenIddict `Properties` alanında. Adres kuralı: https veya yalnızca `http://127.0.0.1`
+    `izinliKullaniciAdlari`, `vurgu`) OpenIddict `Properties` alanında. `staj-otomasyonu` (gizli, Development'ta
+    kaydedilir, secret user-secrets): `izinliRoller` ogrenci, staj_komisyonu, bolum_sekreteri, bolum_baskani; `vurgu`
+    "zeytin" (Uygulamalarım simgesi, `IndexModel.VurguRenkleri` + site.css); `staj.oku`/`staj.yaz` kapsamları
+    (`aud` `staj-api`, her ortamda açılışta oluşturulur; API henüz yok). Adres kuralı: https veya yalnızca `http://127.0.0.1`
     (kayıtta `Istemciler.AdresleriDogrula`; authorize `redirect_uri` ve end-session `post_logout_redirect_uri` için
     OpenIddict doğrulama işleyicisi, `Program.cs`). Back-Channel Logout da yalnızca https veya `http://127.0.0.1`'e
     gönderilir.
@@ -146,6 +149,29 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   ile yeniler (aynı refresh token için tek uçuş, sonuç 1 dk paylaşılır; invalid_grant'te yerel oturum kapanır);
   çıkışta (`OnRedirectToIdentityProviderForSignOut`) önce refresh token'ı iptal eder. Ek kapsamlar
   `Kimlik:EkKapsamlar`. Yeni bir alt uygulama bu kütüphaneyle bağlanır.
+- `src/Selcuk.Otomasyon.Ortak`: bölüm otomasyonlarının şablonu (Razor Class Library; Istemci.Ortak, Arayuz, Roller).
+  `AddSelcukOtomasyon(configuration, ayarla)`: AddSelcukSSO, menü (`MenuOgesi`: başlık, sayfa, açıklama, roller) ve
+  menüden türetilen yetki (`AuthorizeFolder("/")` + sayfa başına rol ilkesi; ortak açık sayfalar `AcikSayfalar`),
+  Razor Pages, `VeriKaynagi` ayarı (`Mod` Mock|Api, `ApiAdresi` yalnızca https, `ZamanAsimi` 5 sn; `ValidateOnStart`,
+  geçersizse açılış durur) ve `VeriKaynagi<TArayuz, TMock, TApi>()` seçimi; `OtomasyonApiIstemcisi` (Bearer access
+  token, 401/403 → `VeriKaynagiHatasi.Yetki`, bağlantı/zaman aşımı/5xx/bozuk JSON → `Ulasilamiyor`; token/adres
+  loglanmaz). `UseSelcukOtomasyon()`: güvenlik başlıkları, her ortamda `UseExceptionHandler("/Hata")` (stack trace
+  yok; 503/403 Türkçe), durum kodu sayfaları (`/signout-backchannel` hariç), HTTPS, statik, kimlik, yetki, Razor
+  Pages, Back-Channel Logout. Ortak sayfalar: `/` (rol başlıklı kısayollar), Giris, Cikis, GirisHatasi,
+  ErisimReddedildi (403, "Bu ekrana erişim yetkin yok"), Hata, Profilim. `_OtomasyonDuzen` (`_SelcukDuzen` üstünde;
+  sabit "Temsili ekran" bandı, solda rol başlıklı menü, dar ekranda selcuk.js `data-menu`, betiksizse
+  `otomasyon-betiksiz.css`; TempData mesajı; alt bilgide `AltBilgiEk` bölümüyle veri rozeti). `KullaniciKapsami`
+  (preferred_username, bolum, fakulte; `Kapsar(Kendi|Bolum|Fakulte, …)`; Api modunda süzmeyi API yapar).
+  `TemsiliIslem.TemsiliIslemSonucu()` (veriyi değiştirmeden aynı sayfaya, TempData mesajı). `OturumBiletDeposu`
+  (çerez `SessionStore`: bilet ve token'lar Data Protection ile şifreli `IDistributedCache`'te, çerezde yalnızca
+  anahtar; localhost'ta bütün uygulamaların çerezleri birikip Kestrel'in 32 KB başlık sınırını aşıyordu, HTTP 431). Stiller `otomasyon.css`;
+  selcuk.css değişmez. Kontrol listesi `docs/otomasyon-sablonu.md`, portlar 5301-5311 `docs/mimari.md`.
+- `src/Selcuk.Otomasyon.Staj` (https://localhost:5302): Staj Otomasyonu, temsili ekranlar ve örnek veri. Vurgu
+  zeytin #4F6B34 / koyu #A9C98B. `StajOtomasyonu.Menu` (ogrenci: Stajlarım, Staj başvurusu, Staj defterim, Sonuç;
+  staj_komisyonu: Başvuru inceleme, Defter değerlendirme, Yıllara göre takip; bolum_sekreteri: Evrak takibi;
+  bolum_baskani: Özet). `Sozlesme/StajSozlesmesi.cs` (DTO'lar, `IStajVeriKaynagi`), `Veri/` (`OrnekStajVerisi` 26
+  kayıt 2024-2026, iki EEM; `MockStajVeriKaynagi`, `ApiStajVeriKaynagi`). API sözleşmesi
+  `docs/api-sozlesmeleri/staj.md`.
 - `src/Selcuk.Demo.Obis` (https://localhost:5101): ortak düzen (`Selcuk.Arayuz`, simge "DO", vurgu lacivert
   #2F4F8F / koyu #9DB5E8). Rol bazlı sayfalar (Notlarım: ogrenci, Ders Yönetimi: akademisyen), Profilim, yalnızca
   Development'ta Token İnceleme (her claim bir satır: Mono ad/değer, Türkçe açıklama `TokenIncelemeModel.Aciklamalar`;
@@ -181,6 +207,12 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   (503), `iss` doğrulaması, token yenileme/iptal ve çok rollü `IsInRole` (tam OIDC girişi, `OidcGirisiAsync`) testleri; yerel RSA anahtarı, sahte JWKS ve sahte token/revocation
   uç noktaları (`TestUygulamasi.TokenUcu`).
 - `tests/Selcuk.Demo.Api.Tests`: Demo API token doğrulama ve yetkilendirme; yerel RSA anahtarı, sabit discovery.
+- `tests/Selcuk.Otomasyon.Ortak.Tests`: menü grupları, kapsam, veri kaynağı ayarları/seçimi, şablon tanım hataları,
+  Api istemcisi (sahte handler ve `IAuthenticationService`). `tests/Selcuk.Otomasyon.Staj.Tests`: `StajFactory`
+  (sabit discovery + imza anahtarı, başlıklardan sahte kimlik `X-Test-Kullanici/Rol/Bolum/Fakulte`, `ayarlar`, `api`
+  handler, `ortam`); menü, adresle yetki reddi, kapsam (`data-staj`), temsili işlem, Mock/Api seçimi, Api modu
+  hataları, güvenlik başlıkları, gerçek çerezle Back-Channel Logout, vurgu kontrastı. Kimlik sunucusu tarafı
+  `StajOtomasyonuIstemciTests`.
 - `tests/Selcuk.Demo.Obis.Tests`, `tests/Selcuk.Demo.Yemekhane.Tests`: yönlendirme, rol, önbellek (`no-store`), ortak
   düzen ve `_content` dosyaları, Notlarım özeti ve Token İnceleme (Development, sahte JWT'ler) testleri; gerçek kimlik
   sunucusu yerine sabit discovery bilgisi ve sahte kimlik doğrulama şeması kullanır (`ObisFactory`: `ortam`,
@@ -209,7 +241,8 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   yönlendirici, ağ yok).
 - `docs/`: `tasarim/d1/` (token'lar, kontrast tablosu, yazı tipi kaynağı, ekran görüntüleri), `tasarim/d2/` (uygulama
   vurgu renkleri ve kontrastı, demolar ve Tek Kapı, ekran görüntüleri), `tez-gorselleri/` (tez için seçilmiş ekranlar),
-  `mimari.md` (Mermaid), `guvenlik-karsilastirma.md`, `tehdit-modeli.md` (STRIDE, gerçek test adları, açık
+  `mimari.md` (Mermaid; port ve istemci düzeni 5301-5311), `otomasyon-sablonu.md` (yeni otomasyon kontrol listesi),
+  `api-sozlesmeleri/` (otomasyon API sözleşmeleri; staj.md), `roller.md` (katalog, plan matrisi), `guvenlik-karsilastirma.md`, `tehdit-modeli.md` (STRIDE, gerçek test adları, açık
   riskler), `test-kapsami.md` (`--list-tests`, `npm test`, coverlet), `olcumler/` (ölçüm çıktıları, elle ölçüm şablonu
   ve protokolü, Tek Kapı CSV yönergesi, `karsilastirma.md` + PNG), `kullanilabilirlik/sus-anketi.md`. `ornek-` önekli
   dosyalar gerçek veri değildir, analiz okumaz. Belgelere ölçülmemiş sayı yazılmaz ("henüz ölçülmedi").
@@ -222,8 +255,8 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   veritabanı ve rastgele test şifreleri (yalnızca ortam değişkeni), `run-all.ps1 -TarayiciAcma`, Tek Kapı geçici
   `PORTAL_DATA_DIR` ile (gerçek kasa okunmaz, sistem açılmaz), QR/anahtar/kurtarma kodları örnek değerle, sonunda
   yalnızca kendi süreçlerini durdurur ve veritabanını siler.
-- `scripts/run-all.ps1`: önce `dotnet build SelcukSSO.sln` (başarısızsa durur), sonra kimlik sunucusu, iki demo ve
-  Demo API'yi ayrı pencerelerde `dotnet run --no-build` ile başlatır; `-TekKapi` ile Tek Kapı'yı da SSO modunda
+- `scripts/run-all.ps1`: önce `dotnet build SelcukSSO.sln` (başarısızsa durur), sonra kimlik sunucusu, iki demo,
+  Demo API ve Staj Otomasyonu'nu ayrı pencerelerde `dotnet run --no-build` ile başlatır; `-TekKapi` ile Tek Kapı'yı da SSO modunda
   başlatır; `-TarayiciAcma` ile sonda tarayıcı açılmaz.
 
 Ayrıntılar için `README.md` dosyasına bakın.
@@ -265,6 +298,7 @@ dotnet run --project src/Selcuk.Identity                                   # htt
 dotnet run --project src/Selcuk.Demo.Obis                                  # https://localhost:5101
 dotnet run --project src/Selcuk.Demo.Yemekhane                             # https://localhost:5102
 dotnet run --project src/Selcuk.Demo.Api                                   # https://localhost:5201
+dotnet run --project src/Selcuk.Otomasyon.Staj                             # https://localhost:5302
 powershell -ExecutionPolicy Bypass -File scripts\run-all.ps1               # hepsi birlikte
 powershell -ExecutionPolicy Bypass -File scripts\run-all.ps1 -TekKapi      # + Tek Kapı (SSO modu, :4545)
 cd araclar\tek-kapi; npm ci; npm test                                       # Tek Kapı testleri

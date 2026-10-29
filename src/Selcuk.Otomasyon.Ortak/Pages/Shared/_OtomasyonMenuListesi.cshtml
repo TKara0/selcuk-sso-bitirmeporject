@@ -1,0 +1,20 @@
+@* Menünün bağlantıları: ana sayfa ve rol başlıkları altında ekranlar. Model: gruplar; ViewData["MenuOnek"]: başlık kimliklerinin öneki. *@
+@model IReadOnlyList<MenuGrubu>
+@{
+    var onek = ViewData["MenuOnek"] as string ?? "menu";
+    var gecerli = ViewContext.RouteData.Values["page"] as string;
+    string? Gecerli(string sayfa) => string.Equals(gecerli, sayfa, StringComparison.OrdinalIgnoreCase) ? "page" : null;
+}
+<ul>
+    <li><a href="/" aria-current="@Gecerli("/Index")">Ana sayfa</a></li>
+</ul>
+@for (var i = 0; i < Model.Count; i++)
+{
+    <p class="menu-grubu" id="@onek-grubu-@i">@Model[i].Baslik</p>
+    <ul aria-labelledby="@onek-grubu-@i">
+        @foreach (var oge in Model[i].Ogeler)
+        {
+            <li><a href="@oge.Sayfa" aria-current="@Gecerli(oge.Sayfa)">@oge.Baslik</a></li>
+        }
+    </ul>
+}

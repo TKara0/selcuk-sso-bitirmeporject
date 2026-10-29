@@ -1,0 +1,17 @@
+/*
+ * Staj Otomasyonu: yalnızca uygulamanın vurgu rengi (zeytin). Yerleşim ortak otomasyon şablonunda
+ * (_content/Selcuk.Otomasyon.Ortak/css/otomasyon.css), token'lar selcuk.css'te. Kontrast (WCAG 2.1, metin):
+ * #4F6B34 beyaz zeminde 6,03:1, taş (#EDF0EF) zeminde 5,25:1, açık zeytin (#E7EEDE) zeminde 5,07:1;
+ * koyu temada #A9C98B yüzey (#15273A) zemininde 8,25:1, koyu açık zeytin (#22331C) zemininde 7,32:1.
+ */
+:root {
+    --uygulama-vurgu: #4F6B34;
+    --uygulama-vurgu-acik: #E7EEDE;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --uygulama-vurgu: #A9C98B;
+        --uygulama-vurgu-acik: #22331C;
+    }
+}

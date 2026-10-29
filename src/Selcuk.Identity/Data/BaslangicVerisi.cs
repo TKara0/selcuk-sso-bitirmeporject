@@ -8,8 +8,8 @@ namespace Selcuk.Identity.Data;
 /// Uygulama açılışında rol kataloğundaki (Selcuk.Roller) bütün rolleri oluşturur. Yalnızca Development ortamında,
 /// şifreleri user-secrets'tan okunan test kullanıcılarını (rolleri <see cref="RolDogrulayici"/>'dan geçer; var olan
 /// kullanıcıya yalnızca eksik rolleri eklenir), ölçüm kullanıcılarını (<see cref="OlcumKullanicilari"/>), demo
-/// istemcileri (demo-obis, demo-yemekhane) ve Tek Kapı'yı (public istemci, izinli kullanıcılar
-/// Istemciler:TekKapi:IzinliKullaniciAdlari ayarından) ekler veya günceller.
+/// istemcileri (demo-obis, demo-yemekhane), Staj Otomasyonu'nu (staj-otomasyonu) ve Tek Kapı'yı (public istemci,
+/// izinli kullanıcılar Istemciler:TekKapi:IzinliKullaniciAdlari ayarından) ekler veya günceller.
 /// </summary>
 public sealed class BaslangicVerisi(
     IServiceProvider services,
@@ -85,15 +85,18 @@ public sealed class BaslangicVerisi(
         }
 
         // Demo API kapsamı (notlar.oku -> aud demo-api) her ortamda tanımlı olmalı: authorize kaynakları buradan okur.
+        // Staj API'sinin kapsamları (staj.oku, staj.yaz -> aud staj-api) da aynı şekilde.
         var scopeManager = scope.ServiceProvider.GetRequiredService<IOpenIddictScopeManager>();
-        var notlarOku = Istemciler.NotlarOku();
-        if (await scopeManager.FindByNameAsync(notlarOku.Name!) is { } mevcutKapsam)
+        foreach (var kapsam in (IEnumerable<OpenIddictScopeDescriptor>)[Istemciler.NotlarOku(), .. Istemciler.StajKapsamlari()])
         {
-            await scopeManager.UpdateAsync(mevcutKapsam, notlarOku);
-        }
-        else
-        {
-            await scopeManager.CreateAsync(notlarOku);
+            if (await scopeManager.FindByNameAsync(kapsam.Name!) is { } mevcutKapsam)
+            {
+                await scopeManager.UpdateAsync(mevcutKapsam, kapsam);
+            }
+            else
+            {
+                await scopeManager.CreateAsync(kapsam);
+            }
         }
 
         if (environment.IsDevelopment())
@@ -110,6 +113,7 @@ public sealed class BaslangicVerisi(
             var applicationManager = scope.ServiceProvider.GetRequiredService<IOpenIddictApplicationManager>();
             await IstemciKaydetAsync(applicationManager, "Istemciler:DemoObis:ClientSecret", Istemciler.DemoObis);
             await IstemciKaydetAsync(applicationManager, "Istemciler:DemoYemekhane:ClientSecret", Istemciler.DemoYemekhane);
+            await IstemciKaydetAsync(applicationManager, "Istemciler:StajOtomasyonu:ClientSecret", Istemciler.StajOtomasyonu);
 
             // Public istemci: secret yok. Liste yoksa veya boşsa varsayılan izinli kullanıcı (herkese açılmaz).
             var izinliler = configuration.GetSection(Istemciler.TekKapiAyarlari + ":IzinliKullaniciAdlari").Get<string[]>() ?? [];

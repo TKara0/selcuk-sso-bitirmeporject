@@ -1,0 +1,54 @@
+@page
+@model Selcuk.Otomasyon.Staj.Pages.Komisyon.BasvuruIncelemeModel
+@{
+    ViewData["Title"] = "Başvuru inceleme";
+}
+<h1>Başvuru inceleme</h1>
+<p class="giris-metni">Bölümündeki bekleyen staj başvuruları. Onayla ve Reddet temsilidir; karar kaydedilmez.</p>
+
+@if (Model.Bekleyenler.Count == 0)
+{
+    <p>Bekleyen başvuru yok.</p>
+}
+else
+{
+    <div class="tablo-kabi">
+        <table class="tablo tablo-yigin basvurular">
+            <caption class="gorunmez">Bekleyen başvurular</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Öğrenci</th>
+                    <th scope="col">Staj türü</th>
+                    <th scope="col">Firma</th>
+                    <th scope="col">Tarihler</th>
+                    <th scope="col" class="sayi">İş günü</th>
+                    <th scope="col">Karar</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var kayit in Model.Bekleyenler)
+                {
+                    <tr data-staj="@kayit.Id">
+                        <th scope="row" class="yigin-baslik">@kayit.OgrenciAdi <span class="mono ipucu">@kayit.OgrenciNo</span></th>
+                        <td>@StajOtomasyonu.TurAdi(kayit.Tur)</td>
+                        <td>@kayit.FirmaAdi</td>
+                        <td>@StajOtomasyonu.Tarih(kayit.Baslangic) – @StajOtomasyonu.Tarih(kayit.Bitis)</td>
+                        <td class="sayi" data-etiket="İş günü:">@kayit.IsGunu</td>
+                        <td>
+                            <div class="satir-islemleri">
+                                <form method="post" asp-page-handler="Onayla">
+                                    <input type="hidden" name="id" value="@kayit.Id" />
+                                    <button type="submit" class="dugme dugme-uygulama">Onayla<span class="gorunmez">: @kayit.OgrenciAdi</span></button>
+                                </form>
+                                <form method="post" asp-page-handler="Reddet">
+                                    <input type="hidden" name="id" value="@kayit.Id" />
+                                    <button type="submit" class="dugme dugme-ikincil">Reddet<span class="gorunmez">: @kayit.OgrenciAdi</span></button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

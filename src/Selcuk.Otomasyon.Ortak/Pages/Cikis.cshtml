@@ -1,0 +1,17 @@
+@page
+@model Selcuk.Otomasyon.Ortak.Pages.CikisModel
+@inject OtomasyonBilgisi Bilgi
+@{
+    ViewData["Title"] = "Çıkış yap";
+    ViewData[Duzen.Ayar.Genislik] = "dar";
+}
+<div class="durum-sayfasi">
+    <h1>Çıkış yap</h1>
+    <p class="giris-metni">
+        @Bilgi.Ad oturumun ve kimlik sunucusundaki oturumun kapanır. Tek şifreyle girdiğin diğer uygulamalardan da
+        çıkış yapılır.
+    </p>
+    <form method="post">
+        <button type="submit" class="dugme dugme-ana">Çıkış yap</button>
+    </form>
+</div>

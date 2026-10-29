@@ -1,0 +1,8 @@
+/* JavaScript kapalıyken (noscript) "Menü" düğmesi çalışmaz: dar ekranda da kenar menüsü gösterilir. */
+.menu-genis {
+    display: block;
+}
+
+.menu-dar {
+    display: none;
+}

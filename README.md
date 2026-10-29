@@ -902,7 +902,65 @@ Tüm yanıtlar `Cache-Control: no-store`, `nosniff`, `no-referrer`, `X-Frame-Opt
 `Content-Security-Policy: default-src 'none'`. 401/403 gövdesiz ve `WWW-Authenticate`'te hata ayrıntısı yok
 (`IncludeErrorDetails = false`); beklenmeyen hata genel bir 500 yanıtı döner.
 
+## Bölüm otomasyonları
+
+Bilgisayar Mühendisliği Bölümü'nün 11 otomasyonu ayrı uygulamalar olarak eklenir (portlar 5301-5311:
+[docs/mimari.md](docs/mimari.md#port-ve-istemci-düzeni)). Hepsi ortak şablonu kullanır: `src/Selcuk.Otomasyon.Ortak`
+(`AddSelcukOtomasyon` + `UseSelcukOtomasyon`: SSO, rol tabanlı menü ve sunucu tarafı yetki, temsili işlemler, veri
+kaynağı seçimi, hata sayfaları, güvenlik başlıkları, Back-Channel Logout). Yeni otomasyon eklemek için kontrol listesi:
+[docs/otomasyon-sablonu.md](docs/otomasyon-sablonu.md).
+
+**Ekranlar temsilidir:** veriler örnektir (mock), formlar antiforgery korumalı gerçek bir POST yapar ama hiçbir şey
+kaydedilmez ("Bu ekran temsilidir; işlem kaydedilmedi."). Her sayfanın üstünde "Temsili ekran" bandı, alt bilgide veri
+kaynağı rozeti ("Veri: örnek veri" / "Veri: API") vardır. Veri kaynağı ayarla seçilir; API yazıldığında yalnızca ayar
+değişir:
+
+```json
+"VeriKaynagi": { "Mod": "Mock", "ApiAdresi": "" }      // varsayılan: uygulamanın içindeki örnek veri
+"VeriKaynagi": { "Mod": "Api", "ApiAdresi": "https://…/" }   // kaynak sunucusu (Bearer access token)
+```
+
+Otomasyonların oturum bileti (token'lar dahil) sunucu tarafında şifreli tutulur, çerezde yalnızca anahtar kalır
+(`OturumBiletDeposu`): localhost'ta bütün uygulamaların çerezleri her isteğe eklendiğinden token'lı çerezler başlık
+sınırını (32 KB) aşıp HTTP 431'e yol açıyordu. Uygulama yeniden başlarsa oturum tek girişle sessizce yenilenir.
+Geçersiz mod veya Api modunda https olmayan adres açılışı durdurur. Api modunda API'ye ulaşılamazsa (bağlantı,
+5 sn zaman aşımı, 5xx) "Veri kaynağına şu an ulaşılamıyor" (503), 401/403'te "Bu verilere erişim yetkin yok" (403);
+stack trace hiçbir ortamda gösterilmez. Mock modunda kapsamı uygulama (`KullaniciKapsami`: öğrenci yalnızca kendi
+kaydı, bölüm başkanı/sekreteri ve komisyon kendi bölümü, fakülte sekreteri kendi fakültesi), Api modunda API token'daki
+claim'lere göre yapar.
+
+### Staj Otomasyonu (`src/Selcuk.Otomasyon.Staj`, https://localhost:5302)
+
+Vurgu rengi zeytin (`#4F6B34`, beyaz zeminde 6,03:1; koyu temada `#A9C98B`). Kimlik sunucusunda `staj-otomasyonu`
+gizli istemcisi (code + PKCE, explicit onay); yalnızca `ogrenci`, `staj_komisyonu`, `bolum_sekreteri` ve
+`bolum_baskani` rollerine açıktır (diğerleri `access_denied` alır, Uygulamalarım'da kartı görmez). Gelecekteki Staj
+API'si için `staj.oku` ve `staj.yaz` kapsamları (`aud` `staj-api`) istenir; sözleşme
+[docs/api-sozlesmeleri/staj.md](docs/api-sozlesmeleri/staj.md). Örnek veri: 2024-2026'ya yayılan 26 staj kaydı
+(Staj I, Staj II, İME; altı durumun hepsi), ikisi Elektrik-Elektronik Mühendisliği'nden; firmalar uydurma.
+
+| Rol | Ekranlar |
+|---|---|
+| `ogrenci` | Stajlarım (Staj I / II / İME ve durumları), Staj başvurusu (form), Staj defterim (girişler ve yeni giriş), Sonuç (komisyon notu, kabul edilen gün) |
+| `staj_komisyonu` | Başvuru inceleme (bekleyenler, Onayla / Reddet), Defter değerlendirme (kabul gün sayısı), Yıllara göre takip |
+| `bolum_sekreteri` | Evrak takibi (kabul belgesi, SGK girişi, defter teslimi) |
+| `bolum_baskani` | Özet (aktif staj, bekleyen başvuru, bu yıl tamamlanan; yıllık tablo) |
+| herkes (giriş yapmış) | Ana sayfa (rollere göre karşılama ve kısayollar), Profilim |
+
+| Test kullanıcısı | Gördüğü ekranlar |
+|---|---|
+| `203011001`, `203011002`, `203011003` | Öğrenci ekranları; her biri yalnızca kendi stajlarını görür (203011001: Staj I değerlendirildi, Staj II defter teslim edildi, İME başvuru bekliyor) |
+| `komisyon.test` | Staj komisyonu ekranları (Bilgisayar Mühendisliği kayıtları) |
+| `sekreter.test` | Evrak takibi |
+| `baskan.test` | Özet |
+| `etik.test`, `iskur.test`, `hoca.test`, `personel.test` | Giremez: kimlik sunucusu `access_denied` döner, uygulama "Giriş tamamlanamadı / erişim izni verilmedi" gösterir |
+
+Şifreler README > [Roller ve test kullanıcıları](#roller-ve-test-kullanıcıları)'ndaki anahtarlarla user-secrets'ta.
+Rolü olmayan bir ekranın adresine doğrudan gidilirse "Bu ekrana erişim yetkin yok" sayfası (403) açılır.
+
 ## Yeni bir uygulamayı sisteme bağlamak
+
+Bölüm otomasyonu ekleniyorsa [docs/otomasyon-sablonu.md](docs/otomasyon-sablonu.md)'yi izleyin; aşağıdaki adımlar
+şablonu kullanmayan bir uygulama içindir.
 
 1. **İstemciyi kaydedin.** `src/Selcuk.Identity/Data/Istemciler.cs` dosyasına `DemoObis`/`DemoYemekhane` gibi bir
    tanım ekleyin (client_id, görünen ad, kök adres, açıklama). Redirect, post-logout, `backchannel_logout_uri`,
@@ -949,7 +1007,7 @@ Tüm yanıtlar `Cache-Control: no-store`, `nosniff`, `no-referrer`, `X-Frame-Opt
 SelcukSSO.sln
 dotnet-tools.json                 dotnet-ef yerel aracı
 .gitattributes                    Satır sonu kuralları
-scripts/run-all.ps1               Dört uygulamayı ayrı pencerelerde başlatır (-TekKapi: Tek Kapı da, SSO modunda)
+scripts/run-all.ps1               Beş uygulamayı (kimlik, iki demo, Demo API, Staj) ayrı pencerelerde başlatır (-TekKapi: Tek Kapı da, SSO modunda)
 scripts/olcum-calistir.ps1        Otomatik ölçüm: derle, uygulamaları ölçüm modunda başlat, ölç, durdur
 scripts/olcum_analiz.py           Ölçüm analizi (Python 3, standart kütüphane; matplotlib varsa PNG)
 scripts/arayuz-esitle.ps1         Ortak tasarım dosyalarını (selcuk.css, yazı tipleri, kapı SVG'leri) Tek Kapı'ya kopyalar
@@ -997,11 +1055,18 @@ src/Selcuk.Istemci.Ortak/         AddSelcukSSO, güvenlik başlıkları, Back-Ch
 src/Selcuk.Demo.Obis/             Notlarım, Ders Yönetimi, Profilim, Token İnceleme …
 src/Selcuk.Demo.Yemekhane/        Haftalık menü, Rezervasyonlarım, Yemekhane Yönetimi …
 src/Selcuk.Demo.Api/              Demo API (kaynak sunucusu): GET /api/notlar, JWT Bearer
+src/Selcuk.Otomasyon.Ortak/       Otomasyon şablonu (Razor Class Library): AddSelcukOtomasyon / UseSelcukOtomasyon,
+                                  rol tabanlı menü, _OtomasyonDuzen, ortak sayfalar, veri kaynağı (Mock/Api),
+                                  KullaniciKapsami, TemsiliIslem, otomasyon.css
+src/Selcuk.Otomasyon.Staj/        Staj Otomasyonu (:5302): temsili ekranlar, Sozlesme/ (DTO'lar, IStajVeriKaynagi),
+                                  Veri/ (örnek veri, Mock ve Api veri kaynakları)
 tests/Selcuk.Identity.Tests/      Kimlik sunucusu entegrasyon, protokol, tek giriş/çıkış testleri
 tests/Selcuk.Istemci.Ortak.Tests/ Back-Channel Logout alıcısı testleri (yerel anahtar + sahte JWKS)
 tests/Selcuk.Demo.Obis.Tests/     Demo OBİS yönlendirme ve rol testleri
 tests/Selcuk.Demo.Yemekhane.Tests/ Demo Yemekhane yönlendirme ve rol testleri
 tests/Selcuk.Demo.Api.Tests/      Demo API token doğrulama ve yetkilendirme testleri (yerel anahtar)
+tests/Selcuk.Otomasyon.Ortak.Tests/ Şablon: menü, kapsam, veri kaynağı ayarları ve seçimi, Api istemcisi
+tests/Selcuk.Otomasyon.Staj.Tests/ Staj: menü, yetki, kapsam, temsili işlem, Api modu, Back-Channel Logout, kontrast
 tests/Selcuk.Olcum.Tests/         Ölçüm aracı: localhost dışı reddi, istatistik, dört uygulamayla bellek içi uçtan uca tur
 ```
 
@@ -1041,10 +1106,12 @@ Hiçbir şifre veya secret repoda yoktur. Development'ta `dotnet user-secrets` k
 | `src/Selcuk.Identity` | `TestKullanicilari:<Anahtar>:Sifre` (`Ogrenci`, `Akademisyen`, `Personel`, `BolumBaskani` …; tam liste [Roller ve test kullanıcıları](#roller-ve-test-kullanıcıları)) | Test kullanıcılarının şifreleri |
 | `src/Selcuk.Identity` | `Istemciler:DemoObis:ClientSecret` | demo-obis secret'ı |
 | `src/Selcuk.Identity` | `Istemciler:DemoYemekhane:ClientSecret` | demo-yemekhane secret'ı |
+| `src/Selcuk.Identity` | `Istemciler:StajOtomasyonu:ClientSecret` | staj-otomasyonu secret'ı |
 | `src/Selcuk.Identity` | `OlcumKullanicilari:Sifre` | Ölçüm kullanıcılarının (`olcum.kullanici.01`…`50`) ortak şifresi; isteğe bağlı, yoksa seed edilmez. Ölçüm aracı da buradan okur ([Ölçüm ve değerlendirme](#ölçüm-ve-değerlendirme)) |
 | `src/Selcuk.Identity` | `Denetim:KullaniciAdiOzetAnahtari` | Anahtarlı özet (HMAC) anahtarı, base64, 32 bayt. Development dışında zorunlu (ortam değişkeni `Denetim__KullaniciAdiOzetAnahtari`) |
 | `src/Selcuk.Demo.Obis` | `Kimlik:ClientSecret` | demo-obis secret'ı (kimlik sunucusundakiyle aynı) |
 | `src/Selcuk.Demo.Yemekhane` | `Kimlik:ClientSecret` | demo-yemekhane secret'ı (kimlik sunucusundakiyle aynı) |
+| `src/Selcuk.Otomasyon.Staj` | `Kimlik:ClientSecret` | staj-otomasyonu secret'ı (kimlik sunucusundakiyle aynı) |
 | `src/Selcuk.Identity` (yalnızca Development dışı) | `Eposta:Smtp:Sifre` | SMTP şifresi; ortam değişkeni olarak `Eposta__Smtp__Sifre`. Development'ta SMTP kullanılmaz |
 
 Görmek için:
@@ -1085,7 +1152,7 @@ powershell -ExecutionPolicy Bypass -File scripts\run-all.ps1
 ```
 
 Betik önce çözümü bir kez derler (`dotnet build SelcukSSO.sln`; başarısızsa durur), sonra kimlik sunucusunu
-(5001), Demo OBİS'i (5101), Demo Yemekhane'yi (5102) ve Demo API'yi (5201) ayrı PowerShell pencerelerinde
+(5001), Demo OBİS'i (5101), Demo Yemekhane'yi (5102), Demo API'yi (5201) ve Staj Otomasyonu'nu (5302) ayrı PowerShell pencerelerinde
 `dotnet run --no-build` ile başlatır, hepsi hazır olunca tarayıcıda https://localhost:5001 adresini açar
 (`-TarayiciAcma` verilirse açmaz). Durdurmak için pencerelerde `Ctrl+C`.
 Önceden her pencere kendisi derlediği için ortak projelerin (`Selcuk.Istemci.Ortak`) dosyalarında kilit hatası
@@ -1099,6 +1166,7 @@ Tek tek:
 dotnet run --project src/Selcuk.Identity          # https://localhost:5001
 dotnet run --project src/Selcuk.Demo.Obis         # https://localhost:5101
 dotnet run --project src/Selcuk.Demo.Yemekhane    # https://localhost:5102
+dotnet run --project src/Selcuk.Otomasyon.Staj   # https://localhost:5302
 ```
 
 Kimlik sunucusu açılışta rolleri (yoksa) oluşturur. Development'ta test kullanıcılarını ve iki demo istemciyi de
@@ -1433,6 +1501,10 @@ yakalanır.
 | `Hesap_menusu_idari_personeli_gorunen_adiyla_gosteriyor` | "İdari personel", "Fakülte sekreteri (Teknoloji Fakültesi)" |
 | `Hesabim_2FA_kapaliyken_notr_oneri_bandi_aciksa_bant_yok` | 2FA kapalıyken öneri bandı ve "İki aşamalı doğrulamayı aç"; "zorunlu" yok; 2FA açıkken bant yok |
 | `IkiAdimZorunluRoller_bos_her_roldeki_2FA_kapali_kullanici_demo_obise_kurulumsuz_giriyor` | `IkiAdimZorunluRoller` boş; katalogdaki her rol için 2FA'sı kapalı kullanıcı girişte Uygulamalarım'a gider, demo-obis'ten kod ve token alır |
+| `Kayit_gizli_istemci_PKCE_adresler_kapsamlar_ve_izinli_roller` (StajOtomasyonuIstemciTests) | staj-otomasyonu gizli, PKCE, 5302 adresleri, back-channel, `staj.oku`/`staj.yaz` izinleri (implicit/password yok), izinli dört rol; kapsamların kaynağı `staj-api` |
+| `Izinli_rolu_olmayan_kullanici_access_denied_aliyor` (×3) | `etik.test`, `iskur.test`, `hoca.test`: authorize `error=access_denied`, kod yok |
+| `Izinli_dort_rol_giris_yapiyor_access_token_staj_api_icin` (×4) | 203011001, komisyon.test, sekreter.test, baskan.test: kod + token; access token `aud` `staj-api`, `scope` `staj.oku staj.yaz`, rol, refresh token |
+| `Uygulamalarimda_Staj_karti_izinli_rollere_gorunuyor_digerlerine_gorunmuyor` | Kart (ad, açıklama, zeytin simge, `initiate_login_uri?iss=`) izinlilere görünür, etik.test ve iskur.test'e görünmez |
 | **Selcuk.Istemci.Ortak.Tests** | |
 | `Cok_rollu_kullanicida_IsInRole_her_rolde_true_olmayan_rolde_false` | Tam OIDC girişi (sahte sunucu, imzalı id_token'da `role` dizisi): her rolde `IsInRole` true, katalogdaki diğer rollerde ve dizinin metin hâlinde false |
 | `Tek_rollu_kullanicida_metin_bicimi_ayni_sekilde_isleniyor` | `role` metin olduğunda da `IsInRole` doğru |
@@ -1489,6 +1561,11 @@ yakalanır.
 | `Yalnizca_tokendaki_subin_notlari_donuyor_parametreyle_baskasi_istenemiyor` | `?sub=` / `?ogrenci=` yok sayılır; A'nın token'ı her zaman A'nın notlarını, B'ninki B'ninkini döndürür |
 | `Giris_yapmis_kullanici_eslestirme_cerezi_olmadan_donuste_ana_sayfaya_yonlendiriliyor` | Yemekhane'de geri tuşu, giriş yapmış: 302 → `/` |
 | `Girissiz_kullanici_eslestirme_cerezi_olmadan_donuste_GirisHatasi_sayfasina_yonlendiriliyor` | Yemekhane'de giriş yapmamış: `/GirisHatasi?neden=oturum-suresi` |
+| **Selcuk.Otomasyon.Ortak.Tests** | |
+| `SablonTests` (28) | Menü: öğrenci yalnızca öğrenci öğeleri, çok rollü birleşim katalog sırasıyla rol başlıkları altında (ortak öğe bir kez), uygun öğe yoksa boş; kapsam: claim'lerden okuma, kendi/bölüm/fakülte süzmesi, aynı adlı bölüm başka fakültede kapsam dışı, boş bilgi hiçbir kayda uymaz; `VeriKaynagi` doğrulaması (Mock, Api + https; http, boş, küçük harfli mod reddedilir); moda göre Mock/Api seçimi ve geçersiz modda `OptionsValidationException`; hatalı şablon tanımları (ad yok, `/` yok, ortak açık sayfa, katalog dışı rol, rolsüz öğe, veri kaynağı yok, aynı sayfa iki kez); oturum bileti deposu (şifreli, çerezde anahtar); Api istemcisi: Bearer, JSON, 5xx/404 → ulaşılamıyor, 401/403 → yetki, bağlantı hatası, token yoksa istek yapılmaz |
+| **Selcuk.Otomasyon.Staj.Tests** | |
+| `StajEkranTests` (20) | Menü (öğrenci, komisyon.test, çok rollü; girişsiz menü yok), adresle yetki reddi ve Türkçe 403 sayfası, her menü sayfası (GET ve POST) rolü olmayana kapalı, her rol kendi ekranlarını açar; kapsam: 203011001 yalnızca kendi üç kaydı, bölüm başkanı/komisyon/sekreter Elektrik-Elektronik kayıtlarını görmez, EEM'deki bölüm başkanı yalnızca kendi bölümünü, bölümsüz kullanıcı hiçbir şey; temsili işlem: antiforgery'siz 400, Onayla/Reddet/Kaydet mesajı gösterir ve kayıtlar değişmez, öğrenci formları; düzen (bant, rozet, simge, menü, stiller), başka uygulamanın TempData çerezi, Profilim, 404; güvenlik başlıkları ve `no-store`; zeytin kontrastı (beyaz 6,03:1) |
+| `VeriKaynagiTests` (17) | Mock/Api seçimi, geçersiz mod ve adres açılışı durdurur, rozet; Api modu: oturumdaki token Bearer olarak gider (aud `staj-api`, `staj.oku`), durum filtresi ve yıl sorgu dizesinde; API kapalı, 500, 503, zaman aşımı, bozuk JSON → 503 "Veri kaynağına şu an ulaşılamıyor"; 401/403 → 403 yetki sayfası; stack trace yok; gerçek çerezle (Testing ve Development) Back-Channel Logout oturumu kapatır, çerez küçük (bilet sunucuda) |
 | **Selcuk.Olcum.Tests** | |
 | `Yerel_hedefler_kabul_ediliyor_varsayilanlar_dogru` | `localhost`, `127.0.0.1`, `[::1]` kabul; varsayılan tekrar 100, ısınma 5, kullanıcı 50, eşzamanlılık 1/10/25/50 |
 | `Localhost_disi_veya_https_olmayan_hedef_reddediliyor` (×8) | `obis.selcuk.edu.tr`, `example.com`, `localhost.example.com`, `192.168.1.10`, `10.0.0.1`, `0.0.0.0`, `http://localhost`, şemasız adres: ölçüm başlamaz |

@@ -1,0 +1,9 @@
+@page
+@model Selcuk.Otomasyon.Staj.Pages.Komisyon.YillaraGoreTakipModel
+@{
+    ViewData["Title"] = "Yıllara göre takip";
+}
+<h1>Yıllara göre takip</h1>
+<p class="giris-metni">Bölümündeki stajların başlangıç yılına ve türüne göre başvuru, onay ve tamamlanma sayıları.</p>
+
+<partial name="_YillikTablo" model="Model.Yillar" />

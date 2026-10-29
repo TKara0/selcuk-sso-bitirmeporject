@@ -1,0 +1,56 @@
+@page
+@model Selcuk.Otomasyon.Staj.Pages.Ogrenci.DefterModel
+@{
+    ViewData["Title"] = "Staj defterim";
+    var staj = Model.Defter.Staj;
+}
+<h1>Staj defterim</h1>
+
+@if (staj is null)
+{
+    <p class="giris-metni">Defter tutulacak bir stajın yok. Staj başladığında günlük girişlerini buraya yazarsın.</p>
+}
+else
+{
+    <p class="giris-metni">
+        @StajOtomasyonu.TurAdi(staj.Tur), @staj.FirmaAdi (@StajOtomasyonu.Tarih(staj.Baslangic) – @StajOtomasyonu.Tarih(staj.Bitis)).
+        Durum: <span class="@StajOtomasyonu.DurumSinifi(staj.Durum)">@StajOtomasyonu.DurumAdi(staj.Durum)</span>
+    </p>
+
+    <h2>Günlük girişler</h2>
+    <div class="tablo-kabi">
+        <table class="tablo tablo-yigin defter">
+            <caption class="gorunmez">Defter girişleri</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Tarih</th>
+                    <th scope="col">Yapılan çalışma</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var giris in Model.Defter.Girisler)
+                {
+                    <tr>
+                        <th scope="row" class="yigin-baslik">@StajOtomasyonu.Tarih(giris.Tarih)</th>
+                        <td>@giris.Calisma</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <h2>Yeni giriş</h2>
+    <form method="post" class="form">
+        <div class="alan">
+            <label for="tarih">Tarih</label>
+            <input id="tarih" name="tarih" type="date" class="metin-alani" required />
+        </div>
+        <div class="alan">
+            <label for="calisma">Yapılan çalışma</label>
+            <textarea id="calisma" name="calisma" class="metin-alani" rows="4" required maxlength="1000"></textarea>
+        </div>
+        <div class="dugmeler">
+            <button type="submit" class="dugme dugme-uygulama">Kaydet</button>
+        </div>
+    </form>
+}

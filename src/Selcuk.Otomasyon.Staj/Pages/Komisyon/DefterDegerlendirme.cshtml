@@ -1,0 +1,49 @@
+@page
+@model Selcuk.Otomasyon.Staj.Pages.Komisyon.DefterDegerlendirmeModel
+@{
+    ViewData["Title"] = "Defter değerlendirme";
+}
+<h1>Defter değerlendirme</h1>
+<p class="giris-metni">Teslim edilen staj defterleri. Kabul edilen gün sayısı girişi temsilidir; kaydedilmez.</p>
+
+@if (Model.Defterler.Count == 0)
+{
+    <p>Değerlendirme bekleyen defter yok.</p>
+}
+else
+{
+    <div class="tablo-kabi">
+        <table class="tablo tablo-yigin defterler">
+            <caption class="gorunmez">Teslim edilen defterler</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Öğrenci</th>
+                    <th scope="col">Staj türü</th>
+                    <th scope="col">Firma</th>
+                    <th scope="col" class="sayi">İş günü</th>
+                    <th scope="col">Kabul edilen gün</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var kayit in Model.Defterler)
+                {
+                    <tr data-staj="@kayit.Id">
+                        <th scope="row" class="yigin-baslik">@kayit.OgrenciAdi <span class="mono ipucu">@kayit.OgrenciNo</span></th>
+                        <td>@StajOtomasyonu.TurAdi(kayit.Tur)</td>
+                        <td>@kayit.FirmaAdi</td>
+                        <td class="sayi" data-etiket="İş günü:">@kayit.IsGunu</td>
+                        <td>
+                            <form method="post" class="satir-islemleri">
+                                <input type="hidden" name="id" value="@kayit.Id" />
+                                <label class="gorunmez" for="kabul-@kayit.Id">Kabul edilen gün: @kayit.OgrenciAdi</label>
+                                <input id="kabul-@kayit.Id" name="kabulGun" type="number" min="0" max="@kayit.IsGunu"
+                                       value="@kayit.IsGunu" class="metin-alani" required />
+                                <button type="submit" class="dugme dugme-uygulama">Kaydet<span class="gorunmez">: @kayit.OgrenciAdi</span></button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

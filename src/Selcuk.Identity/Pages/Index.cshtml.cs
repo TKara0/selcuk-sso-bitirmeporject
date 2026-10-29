@@ -23,7 +23,12 @@ public class IndexModel(
     UserManager<ApplicationUser> userManager,
     IOptionsMonitor<OpenIddictServerOptions> serverAyarlari) : PageModel
 {
-    public sealed record UygulamaKarti(string Ad, string Aciklama, string AnaSayfa, string GirisAdresi, bool MfaGerekli);
+    /// <param name="Vurgu">Simgenin vurgu rengi adı (site.css'te .uygulama-simge-&lt;ad&gt;); yoksa firuze.</param>
+    public sealed record UygulamaKarti(string Ad, string Aciklama, string AnaSayfa, string GirisAdresi, bool MfaGerekli,
+        string? Vurgu = null);
+
+    /// <summary>Uygulamalarım'da tanımlı vurgu renkleri (site.css); başka bir değer yok sayılır.</summary>
+    public static readonly IReadOnlySet<string> VurguRenkleri = new HashSet<string>(StringComparer.Ordinal) { "zeytin" };
 
     public List<UygulamaKarti> Uygulamalar { get; } = [];
 
@@ -63,8 +68,11 @@ public class IndexModel(
                 ?? await applicationManager.GetClientIdAsync(uygulama, HttpContext.RequestAborted)
                 ?? string.Empty;
 
+            var vurgu = ozellikler.TryGetValue(Istemciler.VurguOzelligi, out var v) && v.ValueKind == System.Text.Json.JsonValueKind.String
+                && VurguRenkleri.Contains(v.GetString()!) ? v.GetString() : null;
+
             Uygulamalar.Add(new UygulamaKarti(ad, aciklama, anaSayfa.GetString()!, girisAdresi,
-                IstemciErisimi.MfaZorunlu(ozellikler)));
+                IstemciErisimi.MfaZorunlu(ozellikler), vurgu));
         }
 
         Uygulamalar.Sort((x, y) => string.Compare(x.Ad, y.Ad, StringComparison.CurrentCulture));

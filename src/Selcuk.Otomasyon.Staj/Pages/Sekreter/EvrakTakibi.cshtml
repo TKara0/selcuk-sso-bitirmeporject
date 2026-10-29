@@ -1,0 +1,34 @@
+@page
+@model Selcuk.Otomasyon.Staj.Pages.Sekreter.EvrakTakibiModel
+@{
+    ViewData["Title"] = "Evrak takibi";
+    string Durum(bool var) => var ? "Teslim edildi" : "Eksik";
+    string Sinif(bool var) => var ? "etiket etiket-uygulama" : "etiket etiket-tehlike";
+}
+<h1>Evrak takibi</h1>
+<p class="giris-metni">Bölümündeki onaylanmış stajların staj kabul belgesi, SGK girişi ve staj defteri durumu.</p>
+
+<div class="tablo-kabi">
+    <table class="tablo tablo-yigin evraklar">
+        <caption class="gorunmez">Staj evrakları</caption>
+        <thead>
+            <tr>
+                <th scope="col">Öğrenci ve staj</th>
+                <th scope="col">Staj kabul belgesi</th>
+                <th scope="col">SGK girişi</th>
+                <th scope="col">Staj defteri</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var evrak in Model.Evraklar)
+            {
+                <tr data-staj="@evrak.StajId">
+                    <th scope="row" class="yigin-baslik">@evrak.OgrenciAdi <span class="mono ipucu">@evrak.OgrenciNo</span>, @StajOtomasyonu.TurAdi(evrak.Tur)</th>
+                    <td data-etiket="Kabul belgesi:"><span class="@Sinif(evrak.KabulBelgesi)">@Durum(evrak.KabulBelgesi)</span></td>
+                    <td data-etiket="SGK:"><span class="@Sinif(evrak.SgkGirisi)">@Durum(evrak.SgkGirisi)</span></td>
+                    <td data-etiket="Defter:"><span class="@Sinif(evrak.DefterTeslim)">@Durum(evrak.DefterTeslim)</span></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

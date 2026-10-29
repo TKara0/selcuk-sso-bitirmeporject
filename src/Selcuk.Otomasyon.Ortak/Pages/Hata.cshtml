@@ -1,0 +1,13 @@
+@page
+@model Selcuk.Otomasyon.Ortak.Pages.HataModel
+@attribute [Microsoft.AspNetCore.Mvc.IgnoreAntiforgeryToken]
+@{
+    ViewData["Title"] = Model.Baslik;
+    ViewData[Duzen.Ayar.Genislik] = "dar";
+}
+<div class="durum-sayfasi">
+    @Html.Raw(KapiIsareti.Kapali)
+    <h1>@Model.Baslik</h1>
+    <p class="giris-metni">@Model.Aciklama</p>
+    <a class="dugme dugme-uygulama" href="/">Ana sayfaya dön</a>
+</div>

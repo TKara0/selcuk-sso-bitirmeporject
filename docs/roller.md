@@ -69,6 +69,7 @@ eklenebilir. Kimlik sunucusu rolü bir sonraki açılışta oluşturur; Hesabım
 | | `intibak_komisyonu` | Ders eşleştirme, muafiyet kararı |
 | | `bolum_baskani` | Onay listesi |
 | | `bolum_sekreteri` | İntibak raporları |
+| | `fakulte_sekreteri` | Yönetim kuruluna gidecek evrak |
 | Staj | `ogrenci` | Başvuru, staj defteri, sonuç |
 | | `staj_komisyonu` | Başvuru inceleme, yıllara göre takip |
 | | `bolum_sekreteri` | Evrak listesi |
@@ -83,13 +84,16 @@ eklenebilir. Kimlik sunucusu rolü bir sonraki açılışta oluşturur; Hesabım
 | Bölüm Kurul Karar | `bolum_baskani` | Gündem ve toplantı oluşturma |
 | | `bolum_kurulu_uyesi` | Gündem, oylama |
 | | `bolum_sekreteri` | Tutanak ve arşiv |
+| | `fakulte_sekreteri` | Gelen kararlar |
 | Öğrenci Danışmanlık | `danisman` | Öğrenci listesi, görüşme notları |
 | | `ogrenci` | Danışmanım, görüşme talebi |
+| | `bolum_baskani` | Danışman atama |
 | İŞKUR | `iskur_sorumlusu` | Devam girişi, takip |
 | | `ogrenci` | Kendi devam durumu |
 | MÜDEK | `mudek_komisyonu` | Program çıktıları, eksikler, raporlar |
 | | `akademisyen` | Ders çıktısı veri girişi |
 | | `bolum_baskani` | Raporlar |
+| | `bolum_sekreteri` | Rapor ve evrak arşivi |
 | Lisans Projeleri | `ogrenci` | Konu seçimi, aşamalar |
 | | `akademisyen` | Konu önerisi, değerlendirme |
 | | `bolum_baskani` | Eşleştirme |
@@ -99,6 +103,14 @@ eklenebilir. Kimlik sunucusu rolü bir sonraki açılışta oluşturur; Hesabım
 | ÇAP-Yandal | `ogrenci` | Başvuru ve durum |
 | | `cap_yandal_koordinatoru` | Başvurular, takip |
 | | `bolum_sekreteri` | Evrak |
+| | `bolum_baskani` | Başvuru onayı |
+
+Danışman hoca ve proje hocası gibi kişiye bağlı ilişkiler rol değildir, uygulama verisinde tutulur (ör. danışmanın
+öğrenci listesi, projenin hocası); rol yalnızca ekranın kime açık olduğunu belirler.
+
+**Staj** temsili ekranlarıyla eklendi (`src/Selcuk.Otomasyon.Staj`, https://localhost:5302; ekranlar ve roller
+`StajOtomasyonu.Menu`'de, README > Staj Otomasyonu). Diğer otomasyonlar
+[otomasyon-sablonu.md](otomasyon-sablonu.md)'deki kontrol listesiyle eklenecek.
 
 Rol sahibi kullanıcılar kullanıcı türlerinin ekranlarını da görür: örneğin `bolum_baskani` aynı zamanda
 `akademisyen`'dir ve Etik Kurul'da başvuru, Lisans Projeleri'nde konu önerisi ekranlarını da görür.

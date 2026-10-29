@@ -1,0 +1,28 @@
+@page
+@model Selcuk.Otomasyon.Staj.Pages.Ogrenci.SonucModel
+@{
+    ViewData["Title"] = "Sonuç";
+}
+<h1>Sonuç</h1>
+<p class="giris-metni">Staj komisyonunun değerlendirmesi ve kabul edilen gün sayıları.</p>
+
+@if (Model.Sonuclar.Count == 0)
+{
+    <p>Değerlendirilmiş bir stajın henüz yok.</p>
+}
+else
+{
+    <ul class="satirlar sonuclar">
+        @foreach (var kayit in Model.Sonuclar)
+        {
+            <li data-staj="@kayit.Id">
+                <p class="satir-baslik">
+                    @StajOtomasyonu.TurAdi(kayit.Tur) — @kayit.FirmaAdi
+                    <span class="@StajOtomasyonu.DurumSinifi(kayit.Durum)">@StajOtomasyonu.DurumAdi(kayit.Durum)</span>
+                </p>
+                <p>Kabul edilen gün: <strong>@(kayit.KabulEdilenGun?.ToString(StajOtomasyonu.Tr) ?? "—")</strong> / @kayit.IsGunu iş günü</p>
+                <p class="ipucu">@(kayit.KomisyonNotu ?? "Komisyon notu yok.")</p>
+            </li>
+        }
+    </ul>
+}

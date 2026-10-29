@@ -1,0 +1,41 @@
+@page
+@model Selcuk.Otomasyon.Staj.Pages.Ogrenci.StajlarimModel
+@{
+    ViewData["Title"] = "Stajlarım";
+}
+<h1>Stajlarım</h1>
+<p class="giris-metni">Staj I, Staj II ve İşletmede Mesleki Eğitim (İME) kayıtların ve durumları.</p>
+
+@if (Model.Kayitlar.Count == 0)
+{
+    <p>Henüz staj kaydın yok. <a href="/Ogrenci/Basvuru">Staj başvurusu</a> yapabilirsin.</p>
+}
+else
+{
+    <div class="tablo-kabi">
+        <table class="tablo tablo-yigin stajlar">
+            <caption class="gorunmez">Staj kayıtların</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Staj türü</th>
+                    <th scope="col">Firma</th>
+                    <th scope="col">Tarihler</th>
+                    <th scope="col" class="sayi">İş günü</th>
+                    <th scope="col">Durum</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var kayit in Model.Kayitlar)
+                {
+                    <tr data-staj="@kayit.Id">
+                        <th scope="row" class="yigin-baslik">@StajOtomasyonu.TurAdi(kayit.Tur)</th>
+                        <td>@kayit.FirmaAdi</td>
+                        <td data-etiket="Tarihler:">@StajOtomasyonu.Tarih(kayit.Baslangic) – @StajOtomasyonu.Tarih(kayit.Bitis)</td>
+                        <td class="sayi" data-etiket="İş günü:">@kayit.IsGunu</td>
+                        <td><span class="@StajOtomasyonu.DurumSinifi(kayit.Durum)">@StajOtomasyonu.DurumAdi(kayit.Durum)</span></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

@@ -1,0 +1,26 @@
+@page
+@model Selcuk.Otomasyon.Staj.Pages.Baskan.OzetModel
+@{
+    ViewData["Title"] = "Özet";
+    var ozet = Model.Ozet;
+}
+<h1>Özet</h1>
+<p class="giris-metni">Bölümündeki stajların durumu (@ozet.Yil).</p>
+
+<dl class="ozetler">
+    <div class="ozet">
+        <dt>Aktif staj</dt>
+        <dd data-ozet="aktif">@ozet.AktifStaj</dd>
+    </div>
+    <div class="ozet">
+        <dt>Bekleyen başvuru</dt>
+        <dd data-ozet="bekleyen">@ozet.BekleyenBasvuru</dd>
+    </div>
+    <div class="ozet">
+        <dt>Bu yıl tamamlanan</dt>
+        <dd data-ozet="tamamlanan">@ozet.Tamamlanan</dd>
+    </div>
+</dl>
+
+<h2>Yıl ve staj türüne göre</h2>
+<partial name="_YillikTablo" model="ozet.Yillar" />

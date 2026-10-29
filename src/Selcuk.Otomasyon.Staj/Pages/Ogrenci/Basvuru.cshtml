@@ -1,0 +1,43 @@
+@page
+@model Selcuk.Otomasyon.Staj.Pages.Ogrenci.BasvuruModel
+@{
+    ViewData["Title"] = "Staj başvurusu";
+}
+<h1>Staj başvurusu</h1>
+<p class="giris-metni">Başvurun staj komisyonunun incelemesine gider. Bu ekran temsilidir; başvuru kaydedilmez.</p>
+
+<form method="post" class="form basvuru-formu">
+    <div class="alan">
+        <label for="tur">Staj türü</label>
+        <select id="tur" name="tur" class="metin-alani" required>
+            @foreach (var tur in Enum.GetValues<StajTuru>())
+            {
+                <option value="@tur">@StajOtomasyonu.TurAdi(tur)</option>
+            }
+        </select>
+    </div>
+    <div class="alan">
+        <label for="firma">Firma adı</label>
+        <input id="firma" name="firmaAdi" class="metin-alani" required maxlength="150" />
+    </div>
+    <div class="alan">
+        <label for="adres">Firma adresi</label>
+        <textarea id="adres" name="firmaAdresi" class="metin-alani" rows="3" required maxlength="300"></textarea>
+    </div>
+    <div class="alan">
+        <label for="baslangic">Başlangıç tarihi</label>
+        <input id="baslangic" name="baslangic" type="date" class="metin-alani" required />
+    </div>
+    <div class="alan">
+        <label for="bitis">Bitiş tarihi</label>
+        <input id="bitis" name="bitis" type="date" class="metin-alani" required />
+    </div>
+    <div class="alan">
+        <label for="isgunu">İş günü sayısı</label>
+        <input id="isgunu" name="isGunu" type="number" min="1" max="120" class="metin-alani" required aria-describedby="isgunu-ipucu" />
+        <p class="ipucu" id="isgunu-ipucu">Staj I ve Staj II için 20, İME için 70 iş günü.</p>
+    </div>
+    <div class="dugmeler">
+        <button type="submit" class="dugme dugme-uygulama">Başvur</button>
+    </div>
+</form>

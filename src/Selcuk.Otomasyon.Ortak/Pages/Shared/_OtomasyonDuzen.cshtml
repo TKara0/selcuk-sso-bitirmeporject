@@ -1,0 +1,66 @@
+@*
+    Otomasyonların ortak düzeni, _SelcukDuzen'in (Selcuk.Arayuz) üstünde: üst çubukta uygulama adı ve simgesi
+    (uygulamanın vurgu rengi; firuze ve kapı işareti yalnızca hesap menüsü gibi kimlik öğelerinde), içeriğin üstünde
+    sabit "Temsili ekran" bandı, solda rol tabanlı menü (rol başlıklarıyla; dar ekranda "Menü" düğmesiyle açılır,
+    selcuk.js; betik kapalıysa açık kalır), temsili işlem mesajı (TempData) ve alt bilgide veri kaynağı rozeti.
+    Stiller: otomasyon.css (bu kütüphane) ve uygulamanın kendi /css/site.css'i (vurgu rengi).
+*@
+@inject OtomasyonBilgisi Bilgi
+@inject OtomasyonMenusu Menu
+@inject Microsoft.Extensions.Options.IOptions<VeriKaynagiAyarlari> VeriKaynagi
+@{
+    Layout = "_SelcukDuzen";
+    ViewData[Duzen.Ayar.UygulamaAdi] = Bilgi.Ad;
+    ViewData[Duzen.Ayar.UygulamaSimgesi] = Bilgi.Simge;
+    ViewData[Duzen.Ayar.AltBilgi] = $"{Bilgi.Ad} temsilî ekranlardan oluşur, veriler örnektir. Giriş Tek Şifre Giriş Sistemi ile yapılır.";
+    var dar = ViewData[Duzen.Ayar.Genislik] as string == "dar";
+    ViewData[Duzen.Ayar.Genislik] = "genis";
+
+    var gecerli = ViewContext.RouteData.Values["page"] as string;
+    var gruplar = User.Identity?.IsAuthenticated == true ? Menu.Gruplar(User) : [];
+    var mesaj = TempData[TemsiliIslem.TempDataAnahtari] as string;
+}
+@section Stiller {
+    <link rel="stylesheet" href="~/_content/Selcuk.Otomasyon.Ortak/css/otomasyon.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <noscript><link rel="stylesheet" href="~/_content/Selcuk.Otomasyon.Ortak/css/otomasyon-betiksiz.css" asp-append-version="true" /></noscript>
+}
+@section HesapMenusu {
+    <partial name="_IstemciHesapMenusu" model="@(new[] { new HesapMenusuBaglantisi("Profilim", Url.Page("/Profilim")!, gecerli == "/Profilim") })" />
+}
+@section AltBilgiEk {
+    <p><span class="etiket etiket-notr veri-rozeti">Veri: @(VeriKaynagi.Value.ApiMi ? "API" : "örnek veri")</span></p>
+}
+<div class="bant temsili-bant" role="note">
+    @Html.Raw(Simge.Bilgi)
+    <p>Temsili ekran: gösterilen veriler örnektir, yapılan işlemler kaydedilmez.</p>
+</div>
+<div class="otomasyon@(gruplar.Count == 0 ? " otomasyon-menusuz" : "")">
+    @if (gruplar.Count > 0)
+    {
+        @* Geniş ekranda her zaman açık kenar menüsü; dar ekranda "Menü" düğmeli liste (selcuk.js, data-menu). Betik
+           kapalıysa otomasyon-betiksiz.css dar ekranda da kenar menüsünü gösterir. *@
+        <nav class="otomasyon-menusu menu-genis" aria-label="@Bilgi.Ad menüsü">
+            <div class="menu-listesi" id="otomasyon-menu-listesi">
+                <partial name="_OtomasyonMenuListesi" model="gruplar" view-data="@(new ViewDataDictionary(ViewData) { ["MenuOnek"] = "menu" })" />
+            </div>
+        </nav>
+        <nav class="otomasyon-menusu menu-dar" aria-label="@Bilgi.Ad menüsü" data-menu>
+            <button type="button" class="dugme dugme-ikincil menu-dugmesi" aria-expanded="false"
+                    aria-controls="otomasyon-menu-listesi-dar" data-menu-dugme>Menü</button>
+            <div class="menu-listesi" id="otomasyon-menu-listesi-dar" hidden>
+                <partial name="_OtomasyonMenuListesi" model="gruplar" view-data="@(new ViewDataDictionary(ViewData) { ["MenuOnek"] = "menu-dar" })" />
+            </div>
+        </nav>
+    }
+    <div class="otomasyon-icerik@(dar ? " otomasyon-icerik-dar" : "")">
+        @if (mesaj is not null)
+        {
+            <div class="bant bant-uygulama" role="status">
+                @Html.Raw(Simge.Bilgi)
+                <p>@mesaj</p>
+            </div>
+        }
+        @RenderBody()
+    </div>
+</div>

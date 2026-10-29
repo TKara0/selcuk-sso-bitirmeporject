@@ -1,0 +1,51 @@
+@page
+@*
+    Ortak ana sayfa: girişsiz kullanıcıya uygulamanın tanıtımı ve "Tek Şifre ile giriş yap"; giriş yapmış kullanıcıya
+    rollerine göre karşılama ve menüdeki ekranların kısayol kartları (rol başlıkları altında). Otomasyon kendi
+    Pages/Index.cshtml'ini yazarsa o kullanılır.
+*@
+@inject OtomasyonBilgisi Bilgi
+@inject OtomasyonMenusu Menu
+@{
+    ViewData["Title"] = "Ana sayfa";
+    var girisYapmis = User.Identity?.IsAuthenticated == true;
+    var gruplar = girisYapmis ? Menu.Gruplar(User) : [];
+    var ad = User.Identity?.Name;
+}
+@if (!girisYapmis)
+{
+    <div class="karsilama">
+        <h1>@Bilgi.Ad</h1>
+        <p class="giris-metni">@Bilgi.Aciklama</p>
+        <partial name="_TekSifreGirisi" model="@("/Giris")" />
+    </div>
+}
+else
+{
+    <h1>Merhaba@(string.IsNullOrWhiteSpace(ad) ? "" : ", " + ad)</h1>
+    <p class="giris-metni">@Bilgi.Aciklama</p>
+    @if (gruplar.Count == 0)
+    {
+        <p>Rollerine açık bir ekran yok. Yetki için bölüm sekreterliğine başvur.</p>
+    }
+    else
+    {
+        <p>Rollerine göre görebildiğin ekranlar: @string.Join(", ", gruplar.Select(g => g.Baslik.ToLower(System.Globalization.CultureInfo.GetCultureInfo("tr-TR")))).</p>
+    }
+
+    @for (var i = 0; i < gruplar.Count; i++)
+    {
+        <h2 id="kisayol-@i">@gruplar[i].Baslik</h2>
+        <ul class="satirlar kisayollar" aria-labelledby="kisayol-@i">
+            @foreach (var oge in gruplar[i].Ogeler)
+            {
+                <li>
+                    <a class="kisayol" href="@oge.Sayfa">
+                        <span class="satir-baslik">@oge.Baslik</span>
+                        <span class="ipucu">@oge.Aciklama</span>
+                    </a>
+                </li>
+            }
+        </ul>
+    }
+}

@@ -1,0 +1,161 @@
+/*
+ * Bölüm otomasyonlarının ortak yerleşimi (_OtomasyonDuzen). Renk, yazı, aralık ve köşe değerleri ortak tasarım
+ * sisteminin token'larıdır (_content/Selcuk.Arayuz/css/selcuk.css; o dosya değiştirilmez). Uygulamanın vurgu rengi
+ * (--uygulama-vurgu, --uygulama-vurgu-acik) uygulamanın kendi /css/site.css'indedir. Firuze yalnızca kimlik öğelerinde.
+ */
+
+/* Sabit "Temsili ekran" bandı: nötr (taş zemin, soluk kenar); uyarı veya hata gibi görünmez. */
+.temsili-bant {
+    background: var(--yuzey);
+    border-left-color: var(--kontrol-cizgi);
+}
+
+.temsili-bant > svg {
+    color: var(--soluk);
+}
+
+/* Solda menü, sağda içerik; dar ekranda menü içeriğin üstünde ve "Menü" düğmesiyle açılır. */
+.otomasyon {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--a6);
+}
+
+.otomasyon-icerik {
+    min-width: 0;
+}
+
+.otomasyon-icerik-dar {
+    max-width: 560px;
+}
+
+.otomasyon-menusu {
+    position: relative;
+}
+
+.menu-dugmesi {
+    width: 100%;
+    justify-content: flex-start;
+}
+
+/* Dar ekranda kenar menüsü gizli, "Menü" düğmeli liste görünür; geniş ekranda tersi. */
+.menu-genis {
+    display: none;
+}
+
+.menu-dar .menu-listesi {
+    margin-top: var(--a2);
+}
+
+.menu-listesi {
+    padding: var(--a2) 0;
+    background: var(--yuzey);
+    border: 1px solid var(--cizgi);
+    border-radius: var(--kose-yuzey);
+}
+
+.menu-listesi ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.menu-grubu {
+    margin: var(--a3) 0 var(--a1);
+    padding: 0 var(--a4);
+    color: var(--soluk);
+    font-size: var(--boyut-kucuk);
+    font-weight: 700;
+}
+
+.menu-listesi a {
+    display: flex;
+    align-items: center;
+    min-height: var(--dokunma);
+    padding: var(--a2) var(--a4);
+    color: var(--murekkep);
+    text-decoration: none;
+}
+
+.menu-listesi a:hover {
+    background: var(--uygulama-vurgu-acik);
+}
+
+.menu-listesi a[aria-current="page"] {
+    padding-left: calc(var(--a4) - 4px);
+    font-weight: 700;
+    border-left: 4px solid var(--uygulama-vurgu);
+}
+
+@media (min-width: 840px) {
+    .otomasyon {
+        grid-template-columns: 240px minmax(0, 1fr);
+        gap: var(--a8);
+    }
+
+    .otomasyon-menusuz {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .menu-genis {
+        display: block;
+    }
+
+    .menu-dar {
+        display: none;
+    }
+
+    .menu-genis .menu-listesi {
+        position: sticky;
+        top: var(--a4);
+    }
+}
+
+/* Ana sayfa kısayolları: satır listesinde bütün satır bağlantı. */
+.kisayollar > li {
+    padding: 0;
+}
+
+.kisayol {
+    display: flex;
+    flex-direction: column;
+    gap: var(--a1);
+    padding: var(--a4) 0;
+    color: var(--murekkep);
+    text-decoration: none;
+}
+
+.uygulama-icerigi a.kisayol {
+    color: var(--murekkep);
+}
+
+.kisayol .satir-baslik {
+    color: var(--uygulama-vurgu);
+    font-weight: 700;
+    text-decoration: underline;
+}
+
+.kisayol .ipucu {
+    color: var(--soluk);
+}
+
+/* Tablo satırındaki temsili işlem formları (Onayla / Reddet / Kaydet) yan yana. */
+.satir-islemleri {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--a2);
+    margin: 0;
+}
+
+.satir-islemleri form {
+    margin: 0;
+}
+
+.satir-islemleri input[type="number"] {
+    width: 6em;
+}
+
+/* Alt bilgideki veri kaynağı rozeti. */
+.alt-bilgi .veri-rozeti {
+    font-weight: 700;
+}

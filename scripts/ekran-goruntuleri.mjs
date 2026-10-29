@@ -1,4 +1,5 @@
-// Ekran görüntüleri: kimlik sunucusu, Demo OBİS, Demo Yemekhane ve Tek Kapı ekranlarını Playwright ile çeker.
+// Ekran görüntüleri: kimlik sunucusu, Demo OBİS, Demo Yemekhane, Staj Otomasyonu ve Tek Kapı ekranlarını Playwright
+// ile çeker.
 //
 //   docs/tasarim/d2/    gözden geçirme için her ekranın açık, koyu (1280 × 800) ve 390px (mobil) hâli, tam sayfa
 //   docs/tez-gorselleri/ tez için seçilmiş ekranlar, açık tema, 1440px genişlik, tam sayfa
@@ -7,11 +8,11 @@
 //   node --use-system-ca scripts/ekran-goruntuleri.mjs
 //
 // Ne yapar:
-//   - 4545, 5001, 5101, 5102, 5201 portlarından biri doluysa durur (kullanıcının uygulamalarına dokunmaz).
+//   - 4545, 5001, 5101, 5102, 5201, 5302 portlarından biri doluysa durur (kullanıcının uygulamalarına dokunmaz).
 //   - Kimlik sunucusu için geçici bir LocalDB veritabanı (SelcukSSO_Ekran_<rastgele>) kurar; test kullanıcılarının
 //     şifreleri ve demo istemci sırrı bu çalıştırma için rastgele üretilir, yalnızca bellekte ve başlatılan süreçlerin
 //     ortam değişkenlerinde durur (yazdırılmaz, dosyaya yazılmaz). Yalnızca test kullanıcıları (203011001,
-//     hoca.test, personel.test) kullanılır.
+//     hoca.test, personel.test, komisyon.test, baskan.test) kullanılır.
 //   - Uygulamaları scripts/run-all.ps1 -TarayiciAcma ile başlatır; Tek Kapı'yı GEÇİCİ bir veri klasörüyle
 //     (PORTAL_DATA_DIR) SSO modunda kendisi başlatır. Gerçek kasaya (araclar/tek-kapi/data) dokunmaz, okumaz.
 //     Tek Kapı'da yalnızca portal ekranları çekilir: hiçbir sistem "Aç"ılmaz, yönetilen tarayıcı başlatılmaz; kasaya
@@ -43,13 +44,14 @@ const TEZ = path.join(KOK, 'docs', 'tez-gorselleri');
 const KIMLIK = 'https://localhost:5001';
 const OBIS = 'https://localhost:5101';
 const YEMEKHANE = 'https://localhost:5102';
+const STAJ = 'https://localhost:5302';
 const TEK_KAPI_ADRES = 'http://127.0.0.1:4545';
-const PORTLAR = [4545, 5001, 5101, 5102, 5201];
+const PORTLAR = [4545, 5001, 5101, 5102, 5201, 5302];
 
 // Bu çalıştırmanın sırları: yalnızca bellekte.
 const rastgele = (n) => crypto.randomBytes(n).toString('base64url');
 const sifreUret = () => `Ek${rastgele(12)}7a`;
-const SIFRELER = { ogrenci: sifreUret(), akademisyen: sifreUret(), personel: sifreUret() };
+const SIFRELER = { ogrenci: sifreUret(), akademisyen: sifreUret(), personel: sifreUret(), komisyon: sifreUret(), baskan: sifreUret() };
 const ISTEMCI_SIRRI = rastgele(32);
 const ANA_SIFRE = `Kasa-${rastgele(12)}`;
 const sirlar = [...Object.values(SIFRELER), ISTEMCI_SIRRI, ANA_SIFRE, SAHTE.obisPass, SAHTE.mailPass];
@@ -61,9 +63,12 @@ const ORTAM = {
   TestKullanicilari__Ogrenci__Sifre: SIFRELER.ogrenci,
   TestKullanicilari__Akademisyen__Sifre: SIFRELER.akademisyen,
   TestKullanicilari__Personel__Sifre: SIFRELER.personel,
-  // İki demo istemci aynı sırrı kullanır (ikisi de Kimlik:ClientSecret okur; ortam değişkeni ortak).
+  TestKullanicilari__Komisyon__Sifre: SIFRELER.komisyon,
+  TestKullanicilari__BolumBaskani__Sifre: SIFRELER.baskan,
+  // Gizli istemciler aynı sırrı kullanır (hepsi Kimlik:ClientSecret okur; ortam değişkeni ortak).
   Istemciler__DemoObis__ClientSecret: ISTEMCI_SIRRI,
   Istemciler__DemoYemekhane__ClientSecret: ISTEMCI_SIRRI,
+  Istemciler__StajOtomasyonu__ClientSecret: ISTEMCI_SIRRI,
   Kimlik__ClientSecret: ISTEMCI_SIRRI,
 };
 delete ORTAM.Olcum__HizSiniriGevset;
@@ -139,7 +144,8 @@ async function tasmaKontrolu(sayfa, ad, gorunum) {
 }
 
 const TEZ_SIRASI = ['giris', 'onay', 'uygulamalarim', 'obis-notlarim', 'obis-token-inceleme', 'yemekhane-menu',
-  'tekkapi-ana', 'tekkapi-kilit', 'guvenlik-gecmisi', 'iki-adim-kurulum'];
+  'tekkapi-ana', 'tekkapi-kilit', 'guvenlik-gecmisi', 'iki-adim-kurulum',
+  'staj-stajlarim', 'staj-basvuru-inceleme', 'staj-ozet', 'staj-erisim-reddedildi'];
 
 async function cek(sayfa, ad, { mobil = true } = {}) {
   await hazirla(sayfa);
@@ -320,6 +326,17 @@ async function cekimler(tarayici) {
   await git(sayfa, YEMEKHANE + '/Profilim');
   await cek(sayfa, 'yemekhane-profilim');
 
+  console.log('Staj Otomasyonu (temsili, örnek veri)');
+  await git(sayfa, STAJ + '/Giris');
+  await izinVer(sayfa);
+  await adresiBekle(sayfa, new RegExp(`^${STAJ}/$`));
+  await cek(sayfa, 'staj-ana');
+  await git(sayfa, STAJ + '/Ogrenci/Stajlarim');
+  await cek(sayfa, 'staj-stajlarim');
+  await git(sayfa, STAJ + '/Komisyon/BasvuruInceleme');
+  await adresiBekle(sayfa, /ErisimReddedildi/);
+  await cek(sayfa, 'staj-erisim-reddedildi');
+
   console.log('Tek Kapı (geçici veri klasörü, SSO modu)');
   // 2FA kurulunca bu oturum iki aşamalı doğrulanmış sayılır (amr mfa); tek-kapi doğrudan onay ister.
   await git(sayfa, TEK_KAPI_ADRES + '/');
@@ -383,6 +400,28 @@ async function cekimler(tarayici) {
   await git(hoca.sayfa, OBIS + '/DersYonetimi');
   await cek(hoca.sayfa, 'obis-ders-yonetimi');
   await hoca.baglam.close();
+
+  const komisyon = await yeniBaglam(tarayici);
+  await git(komisyon.sayfa, STAJ + '/Giris');
+  await girisYap(komisyon.sayfa, 'komisyon.test', SIFRELER.komisyon);
+  await izinVer(komisyon.sayfa);
+  await adresiBekle(komisyon.sayfa, new RegExp(`^${STAJ}/$`));
+  await git(komisyon.sayfa, STAJ + '/Komisyon/BasvuruInceleme');
+  await cek(komisyon.sayfa, 'staj-basvuru-inceleme');
+  // Temsili işlem: Onayla gerçek bir POST yapar, veri değişmez, mesaj gösterilir.
+  await Promise.all([komisyon.sayfa.waitForNavigation(), komisyon.sayfa.click('form[action*="handler=Onayla"] button')]);
+  await komisyon.sayfa.waitForSelector('.bant-uygulama[role=status]');
+  await cek(komisyon.sayfa, 'staj-temsili-islem', { mobil: false });
+  await komisyon.baglam.close();
+
+  const baskan = await yeniBaglam(tarayici);
+  await git(baskan.sayfa, STAJ + '/Giris');
+  await girisYap(baskan.sayfa, 'baskan.test', SIFRELER.baskan);
+  await izinVer(baskan.sayfa);
+  await adresiBekle(baskan.sayfa, new RegExp(`^${STAJ}/$`));
+  await git(baskan.sayfa, STAJ + '/Baskan/Ozet');
+  await cek(baskan.sayfa, 'staj-ozet');
+  await baskan.baglam.close();
 
   const personel = await yeniBaglam(tarayici);
   await git(personel.sayfa, YEMEKHANE + '/Giris');

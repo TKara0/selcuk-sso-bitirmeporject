@@ -22,6 +22,8 @@ public static class Istemciler
     public const string IzinliKullaniciAdlariOzelligi = "izinliKullaniciAdlari";
     // true ise bu istemciye yalnızca iki aşamalı doğrulanmış (amr "mfa") oturumdan kod ve token verilir.
     public const string MfaZorunluOzelligi = "mfaZorunlu";
+    // Uygulamalarım kartındaki simgenin vurgu rengi (site.css'te tanımlı bir ad, ör. "zeytin"); yoksa firuze.
+    public const string VurguOzelligi = "vurgu";
 
     // Demo API (kaynak sunucusu): notlar.oku kapsamıyla verilen access token'ın aud'u demo-api olur.
     public const string DemoApiKaynagi = "demo-api";
@@ -38,6 +40,22 @@ public static class Istemciler
     public const string DemoYemekhaneRedirectUri = DemoYemekhaneAdres + "/signin-oidc";
     public const string DemoYemekhanePostLogoutRedirectUri = DemoYemekhaneAdres + "/signout-callback-oidc";
     public const string DemoYemekhaneBackChannelLogoutUri = DemoYemekhaneAdres + "/signout-backchannel";
+
+    // Bölüm otomasyonları (portlar 5301-5311, docs/mimari.md). Gelecekteki Staj API'si: staj.oku / staj.yaz
+    // kapsamlarıyla verilen access token'ın aud'u staj-api olur.
+    public const string StajApiKaynagi = "staj-api";
+    public const string StajOkuKapsami = "staj.oku";
+    public const string StajYazKapsami = "staj.yaz";
+
+    public const string StajOtomasyonuClientId = "staj-otomasyonu";
+    private const string StajOtomasyonuAdres = "https://localhost:5302";
+    public const string StajOtomasyonuRedirectUri = StajOtomasyonuAdres + "/signin-oidc";
+    public const string StajOtomasyonuPostLogoutRedirectUri = StajOtomasyonuAdres + "/signout-callback-oidc";
+    public const string StajOtomasyonuBackChannelLogoutUri = StajOtomasyonuAdres + "/signout-backchannel";
+
+    /// <summary>Staj Otomasyonu'na girebilen roller (en az biri).</summary>
+    public static readonly string[] StajOtomasyonuIzinliRolleri =
+        [Roller.Ogrenci, Roller.StajKomisyonu, Roller.BolumSekreteri, Roller.BolumBaskani];
 
     public const string TekKapiClientId = "tek-kapi";
     private const string TekKapiAdres = "http://127.0.0.1:4545";
@@ -67,6 +85,28 @@ public static class Istemciler
         DisplayName = "Not bilgilerini okuma",
         Resources = { DemoApiKaynagi },
     };
+
+    /// <summary>
+    /// Staj Otomasyonu (temsili ekranlar, örnek veri): gizli web istemcisi; yalnızca izinli rollere açık, gelecekteki
+    /// Staj API'si için staj.oku ve staj.yaz kapsamları.
+    /// </summary>
+    public static OpenIddictApplicationDescriptor StajOtomasyonu(string clientSecret)
+    {
+        var tanim = Tanim(StajOtomasyonuClientId, "Staj Otomasyonu", StajOtomasyonuAdres,
+            "Staj başvurusu, staj defteri, komisyon değerlendirmesi ve evrak takibi (temsili, örnek veri).", clientSecret);
+        tanim.Permissions.Add(Permissions.Prefixes.Scope + StajOkuKapsami);
+        tanim.Permissions.Add(Permissions.Prefixes.Scope + StajYazKapsami);
+        tanim.Properties[IzinliRollerOzelligi] = JsonSerializer.SerializeToElement(StajOtomasyonuIzinliRolleri);
+        tanim.Properties[VurguOzelligi] = JsonSerializer.SerializeToElement("zeytin");
+        return tanim;
+    }
+
+    /// <summary>Staj API'sinin kapsamları: kimlik sunucusunda açılışta oluşturulur veya güncellenir (tüm ortamlarda).</summary>
+    public static IReadOnlyList<OpenIddictScopeDescriptor> StajKapsamlari() =>
+    [
+        new() { Name = StajOkuKapsami, DisplayName = "Staj bilgilerini okuma", Resources = { StajApiKaynagi } },
+        new() { Name = StajYazKapsami, DisplayName = "Staj başvurusu ve değerlendirmesi yazma", Resources = { StajApiKaynagi } },
+    ];
 
     public static OpenIddictApplicationDescriptor DemoYemekhane(string clientSecret) => Tanim(
         DemoYemekhaneClientId, "Demo Yemekhane", DemoYemekhaneAdres,

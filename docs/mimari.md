@@ -28,9 +28,13 @@ flowchart LR
         direction TB
         OB["Selcuk.Demo.Obis :5101<br/>Notlarım · Ders Yönetimi"]
         YE["Selcuk.Demo.Yemekhane :5102<br/>Menü · Rezervasyonlarım"]
+        ST["Selcuk.Otomasyon.Staj :5302<br/>temsili ekranlar · örnek veri"]
+        OTO["Selcuk.Otomasyon.Ortak<br/>AddSelcukOtomasyon · rol tabanlı menü · veri kaynağı"]
         ORT["Selcuk.Istemci.Ortak<br/>AddSelcukSSO · /signout-backchannel · TokenYenileyici"]
         OB --- ORT
         YE --- ORT
+        ST --- OTO
+        OTO --- ORT
     end
 
     API["Selcuk.Demo.Api :5201<br/>kaynak sunucusu · GET /api/notlar"]
@@ -46,9 +50,11 @@ flowchart LR
     K -->|giriş, onay| Kimlik
     K --> OB
     K --> YE
+    K --> ST
     K --> TK
     OB -->|code + PKCE, token, userinfo, revoke| OI
     YE -->|code + PKCE, token, userinfo, revoke| OI
+    ST -->|code + PKCE, token, userinfo, revoke| OI
     OI -.->|logout_token<br/>Back-Channel Logout| ORT
     OB -->|Bearer access token| API
     API -.->|discovery + JWKS| OI
@@ -66,6 +72,37 @@ flowchart LR
 - **Tek Kapı** geçiş dönemi aracıdır: kullanıcı ona SSO ile girer, Tek Kapı gerçek sistemlere kendi bilgisayarındaki
   şifreli kasadan form doldurarak girer. Kimlik sunucusu gerçek sistemlerin şifrelerini görmez; kimlik sunucusu ve
   demo uygulamalar gerçek sistemlere bağlanmaz (kalın ok yalnızca Tek Kapı'dan çıkar).
+- **Bölüm otomasyonları** ortak şablonla (`Selcuk.Otomasyon.Ortak`, docs/otomasyon-sablonu.md) kurulur: SSO, rol
+  tabanlı menü ve yetki, temsili işlemler, veri kaynağı seçimi (`VeriKaynagi:Mod` Mock veya Api). Şimdilik ekranlar
+  temsilidir ve örnek veri gösterir; Api modunda veri, access token'la (aud `<otomasyon>-api`) ayrı bir kaynak
+  sunucusundan gelir (henüz yazılmadı; sözleşmeler docs/api-sozlesmeleri/).
+
+## Port ve istemci düzeni
+
+| Port | Uygulama | İstemci (`client_id`) | Durum |
+|---|---|---|---|
+| 5001 | Kimlik sunucusu (`Selcuk.Identity`) | — | var |
+| 5101 | Demo OBİS | `demo-obis` | var |
+| 5102 | Demo Yemekhane | `demo-yemekhane` | var |
+| 5201 | Demo API (kaynak sunucusu) | — (`aud` `demo-api`) | var |
+| 4545 | Tek Kapı (yerel, `http://127.0.0.1`) | `tek-kapi` | var (kaldırılması planlanıyor) |
+| 5301 | İntibak | `intibak-otomasyonu` | plan |
+| 5302 | Staj (`Selcuk.Otomasyon.Staj`) | `staj-otomasyonu` | var (temsili, örnek veri) |
+| 5303 | Etik Kurul | `etik-kurul-otomasyonu` | plan |
+| 5304 | Mezuniyet | `mezuniyet-otomasyonu` | plan |
+| 5305 | Bölüm Kurul Karar | `bolum-kurul-otomasyonu` | plan |
+| 5306 | Öğrenci Danışmanlık | `danismanlik-otomasyonu` | plan |
+| 5307 | İŞKUR | `iskur-otomasyonu` | plan |
+| 5308 | MÜDEK | `mudek-otomasyonu` | plan |
+| 5309 | Lisans Projeleri | `lisans-projeleri-otomasyonu` | plan |
+| 5310 | Sınav Başarısı Analizi | `sinav-analizi-otomasyonu` | plan |
+| 5311 | ÇAP-Yandal | `cap-yandal-otomasyonu` | plan |
+
+Otomasyon numaraları bölümün otomasyon listesindeki sıradır. Her otomasyon gizli web istemcisidir (Authorization Code +
+PKCE, explicit onay); redirect `https://localhost:<port>/signin-oidc`, post-logout `/signout-callback-oidc`,
+Back-Channel Logout `/signout-backchannel`, giriş başlatma `/Giris`. Plandaki `client_id`'ler önerilir; eklenirken
+kesinleşir. Gelecekteki API'ler için kaynak (`aud`) `<ad>-api`, kapsamlar `<ad>.oku` / `<ad>.yaz` (Staj: `staj-api`,
+`staj.oku`, `staj.yaz`).
 
 ## 1. Giriş (Demo OBİS, soğuk)
 

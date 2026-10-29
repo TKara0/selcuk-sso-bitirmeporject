@@ -4,7 +4,7 @@
     ViewData: Title, Duzen.Ayar.* (uygulama adı ve simgesi, genişlik, alt bilgi, giriş düzeninde kapı paneli metinleri).
     Bölümler: "Stiller" (uygulamanın kendi CSS'i), "HesapMenusu" (üst çubuğun sağı), "Sekmeler" (üst çubuğun altında;
     <nav class="sekmeler"><ul><li><a>…; gösterilecek sekme yoksa bölüm boş kalır); son ikisi giriş düzeninde
-    gösterilmez.
+    gösterilmez. "AltBilgiEk": alt bilgi metninin yanına (ör. otomasyonlarda veri kaynağı rozeti).
 *@
 @{
     var uygulama = ViewData[Duzen.Ayar.UygulamaAdi] as string ?? "Tek Şifre Giriş";
@@ -48,7 +48,7 @@
                 <main id="icerik" class="giris-icerik">
                     @RenderBody()
                 </main>
-                <footer class="alt-bilgi"><p>@altBilgi</p></footer>
+                <footer class="alt-bilgi"><p>@altBilgi</p>@await RenderSectionAsync("AltBilgiEk", required: false)</footer>
             </div>
         </div>
     }
@@ -73,7 +73,7 @@
         <main id="icerik" class="icerik@(genislik is "dar" or "genis" ? " icerik-" + genislik : "")@(simge is null ? "" : " uygulama-icerigi")">
             @RenderBody()
         </main>
-        <footer class="alt-bilgi"><p>@altBilgi</p></footer>
+        <footer class="alt-bilgi"><p>@altBilgi</p>@await RenderSectionAsync("AltBilgiEk", required: false)</footer>
     }
 </body>
 </html>

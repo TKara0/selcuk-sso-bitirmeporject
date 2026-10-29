@@ -1,6 +1,7 @@
 /*
  * Kimlik sunucusuna özel yerleşimler. Renk, yazı, aralık ve köşe değerleri ortak tasarım sisteminin token'larıdır
- * (_content/Selcuk.Arayuz/css/selcuk.css); burada yeni renk tanımlanmaz.
+ * (_content/Selcuk.Arayuz/css/selcuk.css); burada yeni renk tanımlanmaz. Tek istisna Uygulamalarım'daki
+ * otomasyon simgelerinin vurgu renkleridir (.uygulama-simge-<ad>; uygulamanın kendi site.css'indeki değerler).
  */
 
 /* Giriş ekranı */
@@ -41,6 +42,20 @@
     color: var(--baglanti);
     background: var(--firuze-acik);
     border-radius: var(--kose-kontrol);
+}
+
+/* Kendi vurgu rengi olan uygulamaların simgesi (istemci özelliği "vurgu"). Değerler uygulamanın site.css'iyle aynı;
+   kontrast: docs/otomasyon-sablonu.md. */
+.uygulama-simge-zeytin {
+    color: #4F6B34;
+    background: #E7EEDE;
+}
+
+@media (prefers-color-scheme: dark) {
+    .uygulama-simge-zeytin {
+        color: #A9C98B;
+        background: #22331C;
+    }
 }
 
 @media (min-width: 960px) {
