@@ -120,4 +120,9 @@ public sealed class TokenIncelemeTests
         Assert.DoesNotContain("sahte-imza", html);
         Assert.DoesNotContain("sahte-refresh-token", html);
     }
+
+    [Fact]
+    public void Role_claiminin_aciklamasi_rol_katmanlarini_soyluyor() =>
+        Assert.Equal("Kullanıcının rolleri (kullanıcı türü, idari görev ve komisyon üyelikleri)",
+            TokenIncelemeModel.AciklamaBul("role"));
 }

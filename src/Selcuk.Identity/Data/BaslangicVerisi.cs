@@ -5,8 +5,9 @@ using Selcuk.Identity.Hesap;
 namespace Selcuk.Identity.Data;
 
 /// <summary>
-/// Uygulama açılışında rolleri oluşturur. Yalnızca Development ortamında, şifreleri
-/// user-secrets'tan okunan test kullanıcılarını, ölçüm kullanıcılarını (<see cref="OlcumKullanicilari"/>), demo
+/// Uygulama açılışında rol kataloğundaki (Selcuk.Roller) bütün rolleri oluşturur. Yalnızca Development ortamında,
+/// şifreleri user-secrets'tan okunan test kullanıcılarını (rolleri <see cref="RolDogrulayici"/>'dan geçer; var olan
+/// kullanıcıya yalnızca eksik rolleri eklenir), ölçüm kullanıcılarını (<see cref="OlcumKullanicilari"/>), demo
 /// istemcileri (demo-obis, demo-yemekhane) ve Tek Kapı'yı (public istemci, izinli kullanıcılar
 /// Istemciler:TekKapi:IzinliKullaniciAdlari ayarından) ekler veya günceller.
 /// </summary>
@@ -16,22 +17,55 @@ public sealed class BaslangicVerisi(
     IConfiguration configuration,
     ILogger<BaslangicVerisi> logger) : IHostedService
 {
-    private sealed record TestKullanicisi(
-        string AyarAnahtari, string KullaniciAdi, string Email, string AdSoyad,
-        string? Fakulte, string? Bolum, string Rol);
+    /// <summary>Development test kullanıcısı; şifresi TestKullanicilari:{AyarAnahtari}:Sifre (user-secrets).</summary>
+    public sealed record TestKullanicisi(
+        string AyarAnahtari, string KullaniciAdi, string AdSoyad, string? Fakulte, string? Bolum,
+        params string[] Roller)
+    {
+        public string Email => $"{KullaniciAdi}@test.local";
+    }
 
-    private static readonly TestKullanicisi[] TestKullanicilari =
+    private const string Teknoloji = "Teknoloji Fakültesi";
+    private const string Bilgisayar = "Bilgisayar Mühendisliği";
+
+    /// <summary>Uydurma test kullanıcıları (yalnızca Development). Roller açılışta <see cref="RolDogrulayici"/>'dan geçer.</summary>
+    public static readonly IReadOnlyList<TestKullanicisi> TestKullanicilari =
     [
-        new("Ogrenci", "203011001", "203011001@test.local", "Test Öğrenci",
-            "Teknoloji Fakültesi", "Bilgisayar Mühendisliği", Roller.Ogrenci),
-        new("Akademisyen", "hoca.test", "hoca.test@test.local", "Test Akademisyen",
-            "Teknoloji Fakültesi", "Bilgisayar Mühendisliği", Roller.Akademisyen),
-        new("Personel", "personel.test", "personel.test@test.local", "Test Personel",
-            "Teknoloji Fakültesi", null, Roller.Personel),
+        new("Ogrenci", "203011001", "Test Öğrenci", Teknoloji, Bilgisayar, Roller.Ogrenci),
+        new("Ogrenci2", "203011002", "Test Öğrenci İki", Teknoloji, Bilgisayar, Roller.Ogrenci),
+        new("Ogrenci3", "203011003", "Test Öğrenci Üç", Teknoloji, Bilgisayar, Roller.Ogrenci),
+        new("Akademisyen", "hoca.test", "Test Akademisyen", Teknoloji, Bilgisayar, Roller.Akademisyen, Roller.Danisman),
+        new("Personel", "personel.test", "Test Personel", Teknoloji, null, Roller.Personel),
+        new("BolumBaskani", "baskan.test", "Test Bölüm Başkanı", Teknoloji, Bilgisayar,
+            Roller.Akademisyen, Roller.BolumBaskani, Roller.BolumKuruluUyesi),
+        new("BolumSekreteri", "sekreter.test", "Test Bölüm Sekreteri", Teknoloji, Bilgisayar,
+            Roller.Personel, Roller.BolumSekreteri),
+        new("FakulteSekreteri", "fakultesekreter.test", "Test Fakülte Sekreteri", Teknoloji, null,
+            Roller.Personel, Roller.FakulteSekreteri),
+        new("Komisyon", "komisyon.test", "Test Komisyon Üyesi", Teknoloji, Bilgisayar,
+            Roller.Akademisyen, Roller.IntibakKomisyonu, Roller.StajKomisyonu, Roller.MezuniyetKomisyonu,
+            Roller.BolumKuruluUyesi),
+        new("Mudek", "mudek.test", "Test MÜDEK Üyesi", Teknoloji, Bilgisayar,
+            Roller.Akademisyen, Roller.MudekKomisyonu, Roller.BolumKuruluUyesi),
+        new("Etik", "etik.test", "Test Etik Kurul Üyesi", Teknoloji, Bilgisayar, Roller.Akademisyen, Roller.EtikKurulUyesi),
+        new("Koordinator", "koordinator.test", "Test ÇAP-Yandal Koordinatörü", Teknoloji, Bilgisayar,
+            Roller.Akademisyen, Roller.CapYandalKoordinatoru, Roller.Danisman),
+        new("Iskur", "iskur.test", "Test İŞKUR Sorumlusu", Teknoloji, Bilgisayar, Roller.Personel, Roller.IskurSorumlusu),
     ];
+
+    /// <summary>Seed tanımlarının rolleri kurallara uymuyorsa açılış bu hatayla durur.</summary>
+    public static void TanimlariDogrula(IEnumerable<TestKullanicisi> tanimlar)
+    {
+        foreach (var tanim in tanimlar)
+        {
+            RolDogrulayici.Dogrula(tanim.KullaniciAdi, tanim.Roller, tanim.Fakulte, tanim.Bolum);
+        }
+    }
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
+        TanimlariDogrula(TestKullanicilari);
+
         await using var scope = services.CreateAsyncScope();
 
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
@@ -67,7 +101,8 @@ public sealed class BaslangicVerisi(
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
             foreach (var kullanici in TestKullanicilari)
             {
-                await TestKullanicisiOlusturAsync(userManager, kullanici);
+                await TestKullanicisiOlusturAsync(userManager, kullanici,
+                    configuration[$"TestKullanicilari:{kullanici.AyarAnahtari}:Sifre"], logger);
             }
 
             await OlcumKullanicilariniOlusturAsync(userManager);
@@ -173,14 +208,45 @@ public sealed class BaslangicVerisi(
         }
     }
 
-    private async Task TestKullanicisiOlusturAsync(UserManager<ApplicationUser> userManager, TestKullanicisi bilgi)
+    /// <summary>
+    /// Kullanıcı yoksa verilen şifreyle oluşturur (şifre yoksa atlar). Varsa şifresine, 2FA ayarlarına ve diğer
+    /// bilgilerine dokunmaz; yalnızca tanımdaki eksik rolleri ekler (sonuç kümesi kurallara uymuyorsa eklemez).
+    /// </summary>
+    public static async Task TestKullanicisiOlusturAsync(
+        UserManager<ApplicationUser> userManager, TestKullanicisi bilgi, string? sifre, ILogger logger)
     {
-        if (await userManager.FindByNameAsync(bilgi.KullaniciAdi) is not null)
+        if (await userManager.FindByNameAsync(bilgi.KullaniciAdi) is { } mevcut)
         {
+            var roller = await userManager.GetRolesAsync(mevcut);
+            var eksik = bilgi.Roller.Except(roller, StringComparer.Ordinal).ToArray();
+            if (eksik.Length == 0)
+            {
+                return;
+            }
+
+            var hatalar = RolDogrulayici.Hatalar([.. roller, .. eksik], mevcut.Fakulte, mevcut.Bolum);
+            if (hatalar.Count > 0)
+            {
+                logger.LogError("Test kullanıcısı {KullaniciAdi} için roller eklenmedi: {Hatalar}",
+                    bilgi.KullaniciAdi, string.Join(" ", hatalar));
+                return;
+            }
+
+            var ekleme = await userManager.AddToRolesAsync(mevcut, eksik);
+            if (ekleme.Succeeded)
+            {
+                logger.LogInformation("Test kullanıcısına roller eklendi: {KullaniciAdi} ({Roller})",
+                    bilgi.KullaniciAdi, string.Join(", ", eksik));
+            }
+            else
+            {
+                logger.LogError("Test kullanıcısı {KullaniciAdi} için roller eklenemedi: {Hatalar}",
+                    bilgi.KullaniciAdi, string.Join("; ", ekleme.Errors.Select(e => e.Description)));
+            }
+
             return;
         }
 
-        var sifre = configuration[$"TestKullanicilari:{bilgi.AyarAnahtari}:Sifre"];
         if (string.IsNullOrEmpty(sifre))
         {
             logger.LogWarning(
@@ -202,12 +268,13 @@ public sealed class BaslangicVerisi(
         var sonuc = await userManager.CreateAsync(kullanici, sifre);
         if (sonuc.Succeeded)
         {
-            sonuc = await userManager.AddToRoleAsync(kullanici, bilgi.Rol);
+            sonuc = await userManager.AddToRolesAsync(kullanici, bilgi.Roller);
         }
 
         if (sonuc.Succeeded)
         {
-            logger.LogInformation("Test kullanıcısı oluşturuldu: {KullaniciAdi} ({Rol})", bilgi.KullaniciAdi, bilgi.Rol);
+            logger.LogInformation("Test kullanıcısı oluşturuldu: {KullaniciAdi} ({Roller})",
+                bilgi.KullaniciAdi, string.Join(", ", bilgi.Roller));
         }
         else
         {

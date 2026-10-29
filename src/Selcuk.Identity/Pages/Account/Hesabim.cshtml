@@ -14,6 +14,17 @@
     </div>
 }
 
+@if (!Model.IkiAdimEtkin)
+{
+    <div class="bant bant-bilgi" role="note">
+        @Html.Raw(Simge.Bilgi)
+        <div>
+            <p>İki aşamalı doğrulama isteğe bağlıdır. Açarsan hesabın şifren ele geçse bile korunur.</p>
+            <p><a class="dugme dugme-ikincil" asp-page="/Account/IkiAdimDogrulama">İki aşamalı doğrulamayı aç</a></p>
+        </div>
+    </div>
+}
+
 <dl class="tanimlar">
     <div>
         <dt>Ad soyad</dt>
@@ -41,6 +52,11 @@
             <dd>@Model.Kullanici.Bolum</dd>
         </div>
     }
+</dl>
+
+<h2>Rollerin</h2>
+<dl class="tanimlar">
+    <partial name="_RolSatirlari" model="Model.RolGruplari" />
 </dl>
 
 <h2>Güvenlik</h2>

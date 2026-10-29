@@ -1,10 +1,6 @@
 namespace Selcuk.Demo.Obis.Data;
 
-public static class Roller
-{
-    public const string Ogrenci = "ogrenci";
-    public const string Akademisyen = "akademisyen";
-}
+// Rol adları Selcuk.Roller kataloğundan (Roller.Ogrenci, Roller.Akademisyen).
 
 /// <summary>Demo API'den (GET /api/notlar) gelen not; notlar artık OBİS'te değil, API'de tutulur.</summary>
 public sealed record DersNotu(string Kod, string Ad, int Vize, int Final, string Harf);

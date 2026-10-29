@@ -107,6 +107,61 @@ düzeyinde (authorize isteğindeki `redirect_uri` ile end-session isteğindeki `
 doğrulama işleyicisi; ihlalde istemciye yönlendirmeden 400 `invalid_request`). OpenIddict'in kendisi http adreslerini
 sunucu adına bakmadan kabul ettiği için bu kural ayrıca eklendi.
 
+## Roller ve test kullanıcıları
+
+Roller tek bir katalogdadır: `src/Selcuk.Roller` (kimlik sunucusu, `Selcuk.Istemci.Ortak` ve `Selcuk.Arayuz`
+kullanır). Her rolün kimliği (role claim'indeki değer), Türkçe adı, katmanı ve kısa açıklaması vardır; yeni rol
+`Roller.Katalog`'a bir satır eklenerek tanımlanır. Katmanlar: **kullanıcı türü** (her kullanıcıda tam olarak bir tane:
+`ogrenci`, `akademisyen`, `personel`), **idari görev** ve **komisyon/kurul üyeliği** (sıfır veya daha fazla). Bir
+kullanıcının birden çok rolü olabilir. Tutarlılık kuralları `RolDogrulayici`'dadır (görev ve komisyon rolleri yalnızca
+akademisyene veya yalnızca personele; öğrenciye hiçbiri; `bolum_baskani` ve `bolum_sekreteri` bölümü, `fakulte_sekreteri`
+fakültesi dolu kullanıcıya). Kimlik sunucusu açılışta katalogdaki bütün rolleri oluşturur. Roller şimdilik yalnızca
+başlangıç verisiyle atanır (yönetim paneli yok). Tam katalog, kurallar ve 11 bölüm otomasyonu için plan matrisi:
+[docs/roller.md](docs/roller.md).
+
+**Token'larda:** kullanıcının bütün rolleri `roles` kapsamıyla hem id_token'a hem access token'a `role` claim'i olarak
+yazılır: tek rolde metin (`"ogrenci"`), birden çok rolde JSON dizisi (`["akademisyen","bolum_baskani"]`).
+`Selcuk.Istemci.Ortak` iki biçimi de ayrı `role` claim'lerine çevirir; `User.IsInRole` her rol için çalışır. Kapsamlı
+rollerin birimi için yeni claim yok: id_token'daki `bolum` ve `fakulte` kullanılır. Hesabım'da **Rollerin** bölümü ve
+demo uygulamaların **Profilim** sayfası rolleri katmana göre gruplu, Türkçe adlarıyla ve kapsamlı rollerde birimiyle
+gösterir ("Bölüm başkanı (Bilgisayar Mühendisliği)"); hesap menüsünde kullanıcı adının altında kullanıcı türü yazar.
+
+**Test kullanıcıları** (yalnızca Development; ad soyadlar uydurma, e-postalar `<kullanıcı adı>@test.local`; hepsi
+Teknoloji Fakültesi, `personel.test` ve `fakultesekreter.test` dışındakiler Bilgisayar Mühendisliği). Seed, rolleri
+`RolDogrulayici`'dan geçirir; kurala uymayan bir tanım açılışı açık bir hatayla durdurur. Var olan kullanıcının şifresine
+ve 2FA ayarlarına dokunulmaz, yalnızca eksik rolleri eklenir. Şifreler rastgele üretilip user-secrets'a yazılmıştır;
+görmek için `dotnet user-secrets list --project src/Selcuk.Identity` çıktısındaki `TestKullanicilari:<Anahtar>:Sifre`
+değerine bakın:
+
+| Kullanıcı adı | Roller | Şifre anahtarı (`TestKullanicilari:…:Sifre`) |
+|---|---|---|
+| `203011001` | ogrenci | `Ogrenci` |
+| `203011002` | ogrenci | `Ogrenci2` |
+| `203011003` | ogrenci | `Ogrenci3` |
+| `hoca.test` | akademisyen, danisman | `Akademisyen` |
+| `personel.test` | personel | `Personel` |
+| `baskan.test` | akademisyen, bolum_baskani, bolum_kurulu_uyesi | `BolumBaskani` |
+| `sekreter.test` | personel, bolum_sekreteri | `BolumSekreteri` |
+| `fakultesekreter.test` | personel, fakulte_sekreteri (bölüm boş) | `FakulteSekreteri` |
+| `komisyon.test` | akademisyen, intibak_komisyonu, staj_komisyonu, mezuniyet_komisyonu, bolum_kurulu_uyesi | `Komisyon` |
+| `mudek.test` | akademisyen, mudek_komisyonu, bolum_kurulu_uyesi | `Mudek` |
+| `etik.test` | akademisyen, etik_kurul_uyesi | `Etik` |
+| `koordinator.test` | akademisyen, cap_yandal_koordinatoru, danisman | `Koordinator` |
+| `iskur.test` | personel, iskur_sorumlusu | `Iskur` |
+
+Şifre anahtarı user-secrets'ta yoksa o kullanıcı oluşturulmaz (logda uyarı). Yeni bir makinede şifre üretmek için
+(değer ekrana yazılmaz):
+
+```powershell
+$anahtarlar = 'Ogrenci','Ogrenci2','Ogrenci3','Akademisyen','Personel','BolumBaskani','BolumSekreteri',
+    'FakulteSekreteri','Komisyon','Mudek','Etik','Koordinator','Iskur'
+foreach ($a in $anahtarlar) {
+    $b = New-Object byte[] 18; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b)
+    $sifre = 'Aa1' + [Convert]::ToBase64String($b).Replace('+', 'x').Replace('/', 'y')
+    dotnet user-secrets set "TestKullanicilari:${a}:Sifre" $sifre --project src/Selcuk.Identity | Out-Null
+}
+```
+
 ## Uygulama bazlı erişim izni
 
 Her istemcinin kaydında iki isteğe bağlı liste vardır (OpenIddict `Properties`, JSON dizisi):
@@ -470,6 +525,12 @@ loglanmaz.
 
 ## İki aşamalı doğrulama (2FA)
 
+**2FA isteğe bağlıdır. Tek istisna, kaldırılması planlanan Tek Kapı istemcisidir** (`mfaZorunlu`, bkz. İstemci bazlı
+2FA şartı). Hiçbir rol 2FA'ya zorlanmaz: `IkiAdimZorunluRoller` varsayılanı boş listedir ve bu bir testle sabittir
+(`RolModeliTests`: katalogdaki her rol için 2FA'sı kapalı kullanıcı demo-obis'e kurulum sayfasına yönlendirilmeden
+girer). 2FA'sı kapalı kullanıcı Hesabım'da nötr bir öneri bandı görür: "İki aşamalı doğrulama isteğe bağlıdır.
+Açarsan hesabın şifren ele geçse bile korunur." ve **İki aşamalı doğrulamayı aç** düğmesi.
+
 TOTP (RFC 6238, 6 hane, 30 saniye) tabanlıdır; Google Authenticator, Microsoft Authenticator gibi uygulamalarla
 çalışır. Anahtar üretimi ve kod doğrulama Identity'nin yerleşik `AuthenticatorTokenProvider`'ı ve `UserManager`
 API'siyle yapılır; kriptografi elle yazılmadı.
@@ -550,7 +611,7 @@ tireden bağımsız (normalize edilerek) özetlenir.
 değeri taşıyor, TOTP ile kurtarma kodunu ayırmak için ek durum gerekirdi. `claims_supported`'a `amr` eklendi. Demo
 uygulamalar `amr`'yi göstermez ve zorunlu kılmaz (step-up yok).
 
-**Rol bazlı zorunluluk:** `IkiAdimZorunluRoller` (varsayılan boş liste) içindeki bir role sahip ve 2FA'sı kapalı
+**Rol bazlı zorunluluk (varsayılan kapalı):** `IkiAdimZorunluRoller` (varsayılan boş liste; hiçbir rol zorunlu değil) içindeki bir role sahip ve 2FA'sı kapalı
 kullanıcı şifreyle girince kurulum sayfasına yönlendirilir. Kurulum bitmeden authorize kod vermez (kurulum sayfasına
 dönüş adresiyle yönlendirir; `prompt=none`'da `interaction_required`), onay formu doğrudan gönderilse de
 `access_denied` döner, token uç noktası da (kod veya refresh token zorunluluktan önce alınmış olsa bile)
@@ -814,7 +875,7 @@ sayfalar (Profilim, Erişim reddedildi, Giriş hatası, Hata, Çıkış) iki uyg
 | Ana sayfa (`/`) | Herkese açık: uygulama adı, tek cümle ve "Tek Şifre ile giriş yap"; giriş yapınca sayfa bağlantıları |
 | Notlarım (`/Notlarim`) | Yalnızca `ogrenci`. Notlar sunucu tarafında **Demo API'den** (`GET /api/notlar`, oturumdaki access token ile) çekilir; tablo (ders kodu, ders adı, kredi, vize, final, harf etiketi), üstünde toplam kredi ve dönem ağırlıklı ortalaması (4'lük sistem; krediler OBİS'in ders kataloğundan, `SahteVeri.Krediler`; API değişmedi). Dar ekranda her ders iki satır. API'ye ulaşılamazsa hata bandında "Not bilgileri şu an alınamıyor" |
 | Ders Yönetimi (`/DersYonetimi`) | Yalnızca `akademisyen`, aynı tablo dili |
-| Profilim (`/Profilim`) | Giriş yapmış herkes: ad soyad, kullanıcı adı, rol, fakülte, bölüm, e-posta |
+| Profilim (`/Profilim`) | Giriş yapmış herkes: ad soyad, kullanıcı adı, roller (katmana göre gruplu, Türkçe adlarla, kapsamlı rolde birimiyle), fakülte, bölüm, e-posta |
 | Token İnceleme (`/TokenInceleme`) | Yalnızca Development: id_token ve access_token için ayrı bölümler; her başlık alanı ve claim bir satır (ad ve değer Mono, uzun değer kırpılır ve tam hâli `title`'da, Türkçe kısa açıklama); access token bölümünde "kişisel bilgi içermez" bandı; ham JSON "Ham hâlini göster" ile açılır; token'ın kendisi ve imzası gösterilmez; refresh token'ın yalnızca var olduğu ve (yaklaşık) son kullanma zamanı |
 | Erişim reddedildi (`/ErisimReddedildi`) | Yetkisiz rol buraya yönlendirilir |
 | Çıkış (`/Cikis`) | Yerel çerezi siler, kimlik sunucusunun end-session uç noktasına gider, dönüşte ana sayfa |
@@ -926,7 +987,10 @@ src/Selcuk.Arayuz/                Ortak tasarım sistemi (Razor Class Library, "
                                   selcuk.css (token'lar, uygulama vurgu rengi, bileşenler, tablo), selcuk.js,
                                   Atkinson Hyperlegible Next/Mono (OFL), img/ (kapı SVG'leri); _SelcukDuzen (uygulama
                                   adı, simgesi, sekmeler, hesap menüsü), _TekSifreGirisi, _IstemciHesapMenusu,
-                                  _IstemciProfili; kapı işareti (küçük, büyük, kapalı), simgeler
+                                  _IstemciProfili, _RolSatirlari (gruplu roller); kapı işareti (küçük, büyük,
+                                  kapalı), simgeler
+src/Selcuk.Roller/                Rol kataloğu (Roller: kimlik, Türkçe ad, katman, kapsam) ve RolDogrulayici
+                                  (tutarlılık kuralları); kimlik sunucusu, Selcuk.Istemci.Ortak ve Selcuk.Arayuz kullanır
 src/Selcuk.Istemci.Ortak/         AddSelcukSSO, güvenlik başlıkları, Back-Channel Logout alıcısı, OturumIptalDeposu
                                   (IDistributedCache), giriş dönüşü hataları, iss doğrulaması, TokenYenileyici
                                   (access token yenileme, çıkışta refresh token iptali)
@@ -974,7 +1038,7 @@ Hiçbir şifre veya secret repoda yoktur. Development'ta `dotnet user-secrets` k
 
 | Proje | Anahtar | İçerik |
 |---|---|---|
-| `src/Selcuk.Identity` | `TestKullanicilari:Ogrenci:Sifre`, `…:Akademisyen:Sifre`, `…:Personel:Sifre` | Test kullanıcılarının şifreleri |
+| `src/Selcuk.Identity` | `TestKullanicilari:<Anahtar>:Sifre` (`Ogrenci`, `Akademisyen`, `Personel`, `BolumBaskani` …; tam liste [Roller ve test kullanıcıları](#roller-ve-test-kullanıcıları)) | Test kullanıcılarının şifreleri |
 | `src/Selcuk.Identity` | `Istemciler:DemoObis:ClientSecret` | demo-obis secret'ı |
 | `src/Selcuk.Identity` | `Istemciler:DemoYemekhane:ClientSecret` | demo-yemekhane secret'ı |
 | `src/Selcuk.Identity` | `OlcumKullanicilari:Sifre` | Ölçüm kullanıcılarının (`olcum.kullanici.01`…`50`) ortak şifresi; isteğe bağlı, yoksa seed edilmez. Ölçüm aracı da buradan okur ([Ölçüm ve değerlendirme](#ölçüm-ve-değerlendirme)) |
@@ -1260,7 +1324,7 @@ yakalanır.
 | `Yanlis_sifreyle_giris_basarisiz` | Genel hata mesajı, çerez yok |
 | `Bes_hatali_denemeden_sonra_hesap_kilitleniyor` | 5 denemede ~15 dk kilit; kilitliyken doğru şifre de reddedilir ve mesaj aynı kalır |
 | `Kilitli_hesapta_yeni_giris_reddediliyor_kilitten_once_acilan_oturum_kod_ve_token_alabiliyor` | Oturum açıkken başka biri 5 yanlış şifreyle hesabı kilitler: doğru şifreyle yeni giriş reddedilir, yeni tarayıcı authorize'dan girişe yönlenir; kilitten önce açılmış oturum authorize'dan kod, token uç noktasından token alır (iki kez), kilit sürer |
-| `Uc_rol_olusturulmus` | `akademisyen`, `ogrenci`, `personel` |
+| `Katalogdaki_butun_roller_olusturulmus` | Açılışta katalogdaki 15 rolün hepsi var; `akademisyen`, `ogrenci`, `personel` değişmedi |
 | `Pkce_olmadan_authorize_istegi_reddediliyor` | `code_challenge` olmadan istek 400 `invalid_request`; PKCE ile aynı istek girişe yönlenir |
 | `Kod_akisi_PKCE_ile_imzali_JWT_tokenlar_uretiyor` | Giriş → authorize (S256) → onay → kod → token; JWKS ile imza, iss/aud/exp/nonce; iki token'da sub, role; id_token'da name, fakulte, bolum, access token'da yok (15 dk); userinfo |
 | `Ayni_kod_ikinci_kez_kullanilinca_reddediliyor` | İkinci kullanımda `invalid_grant` |
@@ -1359,7 +1423,19 @@ yakalanır.
 | `Giris_onay_ve_hata_sayfalari_D1_duzeltmeleriyle_ciziliyor` | Kapı panelinde "Fakültedeki bütün uygulamalar için tek hesap."; onayda profil açıklaması "Adın, fakülte ve bölüm bilgilerin"; Erişim reddedildi ve Hata sayfalarında başlığın üstünde 48px kapalı kapı (`aria-hidden`) |
 | `Iki_adim_sayfasinda_yardim_cumlesi_yok_kod_alani_yer_tutuculu` | Girişin ikinci adımında "Telefonun yanında değilse…" yok; kod alanında `000 000` yer tutucusu, kurtarma modu için `XXXXX-XXXXX`; "Kurtarma kodu kullan" bağlantısı var |
 | `Guvenlik_gecmisinde_saat_dilimi_yalnizca_sutun_basliginda` | Sütun başlığı "Zaman (TSİ)"; satırlarda yalnızca `gg.aa.yyyy SS:dd`; tabloda dilim bir kez |
+| `Dogrulayici_…` (RolModeliTests, 7 test + 8 satırlık Theory) | İki kullanıcı türü, türsüz küme, öğrenciye bölüm başkanlığı veya herhangi bir görev, personele staj komisyonu, akademisyene bölüm sekreterliği, bölümü boş kullanıcıya bölüm başkanlığı, katalog dışı rol reddedilir; geçerli kombinasyonlar ve her görevin kendi türüyle kabul edilir; ihlal kullanıcı adıyla açık hata verir |
+| `Seed_tanimlari_kurallara_uyuyor_hatali_tanim_acilisi_durduruyor` | Başlangıç verisi doğrulayıcıdan geçer; kurala uymayan tanım `InvalidOperationException` |
+| `Seed_tanimlari_beklenen_kullanicilari_ve_rolleri_iceriyor` | 13 test kullanıcısı ve rolleri, `@test.local`, "Test …" adları |
+| `Her_test_kullanicisi_beklenen_rollerle_seed_ediliyor` | Seed her kullanıcıyı tanımdaki rollerle, fakülte ve bölümüyle oluşturur |
+| `Var_olan_test_kullanicisina_yalnizca_eksik_roller_ekleniyor_sifre_ve_2FA_degismiyor` | `hoca.test`'e yalnızca `danisman` eklenir; eski şifre geçerli, 2FA açık kalır |
+| `Cok_rollu_kullanicinin_id_token_ve_access_tokeninda_role_dizi_tek_rolluda_metin` | İki token'da `role` çok rolde bütün rolleri içeren JSON dizisi, tek rolde metin |
+| `Hesabim_rolleri_katmana_gore_turkce_adlar_ve_kapsamla_gosteriyor` | "Rollerin": kullanıcı türü, idari görevler, komisyonlar sırasıyla; "Bölüm başkanı (Bilgisayar Mühendisliği)"; ham kimlik yok; hesap menüsünde kullanıcı adının altında "Akademisyen" |
+| `Hesap_menusu_idari_personeli_gorunen_adiyla_gosteriyor` | "İdari personel", "Fakülte sekreteri (Teknoloji Fakültesi)" |
+| `Hesabim_2FA_kapaliyken_notr_oneri_bandi_aciksa_bant_yok` | 2FA kapalıyken öneri bandı ve "İki aşamalı doğrulamayı aç"; "zorunlu" yok; 2FA açıkken bant yok |
+| `IkiAdimZorunluRoller_bos_her_roldeki_2FA_kapali_kullanici_demo_obise_kurulumsuz_giriyor` | `IkiAdimZorunluRoller` boş; katalogdaki her rol için 2FA'sı kapalı kullanıcı girişte Uygulamalarım'a gider, demo-obis'ten kod ve token alır |
 | **Selcuk.Istemci.Ortak.Tests** | |
+| `Cok_rollu_kullanicida_IsInRole_her_rolde_true_olmayan_rolde_false` | Tam OIDC girişi (sahte sunucu, imzalı id_token'da `role` dizisi): her rolde `IsInRole` true, katalogdaki diğer rollerde ve dizinin metin hâlinde false |
+| `Tek_rollu_kullanicida_metin_bicimi_ayni_sekilde_isleniyor` | `role` metin olduğunda da `IsInRole` doğru |
 | `Gecerli_logout_token_oturumu_sonlandiriyor` | 200 (`no-store`); o sid'li oturum sonraki istekte authorize'a yönlenir |
 | `Imzasi_gecersiz_token_reddediliyor` | 400, oturum etkilenmez |
 | `Yanlis_aud_reddediliyor` | 400, oturum etkilenmez |
@@ -1378,6 +1454,9 @@ yakalanır.
 | `Eszamanli_istekler_ayni_refresh_tokeni_bir_kez_kullaniyor` | Aynı çerezle 5 eşzamanlı istek (sunucu yanıtı gecikmeli): hepsi 200, tek token isteği |
 | `Cikista_once_refresh_token_iptal_ediliyor_sonra_end_sessiona_gidiliyor` | Çıkış: revocation isteği (token, `token_type_hint`, client kimlik bilgileri), sonra end-session'a yönlendirme |
 | **Selcuk.Demo.Obis.Tests** | |
+| `Profilim_cok_rollu_kullanicinin_rollerini_gruplu_gosteriyor` | Profilim'de katman başlıkları, Türkçe adlar, "Bölüm başkanı (Bilgisayar Mühendisliği)", ham kimlik yok |
+| `Profilim_tek_rolu_ve_idari_personeli_gorunen_adiyla_gosteriyor` | "İdari personel"; boş katman başlığı yok |
+| `Role_claiminin_aciklamasi_rol_katmanlarini_soyluyor` | Token İnceleme'de `role` açıklaması |
 | `Girissiz_kullanici_Notlarim_icin_kimlik_sunucusuna_yonlendiriliyor` | 302 → `https://localhost:5001/connect/authorize`, `code_challenge` + `S256`, kapsamlar `openid profile email roles offline_access notlar.oku` |
 | `Notlarim_Demo_APIden_gelen_veriyi_access_token_ile_gosteriyor` | Sahte Demo API: `GET https://localhost:5201/api/notlar`, `Authorization: Bearer <oturumdaki access token>`, sorgu parametresi yok; sayfada API'den gelen satır (kod, ad, kredi: katalogda yoksa —, vize, final, harf etiketi) |
 | `Demo_API_kapaliyken_Turkce_hata_mesaji_gosteriliyor_500_donmuyor` | API'ye bağlanılamaz: 200, hata bandında (`role="alert"`) "Not bilgileri şu an alınamıyor", tablo ve özet yok |

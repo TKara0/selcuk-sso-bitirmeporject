@@ -2,10 +2,7 @@ using System.Globalization;
 
 namespace Selcuk.Demo.Yemekhane.Data;
 
-public static class Roller
-{
-    public const string Personel = "personel";
-}
+// Rol adları Selcuk.Roller kataloğundan (Roller.Personel).
 
 public sealed record GunlukMenu(DateOnly Gun, string Corba, string AnaYemek, string Yardimci, string Tatli);
 

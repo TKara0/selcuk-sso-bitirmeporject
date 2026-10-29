@@ -1,8 +1,13 @@
-@* Üst çubuktaki hesap menüsü: button + aria-expanded, Esc ile kapanır (selcuk.js). Yalnızca bağlantılar; form yok. *@
+@*
+    Üst çubuktaki hesap menüsü: button + aria-expanded, Esc ile kapanır (selcuk.js). Yalnızca bağlantılar; form yok.
+    Listenin başında kullanıcı adı ve altında kullanıcı türü (rol kataloğundaki görünen adıyla).
+*@
 @if (User.Identity?.IsAuthenticated == true)
 {
     var gecerli = ViewContext.RouteData.Values["page"] as string;
     string? Gecerli(string sayfa) => gecerli == sayfa ? "page" : null;
+    var kullaniciTuru = Selcuk.Roller.Katalog.FirstOrDefault(r =>
+        r.Katman == Selcuk.RolKatmani.KullaniciTuru && User.IsInRole(r.Kimlik));
 
     <nav class="hesap-menusu" aria-label="Hesap" data-menu>
         <button type="button" class="hesap-dugmesi" aria-expanded="false" aria-controls="hesap-listesi" data-menu-dugme>
@@ -12,6 +17,13 @@
             <span class="ok">@Html.Raw(Simge.AsagiOk)</span>
         </button>
         <ul class="hesap-listesi" id="hesap-listesi" hidden>
+            <li class="hesap-basligi">
+                <p><strong class="mono">@User.Identity.Name</strong></p>
+                @if (kullaniciTuru is not null)
+                {
+                    <p class="ipucu">@kullaniciTuru.Ad</p>
+                }
+            </li>
             <li><a asp-page="/Account/Hesabim" aria-current="@Gecerli("/Account/Hesabim")">Hesabım</a></li>
             <li><a asp-page="/Account/IkiAdimDogrulama" aria-current="@Gecerli("/Account/IkiAdimDogrulama")">İki aşamalı doğrulama</a></li>
             <li><a asp-page="/Account/SifreDegistir" aria-current="@Gecerli("/Account/SifreDegistir")">Şifre değiştir</a></li>

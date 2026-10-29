@@ -4,19 +4,19 @@ Sayılar elle sayılmadı: .NET testleri `dotnet test <proje> --no-build --list-
 satırı ayrı test), Tek Kapı kontrolleri `npm test` çıktısından ("35 kontrol geçti.", "14 SSO kontrolü geçti."), kod
 kapsamı `dotnet test SelcukSSO.sln --collect:"XPlat Code Coverage"` (test projelerinde zaten olan
 `coverlet.collector` 6.0.4) ile üretilen Cobertura raporlarından alındı. Ölçüm tarihi: 2026-10-26 (Adım 8). Test
-sayıları Tasarım D2'de güncellendi; kod kapsamı tablosu Adım 8 ölçümüdür, D1 ve D2'den sonra yeniden ölçülmedi.
+sayıları Rol modeli adımında güncellendi; kod kapsamı tablosu Adım 8 ölçümüdür, sonrasında yeniden ölçülmedi.
 
 ## Test sayıları
 
 | Test projesi | Test | Kategori (test sınıfı: test sayısı) |
 |---|---:|---|
-| `tests/Selcuk.Identity.Tests` | 123 | KabaKuvvetTests (istek sınırı, kullanıcı adı tahmini, ölçüm gevşetmesi): 22 · IkiAdimTests (2FA): 17 · TokenYasamDongusuTests (token, refresh, iptal, mutlak sınır): 10 · IstemciErisimiTests (uygulama bazlı erişim, Tek Kapı): 10 · SifreSifirlamaTests: 9 · OidcAkisTests (protokol): 8 · DenetimKaydiTests: 8 · TekOturumTests (tek giriş/çıkış): 6 · GirisTests (giriş, kilit): 5 · GuvenilenProxyTests: 5 · IstemciMfaTests (istemci bazlı 2FA, önbellek): 5 · DiscoveryTests: 3 · SifreDegistirmeTests: 3 · ArayuzTests (tasarım sistemi: statik dosyalar ve CSP, etiketler, boş durum, HTML e-posta, kapı SVG'leri, D1 düzeltmeleri): 8 · TokenBudamaTests: 2 · PkceTests: 1 · RolTests: 1 |
-| `tests/Selcuk.Istemci.Ortak.Tests` | 19 | BackChannelLogoutTests: 8 · OturumGuvenligiTests (çerez süresi, iss, JWKS, dağıtık önbellek): 7 · TokenYenilemeTests: 4 |
-| `tests/Selcuk.Demo.Obis.Tests` | 21 | GirisDonusHatasiTests: 8 · YetkilendirmeTests: 4 · NotlarimApiTests (API, toplam kredi ve ortalama): 4 · TokenIncelemeTests: 2 · ArayuzTests (ortak düzen, `_content`): 2 · OnbellekTests: 1 |
+| `tests/Selcuk.Identity.Tests` | 147 | RolModeliTests (rol kataloğu doğrulayıcısı, seed, role dizisi, Hesabım rolleri, 2FA'nın hiçbir rolde zorunlu olmaması): 24 · KabaKuvvetTests (istek sınırı, kullanıcı adı tahmini, ölçüm gevşetmesi): 22 · IkiAdimTests (2FA): 17 · TokenYasamDongusuTests (token, refresh, iptal, mutlak sınır): 10 · IstemciErisimiTests (uygulama bazlı erişim, Tek Kapı): 10 · SifreSifirlamaTests: 9 · OidcAkisTests (protokol): 8 · DenetimKaydiTests: 8 · TekOturumTests (tek giriş/çıkış): 6 · GirisTests (giriş, kilit): 5 · GuvenilenProxyTests: 5 · IstemciMfaTests (istemci bazlı 2FA, önbellek): 5 · DiscoveryTests: 3 · SifreDegistirmeTests: 3 · ArayuzTests (tasarım sistemi: statik dosyalar ve CSP, etiketler, boş durum, HTML e-posta, kapı SVG'leri, D1 düzeltmeleri): 8 · TokenBudamaTests: 2 · PkceTests: 1 · RolTests (katalogdaki bütün roller): 1 |
+| `tests/Selcuk.Istemci.Ortak.Tests` | 21 | BackChannelLogoutTests: 8 · OturumGuvenligiTests (çerez süresi, iss, JWKS, dağıtık önbellek): 7 · TokenYenilemeTests: 4 · RolTests (çok rollü IsInRole, tam OIDC girişi): 2 |
+| `tests/Selcuk.Demo.Obis.Tests` | 24 | GirisDonusHatasiTests: 8 · YetkilendirmeTests: 4 · NotlarimApiTests (API, toplam kredi ve ortalama): 4 · TokenIncelemeTests: 3 · ProfilimTests (gruplu roller): 2 · ArayuzTests (ortak düzen, `_content`): 2 · OnbellekTests: 1 |
 | `tests/Selcuk.Demo.Yemekhane.Tests` | 9 | YetkilendirmeTests: 4 · GirisDonusHatasiTests: 2 · ArayuzTests (ortak düzen, `_content`): 2 · OnbellekTests: 1 |
 | `tests/Selcuk.Demo.Api.Tests` | 2 | NotlarApiTests: 2 |
 | `tests/Selcuk.Olcum.Tests` | 15 | YerelAgTests (localhost dışı reddi, form ayrıştırma, istatistik): 14 · OlcumAkisTests (dört uygulamayla bellek içi uçtan uca tur): 1 |
-| **.NET toplam** | **189** | Adım 7 sonunda 137; Adım 8'de 36 yeni (Identity 21, Olcum 15); Tasarım D1'de 4 yeni (Identity); Tasarım D2'de 12 yeni (Identity 4, Demo OBİS 6, Demo Yemekhane 2), hiçbiri silinmedi |
+| **.NET toplam** | **218** | Adım 7 sonunda 137; Adım 8'de 36 yeni (Identity 21, Olcum 15); Tasarım D1'de 4 yeni (Identity); Tasarım D2'de 12 yeni (Identity 4, Demo OBİS 6, Demo Yemekhane 2); Rol modelinde 29 yeni (Identity 24, Istemci.Ortak 2, Demo OBİS 3), hiçbiri silinmedi |
 | `araclar/tek-kapi` `test/e2e.js` (bağımsız mod) | 35 kontrol | Kasa, otomatik/yarı otomatik girişler (sahte siteler 5600-5606), ölçüm kaydı, hesap kilitletmeme, "Hepsinden çık", CSV, Host/CSRF korumaları, CSP'de Google Fonts olmaması, `public/arayuz/` kopyalarının kaynakla aynı olması (SHA-256), günlüklerde kimlik bilgisi olmaması |
 | `araclar/tek-kapi` `test/sso.js` (SSO modu) | 14 kontrol | Sahte OIDC sağlayıcıyla (5190) giriş, state/PKCE, id_token doğrulama, izinli kullanıcılar, `iss`, Back-Channel Logout doğrulama ve kilitleme, çıkış |
 | **Tek Kapı toplam** | **49 kontrol** | Tasarım D2'de 2 yeni (e2e), hiçbiri silinmedi |

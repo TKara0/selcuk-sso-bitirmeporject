@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- Katalog sınıfı Selcuk.Roller adıyla kullanılır (Roller.Ogrenci); ayrı bir Selcuk.Roller ad alanı, Selcuk.*
+         ad alanlarındaki kodda "Roller" adını gölgelerdi. -->
+    <RootNamespace>Selcuk</RootNamespace>
+  </PropertyGroup>
+
+</Project>

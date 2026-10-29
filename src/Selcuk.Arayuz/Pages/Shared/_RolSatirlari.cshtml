@@ -1,0 +1,29 @@
+@*
+    Kullanıcının rolleri, katmana göre gruplu tanım satırları olarak (bir dl.tanimlar içinde kullanılır): katman başlığı
+    ve Türkçe görünen adlar; kapsamlı rollerde birimiyle ("Bölüm başkanı (Bilgisayar Mühendisliği)"). Model:
+    Selcuk.Roller.Grupla'nın sonucu. Kimlik sunucusunun Hesabım'ı ve alt uygulamaların Profilim'i kullanır.
+*@
+@model IReadOnlyList<Selcuk.RolGrubu>
+@if (Model.Count == 0)
+{
+    <div>
+        <dt>Rol</dt>
+        <dd>—</dd>
+    </div>
+}
+@foreach (var grup in Model)
+{
+    <div>
+        <dt>@grup.Baslik</dt>
+        <dd>
+            @for (var i = 0; i < grup.Roller.Count; i++)
+            {
+                if (i > 0)
+                {
+                    <br />
+                }
+                @grup.Roller[i]
+            }
+        </dd>
+    </div>
+}

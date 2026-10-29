@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Selcuk.Arayuz\Selcuk.Arayuz.csproj" />
+    <ProjectReference Include="..\Selcuk.Roller\Selcuk.Roller.csproj" />
   </ItemGroup>
 
 </Project>

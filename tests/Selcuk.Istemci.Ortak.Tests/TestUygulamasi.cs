@@ -132,6 +132,8 @@ public sealed class TestUygulamasi : IAsyncDisposable
         app.MapGet("/test/cikis", () => Results.SignOut(new AuthenticationProperties { RedirectUri = "/" },
             [CookieAuthenticationDefaults.AuthenticationScheme, OpenIdConnectDefaults.AuthenticationScheme]));
         app.MapGet("/korumali", () => "korumalı içerik").RequireAuthorization();
+        app.MapGet("/test/rolde-mi", (HttpContext context, string rol) => context.User.IsInRole(rol) ? "evet" : "hayir")
+            .RequireAuthorization();
         // Demo uygulamalardaki /Giris sayfası gibi: kimlik sunucusuna OIDC challenge (initiate_login_uri).
         app.MapGet("/giris", () => Results.Challenge(new AuthenticationProperties { RedirectUri = "/" },
             [OpenIdConnectDefaults.AuthenticationScheme]));
@@ -182,6 +184,43 @@ public sealed class TestUygulamasi : IAsyncDisposable
         });
     }
 
+    /// <summary>
+    /// Tam OIDC girişi (authorization code): /giris kimlik sunucusuna yönlendirir; sahte token uç noktası verilen role
+    /// değeriyle (tek metin veya dizi) imzalı bir id_token, userinfo da aynı role değerini döndürür; tarayıcı
+    /// /signin-oidc'ye kod ve state ile döner ve yerel oturum açılır.
+    /// </summary>
+    public async Task OidcGirisiAsync(HttpClient tarayici, object rol, string sub = "kullanici-1")
+    {
+        var challenge = await tarayici.GetAsync("/giris");
+        Assert.Equal(HttpStatusCode.Redirect, challenge.StatusCode);
+        var sorgu = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(challenge.Headers.Location!.Query);
+
+        var simdi = DateTime.UtcNow;
+        TokenUcu.IdToken = new JsonWebTokenHandler().CreateToken(new SecurityTokenDescriptor
+        {
+            Issuer = Issuer,
+            Audience = ClientId,
+            IssuedAt = simdi,
+            NotBefore = simdi,
+            Expires = simdi.AddMinutes(5),
+            Claims = new Dictionary<string, object>
+            {
+                ["sub"] = sub,
+                ["sid"] = "oturum-oidc",
+                ["name"] = "Test Kullanıcısı",
+                ["nonce"] = sorgu["nonce"].ToString(),
+                ["role"] = rol,
+            },
+            SigningCredentials = new SigningCredentials(_imzaAnahtari, SecurityAlgorithms.RsaSha256),
+        });
+        TokenUcu.Userinfo = new Dictionary<string, object> { ["sub"] = sub, ["role"] = rol };
+
+        var donus = await tarayici.GetAsync(
+            $"/signin-oidc?code=test-kodu&state={Uri.EscapeDataString(sorgu["state"].ToString())}");
+        Assert.Equal(HttpStatusCode.Redirect, donus.StatusCode);
+        Assert.Equal("/", donus.Headers.Location!.OriginalString);
+    }
+
     /// <summary>Aynı anahtar kimliğine (kid) sahip ama JWKS'te yayınlanmamış başka bir anahtar.</summary>
     public static SecurityKey YabanciAnahtar() => new RsaSecurityKey(RSA.Create(2048)) { KeyId = AnahtarKimligi };
 
@@ -200,7 +239,8 @@ public sealed class TestUygulamasi : IAsyncDisposable
 
     /// <summary>
     /// Sahte token uç noktası: refresh_token grant'ine yeni access/refresh token (yeni-at-N, yeni-rt-N) veya istenirse
-    /// invalid_grant döner; isteğe gecikme eklenebilir (eşzamanlılık testi). Revocation istekleri kaydedilir.
+    /// invalid_grant döner; isteğe gecikme eklenebilir (eşzamanlılık testi). <see cref="IdToken"/> verilmişse
+    /// authorization_code grant'ine onu döner. Revocation istekleri kaydedilir.
     /// </summary>
     public sealed class SahteTokenUcu
     {
@@ -212,12 +252,27 @@ public sealed class TestUygulamasi : IAsyncDisposable
 
         public TimeSpan Gecikme { get; set; }
 
+        /// <summary>authorization_code grant'inin döndüreceği id_token (<see cref="OidcGirisiAsync"/>).</summary>
+        public string? IdToken { get; set; }
+
+        /// <summary>userinfo uç noktasının döndüreceği claim'ler.</summary>
+        public Dictionary<string, object>? Userinfo { get; set; }
+
         public ConcurrentQueue<IReadOnlyDictionary<string, string>> YenilemeIstekleri { get; } = new();
 
         public ConcurrentQueue<IReadOnlyDictionary<string, string>> IptalIstekleri { get; } = new();
 
         internal async Task<HttpResponseMessage> TokenAsync(IReadOnlyDictionary<string, string> form)
         {
+            // Giriş (kod değişimi) yenileme sayılmaz.
+            if (IdToken is not null && form.GetValueOrDefault("grant_type") == "authorization_code")
+            {
+                return Yanit(HttpStatusCode.OK, new
+                {
+                    access_token = "giris-at", id_token = IdToken, token_type = "Bearer", expires_in = 900,
+                });
+            }
+
             YenilemeIstekleri.Enqueue(form);
             var sira = Interlocked.Increment(ref _yenilemeSayisi);
             await Task.Delay(Gecikme);
@@ -259,7 +314,11 @@ public sealed class TestUygulamasi : IAsyncDisposable
                 return adres == Issuer + "connect/token" ? await tokenUcu.TokenAsync(form) : tokenUcu.Iptal(form);
             }
 
-            if (adres == Issuer + ".well-known/openid-configuration")
+            if (adres == Issuer + "connect/userinfo" && tokenUcu.Userinfo is not null)
+            {
+                json = JsonSerializer.Serialize(tokenUcu.Userinfo);
+            }
+            else if (adres == Issuer + ".well-known/openid-configuration")
             {
                 json = JsonSerializer.Serialize(new Dictionary<string, object>
                 {

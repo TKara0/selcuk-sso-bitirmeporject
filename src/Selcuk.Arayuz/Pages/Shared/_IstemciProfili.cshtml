@@ -1,14 +1,8 @@
 @* Alt uygulamaların Profilim sayfası: kimlik sunucusundan gelen claim'ler (id_token ve userinfo). *@
 @{
-    string Rol(string rol) => rol switch
-    {
-        "ogrenci" => "Öğrenci",
-        "akademisyen" => "Akademisyen",
-        "personel" => "Personel",
-        _ => rol,
-    };
-
-    var roller = User.FindAll("role").Select(c => Rol(c.Value)).ToList();
+    // Görünen adlar ve gruplar rol kataloğundan (Selcuk.Roller); kapsamlı roller bölüm/fakülte claim'iyle.
+    var rolGruplari = Selcuk.Roller.Grupla(User.FindAll("role").Select(c => c.Value),
+        User.FindFirst("fakulte")?.Value, User.FindFirst("bolum")?.Value);
     var kullaniciAdi = User.FindFirst("preferred_username")?.Value;
 }
 <h1>Profilim</h1>
@@ -23,10 +17,7 @@
         <dt>Kullanıcı adı</dt>
         <dd>@if (kullaniciAdi is null) { <span>—</span> } else { <span class="mono">@kullaniciAdi</span> }</dd>
     </div>
-    <div>
-        <dt>Rol</dt>
-        <dd>@(roller.Count > 0 ? string.Join(", ", roller) : "—")</dd>
-    </div>
+    <partial name="_RolSatirlari" model="rolGruplari" />
     <div>
         <dt>Fakülte</dt>
         <dd>@(User.FindFirst("fakulte")?.Value ?? "—")</dd>

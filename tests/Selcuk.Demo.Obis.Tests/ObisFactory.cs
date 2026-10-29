@@ -17,7 +17,8 @@ namespace Selcuk.Demo.Obis.Tests;
 /// <summary>
 /// Demo OBİS'i kimlik sunucusu olmadan çalıştırır. Discovery bilgisi sabit verilir; böylece
 /// OpenID Connect challenge'ı ağ isteği yapmadan üretilir. sahteKimlik açıkken kullanıcı,
-/// istekteki X-Test-Rol başlığından oluşturulur (gerçek kimlik sunucusu yerine); oturumda sahte bir access token
+/// istekteki X-Test-Rol başlığından (virgülle ayrılmış birden çok rol olabilir; isteğe bağlı X-Test-Bolum ve
+/// X-Test-Fakulte) oluşturulur (gerçek kimlik sunucusu yerine); oturumda sahte bir access token
 /// (<see cref="SahteAccessToken"/>) bulunur. Demo API'ye istekler demoApi işleyicisine gider; verilmezse API kapalıdır
 /// (bağlantı hatası), testler ağa çıkmaz. ortam verilirse (ör. Development: Token İnceleme) o ortamda çalışır;
 /// tokenlar verilirse oturumdaki token'lar onlardır.
@@ -29,6 +30,8 @@ public sealed class ObisFactory(
     IReadOnlyList<AuthenticationToken>? tokenlar = null) : WebApplicationFactory<Program>
 {
     public const string RolBasligi = "X-Test-Rol";
+    public const string BolumBasligi = "X-Test-Bolum";
+    public const string FakulteBasligi = "X-Test-Fakulte";
     public const string SahteAccessToken = "test-erisim-tokeni";
     private const string TestSemasi = "Test";
     private const string Authority = "https://localhost:5001/";
@@ -105,8 +108,15 @@ public sealed class ObisFactory(
             [
                 new Claim("sub", "test-kullanici"),
                 new Claim("name", "Test Kullanıcısı"),
-                new Claim("role", rol.ToString()),
+                .. rol.ToString().Split(',').Select(r => new Claim("role", r)),
             ], Scheme.Name, "name", "role");
+            foreach (var (baslik, claim) in new[] { (BolumBasligi, "bolum"), (FakulteBasligi, "fakulte") })
+            {
+                if (Request.Headers.TryGetValue(baslik, out var deger))
+                {
+                    identity.AddClaim(new Claim(claim, deger.ToString()));
+                }
+            }
 
             var ozellikler = new AuthenticationProperties();
             ozellikler.StoreTokens(tokenlar.Liste);

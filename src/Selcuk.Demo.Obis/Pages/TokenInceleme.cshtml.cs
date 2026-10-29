@@ -70,7 +70,7 @@ public class TokenIncelemeModel(IWebHostEnvironment environment) : PageModel
         ["preferred_username"] = "Kullanıcı adı veya öğrenci numarası",
         ["email"] = "E-posta adresi",
         ["email_verified"] = "E-posta adresi doğrulanmış mı",
-        ["role"] = "Rol (sayfa yetkileri buna göre)",
+        ["role"] = "Kullanıcının rolleri (kullanıcı türü, idari görev ve komisyon üyelikleri)",
         ["fakulte"] = "Fakülte",
         ["bolum"] = "Bölüm",
 

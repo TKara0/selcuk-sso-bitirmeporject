@@ -11,11 +11,13 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
 ## Mimari
 
 - `src/Selcuk.Identity`: ASP.NET Core (.NET 10) kimlik sunucusu.
-  - **ASP.NET Core Identity**: kullanıcılar (`ApplicationUser`: `AdSoyad`, `Fakulte`, `Bolum`), roller
-    (`ogrenci`, `akademisyen`, `personel`), şifre politikası, hesap kilitleme.
+  - **ASP.NET Core Identity**: kullanıcılar (`ApplicationUser`: `AdSoyad`, `Fakulte`, `Bolum`), roller (katalog
+    `Selcuk.Roller`; açılışta hepsi oluşturulur, bir kullanıcının birden çok rolü olabilir), şifre politikası, hesap
+    kilitleme.
   - **OpenIddict Server**: authorize, token, userinfo, end-session, revocation (`/connect/revoke`, RFC 7009) ve
     discovery uç noktaları. Authorization Code + PKCE (zorunlu, yalnızca S256) ve Refresh Token akışları.
-    `profile` kapsamıyla `name`, `fakulte`, `bolum`; `roles` kapsamıyla `role` claim'leri verilir.
+    `profile` kapsamıyla `name`, `fakulte`, `bolum`; `roles` kapsamıyla `role` claim'leri verilir (bütün roller, id_token
+    ve access token'da; tek rolde metin, çokta JSON dizisi).
   - **Token yaşam döngüsü**: access token imzalı JWT, 15 dk (`Tokenlar:AccessTokenSuresi`), küçültülmüş: profil/e-posta
     yok, yalnızca sub, role, scope, sid, client_id, aud (+ OpenIddict `oi_*`); profil id_token'da ve userinfo'da
     (`OidcKimlik.Hedefler`). Refresh token yalnızca `offline_access` ile (demo-obis, demo-yemekhane; tek-kapi değil),
@@ -63,8 +65,8 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   - **Razor Pages** (Türkçe arayüz, `sen` hitabı; düzen `Selcuk.Arayuz`'un `_SelcukDuzen`'i, kimlik sunucusuna özel
     yerleşimler `wwwroot/css/site.css`'te yalnızca token'larla; üst çubukta hesap menüsü `_HesapMenusu`, form yok):
     Uygulamalarım (ana sayfa; ayırıcı çizgili satırlar, "Aç" `initiate_login_uri?iss=…`), Giriş, Girişin
-    ikinci adımı (2FA), Şifremi unuttum, Şifre sıfırlama, Hesabım, Şifre değiştir, İki aşamalı doğrulama, Ek doğrulama
-    (step-up), Güvenlik geçmişi, Onay ("Hesabı değiştir" = aynı istek `prompt=login`), Çıkış, Erişim reddedildi. Giriş
+    ikinci adımı (2FA), Şifremi unuttum, Şifre sıfırlama, Hesabım ("Rollerin" bölümü; hesap menüsünde kullanıcı
+    türü), Şifre değiştir, İki aşamalı doğrulama, Ek doğrulama (step-up), Güvenlik geçmişi, Onay ("Hesabı değiştir" = aynı istek `prompt=login`), Çıkış, Erişim reddedildi. Giriş
     ve şifremi unuttum sonuç metinleri hesap var/yok ayırt etmemek için değiştirilmez. Tüm yanıtlarda güvenlik
     başlıkları (`GuvenlikBasliklari.cs`: nosniff, no-referrer, X-Frame-Options DENY, CSP).
   - **Şifre sıfırlama ve değiştirme** (`Hesap/`): Identity'nin yerleşik `DataProtectorTokenProvider`'ı ayrı adla
@@ -89,7 +91,8 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
     (`UserStore` alt sınıfı) kodları `IPasswordHasher` özetiyle saklar. Açma/kapatma/kod yenilemede damga yenilenir,
     diğer oturumlara Back-Channel Logout, e-posta; "Kurulumu başlat" (anahtar sıfırlama) da diğer oturumlara
     Back-Channel Logout gönderir, `IkiAdimKurulumuBaslatildi` denetim kaydı ve e-posta. Kapatma ve yenileme şifre +
-    TOTP ister. `TekKullanimlikTotpSaglayici` (`DefaultAuthenticatorProvider`): kabul edilen TOTP kodu 3 dk tekrar
+    TOTP ister. 2FA isteğe bağlıdır: `IkiAdimZorunluRoller` boş (hiçbir rol zorlanmaz, `RolModeliTests` sabitler);
+    tek istisna `mfaZorunlu` tek-kapi. Hesabım'da 2FA kapalıyken nötr öneri bandı. `TekKullanimlikTotpSaglayici` (`DefaultAuthenticatorProvider`): kabul edilen TOTP kodu 3 dk tekrar
     kabul edilmez (kurulumdaki doğrulama, giriş, kapatma, yenileme);
     kodun HMAC'i ve kabul zamanı `AspNetUserTokens`'ta (`[SelcukSSO]`/`KullanilanTotpKodlari`). "Bu cihazı hatırla":
     Identity `TwoFactorRememberMe` (`IkiAdimCihazHatirlamaGun`, 30). `IkiAdimZorunluRoller`: kurulum bitmeden
@@ -107,6 +110,13 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
     Sayfalar `EpostaKuyrugu`'na bırakır, `EpostaGonderimHizmeti` arka planda gönderir. Şablonlar Türkçe; düz metin +
     aynı içeriğin HTML sürümü (`EpostaMesaji.HtmlGovde`, multipart/alternative, satır içi stil, harici kaynak yok).
   - **Oturum süresi**: kimlik sunucusu çerezi `Oturum:Sure` (varsayılan 8 saat, kayan).
+- `src/Selcuk.Roller`: rol kataloğu, tek kaynak (class library, kök ad alanı `Selcuk`: `Selcuk.Roller` sınıfı, ayrı
+  ad alanı yok ki `Roller` adı gölgelenmesin). `Roller.Katalog`: her rol kimlik, Türkçe ad, katman (kullanıcı türü:
+  tam olarak bir; idari görev; komisyon/kurul), açıklama, verilebileceği kullanıcı türü, kapsam (`Bolum`/`Fakulte`);
+  yeni rol = bir satır. `RolDogrulayici`: tutarlılık kuralları. `Roller.Grupla`: katmana göre görünüm (kapsamlı rolde
+  birim). Kimlik sunucusu, `Selcuk.Istemci.Ortak` ve `Selcuk.Arayuz` referans alır; demolar `Roller.…` sabitlerini
+  buradan kullanır. Development test kullanıcıları (`BaslangicVerisi.TestKullanicilari`, 13 kullanıcı) açılışta
+  doğrulayıcıdan geçer (ihlal açılışı durdurur); var olana yalnızca eksik roller eklenir. Ayrıntı `docs/roller.md`.
 - `src/Selcuk.Arayuz`: ortak tasarım sistemi ("Taç kapı"), Razor Class Library; statik dosyalar
   `_content/Selcuk.Arayuz/` altında. `css/selcuk.css`: token'lar (renk açık/koyu `prefers-color-scheme`, tipografi,
   4'ün katı aralık, köşe 6/12px, gölge yok), uygulama vurgu rengi (`--uygulama-vurgu`, `--uygulama-vurgu-acik`;
@@ -118,7 +128,8 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   eşitliğini `ArayuzTests` denetler). `_SelcukDuzen` (üst çubuk: kapı işareti veya `Duzen.Ayar.UygulamaSimgesi` ile
   uygulama simgesi ve başlık şeridi; `HesapMenusu` ve `Sekmeler` bölümleri; alt bilgi `Duzen.Ayar.AltBilgi`;
   `Duzen = "giris"` ile kapı panelli giriş düzeni), `_FormHatalari`, `_TekSifreGirisi` ("Tek Şifre ile giriş yap"),
-  `_IstemciHesapMenusu` (alt uygulamaların hesap menüsü; çıkış /Cikis'e POST), `_IstemciProfili`, `KapiIsareti`
+  `_IstemciHesapMenusu` (alt uygulamaların hesap menüsü; çıkış /Cikis'e POST), `_IstemciProfili`, `_RolSatirlari`
+  (gruplu roller; Hesabım ve Profilim), `KapiIsareti`
   (elle çizilmiş SVG: küçük, büyük "yıldız ve haç" örgülü kapı (animasyon yalnızca girişte, `prefers-reduced-motion`'da
   yok), hata sayfalarında 48px kapalı kapı), `Simge`, `FormYardimcisi`. Firuze ve kapı işareti yalnızca kimlikle ilgili
   öğelerde ("Tek Şifre ile giriş yap", hesap menüsü, kimlik sunucusu ekranları, Tek Kapı'nın SSO öğeleri); alt
@@ -154,7 +165,8 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   çıkış, şifre sıfırlama/değiştirme, istek sınırı ve tahmin koruması, 2FA (TOTP tekrar koruması dahil), kilit
   tutarlılığı, denetim kaydı (HMAC özeti, eksik anahtarla açılmama), güvenilen proxy, Tek Kapı (public istemci,
   loopback, back-channel), uygulama bazlı erişim izni, istemci bazlı 2FA şartı (step-up), önbellek, token budama,
-  refresh mutlak sınırı ve ölçüm hız sınırı gevşetmesi testleri.
+  refresh mutlak sınırı, ölçüm hız sınırı gevşetmesi ve rol modeli (`RolModeliTests`: doğrulayıcı, seed, role dizisi,
+  Hesabım, 2FA'nın hiçbir rolde zorunlu olmaması) testleri.
   `IstemciMfaTests` "yalnızca şifreyle açılmış oturum + 2FA açık" durumunu, 2FA'yı depoya güvenlik damgasını
   değiştirmeden yazarak kurar. `OidcYardimcisi` istemci parametreli (varsayılan
   demo-obis; public istemci için `PublicTokenIsteAsync`).
@@ -166,7 +178,7 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   tek bir zaman ölçümünden üretir. Denetim kayıtları arka planda yazıldığı için
   `DenetimKayitlariAsync` ile beklenir.
 - `tests/Selcuk.Istemci.Ortak.Tests`: Back-Channel Logout alıcısı, çerez süresi, ortak dağıtık önbellek, JWKS hatası
-  (503), `iss` doğrulaması ve token yenileme/iptal testleri; yerel RSA anahtarı, sahte JWKS ve sahte token/revocation
+  (503), `iss` doğrulaması, token yenileme/iptal ve çok rollü `IsInRole` (tam OIDC girişi, `OidcGirisiAsync`) testleri; yerel RSA anahtarı, sahte JWKS ve sahte token/revocation
   uç noktaları (`TestUygulamasi.TokenUcu`).
 - `tests/Selcuk.Demo.Api.Tests`: Demo API token doğrulama ve yetkilendirme; yerel RSA anahtarı, sabit discovery.
 - `tests/Selcuk.Demo.Obis.Tests`, `tests/Selcuk.Demo.Yemekhane.Tests`: yönlendirme, rol, önbellek (`no-store`), ortak
