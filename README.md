@@ -910,6 +910,11 @@ Bilgisayar Mühendisliği Bölümü'nün 11 otomasyonu ayrı uygulamalar olarak 
 kaynağı seçimi, hata sayfaları, güvenlik başlıkları, Back-Channel Logout). Yeni otomasyon eklemek için kontrol listesi:
 [docs/otomasyon-sablonu.md](docs/otomasyon-sablonu.md).
 
+**Uygulamalarım bağlantısı:** giriş yapmış kullanıcının üst çubuğunda, hesap menüsünün solunda **Uygulamalarım**
+bağlantısı bulunur (kimlik sunucusunun kök adresi; aynı sekmede açılır). Adres `Kimlik:Authority` ayarından türetilir
+(yalnızca https veya `http://127.0.0.1`; kullanıcı girdisinden adres türetilmez, açık yönlendirme yoktur), dar ekranda da
+görünür ve betik gerektirmez. Erişim reddedildi ve hata sayfalarında da vardır; girişsiz sayfada yoktur.
+
 **Ekranlar temsilidir:** veriler örnektir (mock), formlar antiforgery korumalı gerçek bir POST yapar ama hiçbir şey
 kaydedilmez ("Bu ekran temsilidir; işlem kaydedilmedi."). Her sayfanın üstünde "Temsili ekran" bandı, alt bilgide veri
 kaynağı rozeti ("Veri: örnek veri" / "Veri: API") vardır. Veri kaynağı ayarla seçilir; API yazıldığında yalnızca ayar
@@ -1277,7 +1282,8 @@ Bölüm otomasyonu ekleniyorsa [docs/otomasyon-sablonu.md](docs/otomasyon-sablon
 SelcukSSO.sln
 dotnet-tools.json                 dotnet-ef yerel aracı
 .gitattributes                    Satır sonu kuralları
-scripts/run-all.ps1               On beş uygulamayı (kimlik, iki demo, Demo API, on bir bölüm otomasyonu) ayrı pencerelerde başlatır (-TekKapi: Tek Kapı da, SSO modunda)
+scripts/run-all.ps1               On beş uygulamayı (kimlik, iki demo, Demo API, on bir bölüm otomasyonu) ayrı pencerelerde başlatır (-TekKapi: Tek Kapı da, SSO modunda; -Sadece: seçili uygulamalar; -ArkaPlan: pencere açmadan, logs/ altına log)
+scripts/durdur-hepsi.ps1          run-all.ps1 -ArkaPlan ile başlatılanları logs/run-all.pids'teki PID'lerle durdurur
 scripts/olcum-calistir.ps1        Otomatik ölçüm: derle, uygulamaları ölçüm modunda başlat, ölç, durdur
 scripts/olcum_analiz.py           Ölçüm analizi (Python 3, standart kütüphane; matplotlib varsa PNG)
 scripts/arayuz-esitle.ps1         Ortak tasarım dosyalarını (selcuk.css, yazı tipleri, kapı SVG'leri) Tek Kapı'ya kopyalar
@@ -1453,6 +1459,30 @@ Projeleri 5309, Sınav Başarısı Analizi 5310, ÇAP-Yandal 5311) ayrı PowerSh
 oluşabiliyordu.
 `-TekKapi` verilirse Tek Kapı da (`araclar/tek-kapi`, http://127.0.0.1:4545) SSO modunda ayrı bir pencerede başlar
 (bkz. [Tek Kapı köprüsü](#tek-kapı-köprüsü)).
+
+Daha az pencere için iki seçenek vardır (varsayılan davranış değişmez):
+
+```powershell
+# Yalnızca seçili uygulamalar (kimlik sunucusu 5001 her zaman başlar); adlar virgülle ayrılır
+powershell -ExecutionPolicy Bypass -File scripts\run-all.ps1 -Sadece staj,intibak
+# Pencere açmadan (gizli) başlat; kapat
+powershell -ExecutionPolicy Bypass -File scripts\run-all.ps1 -ArkaPlan -Sadece staj
+powershell -ExecutionPolicy Bypass -File scripts\durdur-hepsi.ps1
+```
+
+- `-Sadece` adları: `staj`, `intibak`, `mezuniyet`, `cap-yandal`, `etik-kurul`, `bolum-kurul`, `lisans-projeleri`,
+  `danismanlik`, `iskur`, `mudek`, `sinav-analizi`, `obis`, `yemekhane`, `demo-api` (`ekran-goruntuleri.mjs --sadece`
+  ile aynı). Geçersiz ad verilirse hiçbir şey başlatılmaz; Türkçe hata geçerli adları yazar. Demo OBİS'in Notlarım
+  ekranı için `demo-api` de seçilmelidir.
+- `-ArkaPlan`: her uygulamanın çıktısı (stdout + stderr) `logs\<uygulama>.log` dosyasına (örn. `logs\kimlik.log`,
+  `logs\staj.log`) yazılır; başlatılan işlemlerin PID'leri başlangıç zamanıyla `logs\run-all.pids` dosyasına yazılır.
+  `logs/` git'e girmez. Betik ortam değişkeni veya parola yazmaz; loglarda yalnızca uygulamanın kendi çıktısı vardır
+  (EF komut günlüklerinde parametre değerleri `'?'` ile maskelidir). Önceki arka plan çalıştırması açıksa yenisi
+  başlamaz.
+- `durdur-hepsi.ps1`: yalnızca `logs\run-all.pids` içindeki işlemleri ve alt işlemlerini durdurur; port veya ad
+  eşleştirmesiyle başka işlem kapatmaz. PID, kayıttaki başlangıç zamanıyla eşleşmiyorsa (numara başka işleme geçmişse)
+  dokunmaz. Dosya yoksa veya işlem kapanmışsa hata vermeden Türkçe bilgi yazar; işi bitince dosyayı siler. Tek Kapı
+  (`-TekKapi`) her zaman kendi penceresinde açılır ve bu betikle kapanmaz.
 
 Tek tek:
 

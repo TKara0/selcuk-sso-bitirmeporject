@@ -26,6 +26,26 @@ public sealed class SablonTests
     private static ClaimsPrincipal Kullanici(params string[] roller) =>
         new(new ClaimsIdentity(roller.Select(r => new Claim("role", r)), "test", "name", "role"));
 
+    // ---------- "Uygulamalarım" bağlantısı ----------
+
+    [Theory]
+    [InlineData("https://localhost:5001", "https://localhost:5001/")]
+    [InlineData("https://localhost:5001/", "https://localhost:5001/")]
+    [InlineData("https://kimlik.test.local/yol/baska?x=1#y", "https://kimlik.test.local/")]
+    [InlineData("http://127.0.0.1:5001", "http://127.0.0.1:5001/")]
+    [InlineData("http://localhost:5001", null)]
+    [InlineData("http://kimlik.test.local", null)]
+    [InlineData("ftp://localhost:5001", null)]
+    [InlineData("javascript:alert(1)", null)]
+    [InlineData("//kimlik.test.local", null)]
+    [InlineData("https://kullanici:parola@localhost:5001", null)]
+    [InlineData("", null)]
+    [InlineData(null, null)]
+    public void Uygulamalarim_adresi_yalnizca_https_veya_loopback_authority_kokunden_turetiliyor(string? authority, string? beklenen)
+    {
+        Assert.Equal(beklenen, OtomasyonBilgisi.KimlikSunucusuKoku(authority));
+    }
+
     // ---------- Menü ----------
 
     [Fact]

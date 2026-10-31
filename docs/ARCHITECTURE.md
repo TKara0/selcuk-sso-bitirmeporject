@@ -17,7 +17,7 @@ src/Selcuk.Demo.Obis|Yemekhane|Api
 araclar/tek-kapi               Node.js portal (ayrı AGENTS.md)
 tools/Selcuk.Olcum             otomatik ölçüm (yalnızca localhost+https)
 tests/                         her src projesi için *.Tests; Otomasyon.TestOrtak ortak kaynak (bağlantıyla derlenir)
-scripts/                       run-all, olcum-calistir, arayuz-esitle, ekran-goruntuleri, olcum_analiz
+scripts/                       run-all, durdur-hepsi, olcum-calistir, arayuz-esitle, ekran-goruntuleri, olcum_analiz
 docs/                          bu sistem + konu belgeleri
 ```
 

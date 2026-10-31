@@ -174,7 +174,8 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   yok; 503/403 Türkçe), durum kodu sayfaları (`/signout-backchannel` hariç), HTTPS, statik, kimlik, yetki, Razor
   Pages, Back-Channel Logout. Ortak sayfalar: `/` (rol başlıklı kısayollar), Giris, Cikis, GirisHatasi,
   ErisimReddedildi (403, "Bu ekrana erişim yetkin yok"), Hata, Profilim. `_OtomasyonDuzen` (`_SelcukDuzen` üstünde;
-  sabit "Temsili ekran" bandı, solda rol başlıklı menü, dar ekranda selcuk.js `data-menu`, betiksizse
+  üst çubukta giriş yapmış kullanıcıya "Uygulamalarım" bağlantısı (`OtomasyonBilgisi.KimlikSunucusuAdresi`,
+  `Kimlik:Authority` kökü; yalnızca https veya `http://127.0.0.1`); sabit "Temsili ekran" bandı, solda rol başlıklı menü, dar ekranda selcuk.js `data-menu`, betiksizse
   `otomasyon-betiksiz.css`; TempData mesajı; alt bilgide `AltBilgiEk` bölümüyle veri rozeti). `KullaniciKapsami`
   (preferred_username, bolum, fakulte; `Kapsar(Kendi|Bolum|Fakulte, …)`; Api modunda süzmeyi API yapar).
   `TemsiliIslem.TemsiliIslemSonucu()` (veriyi değiştirmeden aynı sayfaya, TempData mesajı). `OturumBiletDeposu`
@@ -322,7 +323,11 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   01-34.
 - `scripts/run-all.ps1`: önce `dotnet build SelcukSSO.sln` (başarısızsa durur), sonra kimlik sunucusu, iki demo,
   Demo API ve on bir bölüm otomasyonunu (5301-5311) ayrı pencerelerde `dotnet run --no-build` ile başlatır; `-TekKapi` ile Tek Kapı'yı da SSO modunda
-  başlatır; `-TarayiciAcma` ile sonda tarayıcı açılmaz.
+  başlatır; `-TarayiciAcma` ile sonda tarayıcı açılmaz. `-Sadece <adlar>` yalnızca seçili uygulamaları başlatır
+  (kimlik sunucusu her zaman; adlar `ekran-goruntuleri.mjs --sadece` ile aynı, geçersiz ad hiçbir şey başlatmaz);
+  `-ArkaPlan` gizli pencerede başlatır, çıktıyı `logs/<uygulama>.log`'a, PID'leri başlangıç zamanıyla
+  `logs/run-all.pids`'e yazar. `scripts/durdur-hepsi.ps1` yalnızca o dosyadaki PID'leri ve alt işlemlerini durdurur
+  (port veya ad eşleştirmesiyle işlem kapatmaz; Tek Kapı kapsam dışı).
 
 Ayrıntılar için `README.md` dosyasına bakın.
 

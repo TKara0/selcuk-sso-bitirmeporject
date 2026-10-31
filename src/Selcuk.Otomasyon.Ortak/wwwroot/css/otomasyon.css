@@ -14,6 +14,28 @@
     color: var(--soluk);
 }
 
+/* Üst çubuk: "Uygulamalarım" bağlantısı hesap menüsünün solunda. Dar ekranda çubuk sarılır (marka üstte, bağlantı ve
+   hesap düğmesi altta); bağlantı betik gerektirmez, "Menü" düğmesinden bağımsızdır. Renk --baglanti (yüzey zemininde
+   AA: 6,28:1 açık, 7,25:1 koyu), odak halkası ortak :focus-visible. */
+.uygulama-cubugu {
+    flex-wrap: wrap;
+}
+
+.ust-baglantilar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--a2) var(--a4);
+}
+
+.uygulamalarim-baglantisi {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--dokunma);
+    font-weight: 700;
+}
+
 /* Solda menü, sağda içerik; dar ekranda menü içeriğin üstünde ve "Menü" düğmesiyle açılır. */
 .otomasyon {
     display: grid;

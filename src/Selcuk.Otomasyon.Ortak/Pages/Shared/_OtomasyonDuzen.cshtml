@@ -3,6 +3,8 @@
     (uygulamanın vurgu rengi; firuze ve kapı işareti yalnızca hesap menüsü gibi kimlik öğelerinde), içeriğin üstünde
     sabit "Temsili ekran" bandı, solda rol tabanlı menü (rol başlıklarıyla; dar ekranda "Menü" düğmesiyle açılır,
     selcuk.js; betik kapalıysa açık kalır), temsili işlem mesajı (TempData) ve alt bilgide veri kaynağı rozeti.
+    Giriş yapmış kullanıcıya üst çubukta, hesap menüsünün yanında "Uygulamalarım" bağlantısı (kimlik sunucusunun kök
+    adresi, Kimlik:Authority'den türetilir; aynı sekmede açılır, betik gerekmez).
     Stiller: otomasyon.css (bu kütüphane) ve uygulamanın kendi /css/site.css'i (vurgu rengi).
 *@
 @inject OtomasyonBilgisi Bilgi
@@ -26,7 +28,13 @@
     <noscript><link rel="stylesheet" href="~/_content/Selcuk.Otomasyon.Ortak/css/otomasyon-betiksiz.css" asp-append-version="true" /></noscript>
 }
 @section HesapMenusu {
-    <partial name="_IstemciHesapMenusu" model="@(new[] { new HesapMenusuBaglantisi("Profilim", Url.Page("/Profilim")!, gecerli == "/Profilim") })" />
+    <div class="ust-baglantilar">
+        @if (User.Identity?.IsAuthenticated == true && Bilgi.KimlikSunucusuAdresi is { } uygulamalarimAdresi)
+        {
+            <a class="uygulamalarim-baglantisi" href="@uygulamalarimAdresi">Uygulamalarım</a>
+        }
+        <partial name="_IstemciHesapMenusu" model="@(new[] { new HesapMenusuBaglantisi("Profilim", Url.Page("/Profilim")!, gecerli == "/Profilim") })" />
+    </div>
 }
 @section AltBilgiEk {
     <p><span class="etiket etiket-notr veri-rozeti">Veri: @(VeriKaynagi.Value.ApiMi ? "API" : "örnek veri")</span></p>

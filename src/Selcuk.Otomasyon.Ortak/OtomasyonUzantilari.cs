@@ -74,8 +74,19 @@ public interface IDogrulanabilirAyar
     string? Hata();
 }
 
-/// <summary>Düzenin okuduğu otomasyon bilgileri.</summary>
-public sealed record OtomasyonBilgisi(string Ad, string Simge, string Aciklama);
+/// <summary>
+/// Düzenin okuduğu otomasyon bilgileri. KimlikSunucusuAdresi, "Uygulamalarım" bağlantısının adresidir: yalnızca
+/// "Kimlik:Authority" ayarından türetilen kök adres (kullanıcı girdisinden adres türetilmez); ayar https veya
+/// http://127.0.0.1 değilse null (bağlantı gösterilmez).
+/// </summary>
+public sealed record OtomasyonBilgisi(string Ad, string Simge, string Aciklama, string? KimlikSunucusuAdresi = null)
+{
+    public static string? KimlikSunucusuKoku(string? authority) =>
+        Uri.TryCreate(authority, UriKind.Absolute, out var adres) && string.IsNullOrEmpty(adres.UserInfo)
+        && (adres.Scheme == Uri.UriSchemeHttps || (adres.Scheme == Uri.UriSchemeHttp && adres.Host == "127.0.0.1"))
+            ? adres.GetLeftPart(UriPartial.Authority) + "/"
+            : null;
+}
 
 /// <summary>
 /// Bölüm otomasyonlarının ortak kurulumu. AddSelcukOtomasyon servisleri, UseSelcukOtomasyon istek hattını ve uç
@@ -106,7 +117,9 @@ public static class OtomasyonUzantilari
         // Oturum bileti sunucu tarafında, çerezde yalnızca anahtar (localhost'ta çerez birikimi, HTTP 431).
         OturumBiletDeposu.Kaydet(services);
         services.AddHttpContextAccessor();
-        services.AddSingleton(new OtomasyonBilgisi(secenekler.Ad, secenekler.Simge, secenekler.Aciklama));
+        // Authority, AddSelcukSSO gibi kullanım anında okunur.
+        services.AddSingleton(sp => new OtomasyonBilgisi(secenekler.Ad, secenekler.Simge, secenekler.Aciklama,
+            OtomasyonBilgisi.KimlikSunucusuKoku(sp.GetRequiredService<IConfiguration>()["Kimlik:Authority"])));
         var menu = new OtomasyonMenusu([.. secenekler.Menu]);
         services.AddSingleton(menu);
 

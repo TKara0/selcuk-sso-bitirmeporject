@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
@@ -218,6 +219,82 @@ public abstract partial class OtomasyonTemelTestleri<TProgram> : IDisposable whe
         {
             Assert.Equal(HttpStatusCode.OK, (await Fabrika.Istemci().GetAsync(dosya)).StatusCode);
         }
+    }
+
+    // ---------- "Uygulamalarım" bağlantısı ----------
+
+    private string KimlikSunucusuKoku()
+    {
+        var authority = Fabrika.Services.GetRequiredService<IConfiguration>()["Kimlik:Authority"];
+        Assert.False(string.IsNullOrEmpty(authority));
+        return new Uri(authority).GetLeftPart(UriPartial.Authority) + "/";
+    }
+
+    [Fact]
+    public async Task Uygulamalarim_baglantisi_girisli_kullanicida_kimlik_sunucusu_kokune_gidiyor_hesap_menusu_ve_cikis_duruyor()
+    {
+        var kok = KimlikSunucusuKoku();
+        Assert.Equal(OtomasyonFactory.Authority, kok);
+        var baglanti = $"<a class=\"uygulamalarim-baglantisi\" href=\"{kok}\">Uygulamalarım</a>";
+        var rol = Kullanicilar.Keys.First();
+        var client = Istemci(rol);
+        var sayfalar = new List<string> { "/", "/Profilim", Menu.First(o => o.Roller.Contains(rol)).Sayfa, "/Hata" };
+
+        foreach (var sayfa in sayfalar)
+        {
+            var html = await OtomasyonFactory.MetinAsync(await client.GetAsync(sayfa));
+
+            Assert.True(Regex.Matches(html, "uygulamalarim-baglantisi").Count == 1, sayfa);
+            Assert.Contains(baglanti, html);
+            Assert.DoesNotContain("target=", html);
+            Assert.Contains("class=\"hesap-menusu\"", html);
+            Assert.Contains("<button type=\"submit\">Çıkış yap</button>", html);
+            Assert.Contains("aria-label=\"Hesap\"", html);
+            // Bağlantı üst çubukta, hesap menüsünden önce ve "Menü" düğmesinden bağımsızdır.
+            Assert.True(html.IndexOf("uygulamalarim-baglantisi", StringComparison.Ordinal)
+                        < html.IndexOf("class=\"hesap-menusu\"", StringComparison.Ordinal), sayfa);
+            Assert.True(html.IndexOf("uygulamalarim-baglantisi", StringComparison.Ordinal)
+                        < html.IndexOf("</header>", StringComparison.Ordinal), sayfa);
+        }
+
+        // Yetkisiz sayfa (403, /ErisimReddedildi) ortak düzeni kullandığı için bağlantıyı kendiliğinden gösterir.
+        var sayfaYetkisiz = Menu.First(o => !o.Roller.Contains(AnaRol)).Sayfa;
+        var ana = Istemci(AnaRol);
+        var yonlendirme = await ana.GetAsync(sayfaYetkisiz);
+        var red = await ana.GetAsync(yonlendirme.Headers.Location);
+        Assert.Equal(HttpStatusCode.Forbidden, red.StatusCode);
+        var redHtml = await OtomasyonFactory.MetinAsync(red);
+        Assert.Contains(baglanti, redHtml);
+        Assert.Contains("<button type=\"submit\">Çıkış yap</button>", redHtml);
+    }
+
+    [Fact]
+    public async Task Uygulamalarim_baglantisi_girissiz_kullanicida_yok()
+    {
+        var html = await OtomasyonFactory.MetinAsync(await Fabrika.Istemci().GetAsync("/"));
+
+        Assert.DoesNotContain("uygulamalarim-baglantisi", html);
+        Assert.DoesNotContain(">Uygulamalarım<", html);
+    }
+
+    [Fact]
+    public async Task Uygulamalarim_baglantisi_kontrasti_AA_ve_satir_ici_stil_yok()
+    {
+        var css = await (await Fabrika.Istemci().GetAsync("/_content/Selcuk.Arayuz/css/selcuk.css")).Content.ReadAsStringAsync();
+        var baglanti = Regex.Matches(css, @"--baglanti:\s*(#[0-9A-Fa-f]{6})").Select(m => m.Groups[1].Value).ToList();
+        var yuzey = Regex.Matches(css, @"--yuzey:\s*(#[0-9A-Fa-f]{6})").Select(m => m.Groups[1].Value).ToList();
+        Assert.Equal(2, baglanti.Count);
+        Assert.Equal(2, yuzey.Count);
+        for (var i = 0; i < 2; i++)
+        {
+            Assert.True(Kontrast(baglanti[i], yuzey[i]) >= 4.5, $"{baglanti[i]} / {yuzey[i]}: {Kontrast(baglanti[i], yuzey[i]):0.00}");
+        }
+
+        var oturumlu = Kullanicilar.Values.First();
+        var html = await OtomasyonFactory.MetinAsync(await Fabrika.Istemci(oturumlu.KullaniciAdi, oturumlu.Bolum, oturumlu.Fakulte, oturumlu.Roller).GetAsync("/"));
+        Assert.DoesNotContain(" style=", html);
+        var otomasyonCss = await (await Fabrika.Istemci().GetAsync("/_content/Selcuk.Otomasyon.Ortak/css/otomasyon.css")).Content.ReadAsStringAsync();
+        Assert.Contains(".uygulamalarim-baglantisi", otomasyonCss);
     }
 
     [Fact]

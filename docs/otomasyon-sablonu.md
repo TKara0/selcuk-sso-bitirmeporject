@@ -43,7 +43,10 @@ app.UseSelcukOtomasyon();
   Şifre ile giriş yap"; girişte rollere göre karşılama ve kısayol kartları), `/Giris`, `/Cikis`, `/GirisHatasi`,
   `/ErisimReddedildi` ("Bu ekrana erişim yetkin yok", 403), `/Hata`, `/Profilim` (gruplu roller).
 - **Düzen** `_OtomasyonDuzen` (`_SelcukDuzen`'in üstünde): üst çubukta uygulama adı ve simgesi (uygulamanın vurgu
-  rengi), içeriğin üstünde sabit "Temsili ekran: gösterilen veriler örnektir, yapılan işlemler kaydedilmez." bandı,
+  rengi) ve giriş yapmış kullanıcı için hesap menüsünün yanında **"Uygulamalarım"** bağlantısı (kimlik sunucusunun kök
+  adresi, `Kimlik:Authority`'den `OtomasyonBilgisi.KimlikSunucusuKoku` ile türetilir; yalnızca https veya
+  `http://127.0.0.1`, aksi hâlde bağlantı gösterilmez; aynı sekmede açılır, dar ekranda da görünür, betik gerekmez;
+  `/ErisimReddedildi` ve `/Hata` ortak düzeni kullandığı için kendiliğinden gösterir), içeriğin üstünde sabit "Temsili ekran: gösterilen veriler örnektir, yapılan işlemler kaydedilmez." bandı,
   solda rol başlıklı menü (dar ekranda "Menü" düğmesi; betik kapalıysa açık), temsili işlem mesajı ve alt bilgide veri
   kaynağı rozeti ("Veri: örnek veri" / "Veri: API"). Stiller `otomasyon.css`'te (bu kütüphane); `selcuk.css`
   değiştirilmez. Firuze ve kapı işareti yalnızca kimlik öğelerinde (hesap menüsü, "Tek Şifre ile giriş yap").

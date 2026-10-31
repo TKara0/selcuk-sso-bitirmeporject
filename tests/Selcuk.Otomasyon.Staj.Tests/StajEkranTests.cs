@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Net;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Selcuk.Otomasyon.Ortak;
 using Selcuk.Otomasyon.Staj.Sozlesme;
 using Selcuk.Otomasyon.Staj.Veri;
@@ -309,6 +311,36 @@ public sealed partial class StajEkranTests : IDisposable
         {
             Assert.Equal(HttpStatusCode.OK, (await _factory.Istemci().GetAsync(dosya)).StatusCode);
         }
+    }
+
+    [Fact]
+    public async Task Uygulamalarim_baglantisi_girisli_kullanicida_kimlik_sunucusu_kokune_gidiyor_hesap_menusu_ve_cikis_duruyor()
+    {
+        var kok = new Uri(_factory.Services.GetRequiredService<IConfiguration>()["Kimlik:Authority"]!).GetLeftPart(UriPartial.Authority) + "/";
+        Assert.Equal(StajFactory.Authority, kok);
+        var baglanti = $"<a class=\"uygulamalarim-baglantisi\" href=\"{kok}\">Uygulamalarım</a>";
+        var client = Ogrenci();
+
+        foreach (var sayfa in new[] { "/", "/Profilim", OgrenciSayfalari[0], "/Hata" })
+        {
+            var html = await StajFactory.MetinAsync(await client.GetAsync(sayfa));
+
+            Assert.True(Regex.Matches(html, "uygulamalarim-baglantisi").Count == 1, sayfa);
+            Assert.Contains(baglanti, html);
+            Assert.DoesNotContain("target=", html);
+            Assert.Contains("class=\"hesap-menusu\"", html);
+            Assert.Contains("<button type=\"submit\">Çıkış yap</button>", html);
+            Assert.True(html.IndexOf("uygulamalarim-baglantisi", StringComparison.Ordinal)
+                        < html.IndexOf("class=\"hesap-menusu\"", StringComparison.Ordinal), sayfa);
+        }
+
+        var yonlendirme = await client.GetAsync(KomisyonSayfalari[0]);
+        var red = await client.GetAsync(yonlendirme.Headers.Location);
+        Assert.Equal(HttpStatusCode.Forbidden, red.StatusCode);
+        Assert.Contains(baglanti, await StajFactory.MetinAsync(red));
+
+        var girissiz = await StajFactory.MetinAsync(await _factory.Istemci().GetAsync("/"));
+        Assert.DoesNotContain("uygulamalarim-baglantisi", girissiz);
     }
 
     [Fact]

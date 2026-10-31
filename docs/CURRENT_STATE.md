@@ -1,8 +1,8 @@
 # CURRENT_STATE
 
-Son güncelleme: 2026-10-31 (Öğrenci Danışmanlık, İŞKUR, MÜDEK ve Sınav Başarısı Analizi eklendi). Son commit: bu
-belgeyi içeren "Danışmanlık, İŞKUR, MÜDEK ve Sınav Başarısı Analizi otomasyonları (temsili, mock veri)" (öncesi
-`2e16845`); hash için `git log -1`. Dal `main`.
+Son güncelleme: 2026-11-01 (otomasyonlara "Uygulamalarım" bağlantısı; `run-all.ps1` için `-Sadece`, `-ArkaPlan` ve
+`durdur-hepsi.ps1`). Son commit: bu belgeyi içeren "Otomasyonlara Uygulamalarım bağlantısı; run-all için -Sadece,
+-ArkaPlan ve durdurma betiği" (öncesi `bfee031`); hash için `git log -1`. Dal `main`.
 
 ## Çalışanlar (kodda var ve testle kapsanıyor)
 
@@ -26,9 +26,20 @@ belgeyi içeren "Danışmanlık, İŞKUR, MÜDEK ve Sınav Başarısı Analizi o
 
 ## Doğrulama durumu
 
-- Bu adımda çalıştırıldı ve geçti: `dotnet build` (0 uyarı), `dotnet test` (18 .NET test projesi, **692** test), Tek Kapı
+- Bu adımda çalıştırıldı ve geçti: `dotnet build` (0 uyarı), `dotnet test` (18 .NET test projesi, **735** test), Tek Kapı
   `npm test` (**49** kontrol: 35 + 14). Sayılar `docs/test-kapsami.md`'de.
 - Kod kapsamı satır %82,5 / dal %69,7 Adım 8 ölçümüdür; sonradan yeniden ölçülmedi (otomasyon projeleri dahil değil).
+
+## Bu adımın değişiklikleri (kullanılabilirlik)
+
+- Otomasyonların ortak düzeni (`_OtomasyonDuzen`): giriş yapmış kullanıcının üst çubuğunda hesap menüsünün solunda
+  "Uygulamalarım" bağlantısı (kimlik sunucusunun kök adresi; `Kimlik:Authority`'den `OtomasyonBilgisi.KimlikSunucusuKoku`
+  ile, yalnızca https veya `http://127.0.0.1`; aynı sekme; betik gerekmez). Stil `otomasyon.css`'te. Ekran görüntüleri
+  (üst çubuk değişti) bu adımda yenilenmedi.
+- `scripts/run-all.ps1`: `-Sadece <adlar>` (seçili uygulamalar; kimlik sunucusu her zaman), `-ArkaPlan` (gizli pencere,
+  `logs/<uygulama>.log`, PID kaydı `logs/run-all.pids`); `scripts/durdur-hepsi.ps1` yalnızca kayıttaki PID'leri ve alt
+  işlemlerini durdurur. Varsayılan davranış ve `-TekKapi` değişmedi. Betik kodlaması UTF-8 BOM'lu (diğer betiklerle aynı).
+- Testler: +43 (Otomasyon.Ortak 12, Staj 1, ortak `OtomasyonTemelTestleri` 3 × 10 otomasyon), hiçbiri silinmedi.
 
 ## Aşama ve son işler
 
