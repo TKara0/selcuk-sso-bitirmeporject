@@ -1,0 +1,27 @@
+@page
+@model Selcuk.Otomasyon.BolumKurul.Pages.Sekreter.ArsivModel
+@{
+    ViewData["Title"] = "Tutanak ve arşiv";
+    var kararlar = KayitTablosu.Olustur("Kararlar", Model.Kararlar, k => k.Madde.Id, "kurul",
+        new KayitSutunu<(Toplanti Toplanti, GundemMaddesi Madde)>("Karar no", k => k.Madde.KararNo),
+        new KayitSutunu<(Toplanti Toplanti, GundemMaddesi Madde)>("Konu", k => k.Madde.Konu),
+        new KayitSutunu<(Toplanti Toplanti, GundemMaddesi Madde)>("Toplantı", k => $"{k.Toplanti.No}, {BolumKurulOtomasyonu.Tarih(k.Toplanti.Tarih)}"),
+        new KayitSutunu<(Toplanti Toplanti, GundemMaddesi Madde)>("Oylar", k => BolumKurulOtomasyonu.Oylar(k.Madde)),
+        new KayitSutunu<(Toplanti Toplanti, GundemMaddesi Madde)>("Karar", k => BolumKurulOtomasyonu.Rozet(k.Madde.Durum)));
+    var tutanaklar = KayitTablosu.Olustur("Tutanaklar", Model.Toplantilar, t => t.Id, "kurul",
+        new KayitSutunu<Toplanti>("Toplantı", t => $"{t.No}, {BolumKurulOtomasyonu.Tarih(t.Tarih)}"),
+        new KayitSutunu<Toplanti>("Katılan / üye", t => $"{t.KatilanSayisi} / {t.UyeSayisi}", Sayi: true),
+        new KayitSutunu<Toplanti>("Durum", t => BolumKurulOtomasyonu.Rozet(t.Durum)),
+        new KayitSutunu<Toplanti>("Tutanak", t => t.Durum != ToplantiDurumu.Yapildi ? new DurumRozeti("Gerekmez", DurumTuru.Bilgi)
+            : t.TutanakHazir ? new DurumRozeti("Hazır", DurumTuru.Olumlu) : new DurumRozeti("Hazırlanıyor", DurumTuru.Bekliyor)));
+}
+<h1>Tutanak ve arşiv</h1>
+<p class="giris-metni">Bölümünün kurul kararları ve toplantı tutanaklarının durumu.</p>
+
+<form method="post" class="dugmeler">
+    <button type="submit" class="dugme dugme-ikincil">Yazdır</button>
+    <p class="ipucu">Temsili: arşiv yazdırılmaz, yalnızca işlem mesajı gösterilir.</p>
+</form>
+
+<partial name="_KayitTablosu" model="kararlar" />
+<partial name="_KayitTablosu" model="tutanaklar" />

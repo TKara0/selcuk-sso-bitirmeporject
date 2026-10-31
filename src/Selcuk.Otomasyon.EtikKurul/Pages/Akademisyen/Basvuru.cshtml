@@ -1,0 +1,42 @@
+@page
+@model Selcuk.Otomasyon.EtikKurul.Pages.Akademisyen.BasvuruModel
+@{
+    ViewData["Title"] = "Etik başvurusu";
+}
+<h1>Etik başvurusu</h1>
+<p class="giris-metni">
+    Başvurun önce ön incelemeden, sonra kurul üyelerinin değerlendirmesinden geçer. Bu ekran temsilidir; başvuru ve
+    belgeler kaydedilmez.
+</p>
+
+<form method="post" enctype="multipart/form-data" class="form basvuru-formu">
+    <div class="alan">
+        <label for="baslik">Proje başlığı</label>
+        <input id="baslik" name="projeBasligi" class="metin-alani" required maxlength="200" />
+    </div>
+    <div class="alan">
+        <label for="tur">Araştırma türü</label>
+        <select id="tur" name="arastirmaTuru" class="metin-alani" required>
+            @foreach (var tur in Enum.GetValues<ArastirmaTuru>())
+            {
+                <option value="@tur">@EtikKurulOtomasyonu.TurAdi(tur)</option>
+            }
+        </select>
+    </div>
+    <div class="alan">
+        <label for="katilimci">Katılımcı grubu</label>
+        <input id="katilimci" name="katilimciGrubu" class="metin-alani" required maxlength="200" />
+    </div>
+    <div class="alan">
+        <label for="yontem">Veri toplama yöntemi</label>
+        <textarea id="yontem" name="veriToplamaYontemi" class="metin-alani" rows="3" required maxlength="1000"></textarea>
+    </div>
+    <div class="alan">
+        <label for="belge">Belgeler (onam formu, veri toplama aracı; PDF)</label>
+        <input id="belge" name="belge" type="file" accept=".pdf,application/pdf" class="metin-alani" aria-describedby="belge-ipucu" />
+        <p class="ipucu" id="belge-ipucu">Temsili alan: seçilen dosya sunucuya kaydedilmez.</p>
+    </div>
+    <div class="dugmeler">
+        <button type="submit" class="dugme dugme-uygulama">Başvur</button>
+    </div>
+</form>

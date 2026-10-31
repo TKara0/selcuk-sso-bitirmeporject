@@ -19,7 +19,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $kok = Split-Path -Parent $PSScriptRoot
 $Eszamanlilik = ($Eszamanlilik -split '[,\s]+' | Where-Object { $_ }) -join ','
-$portlar = 5001, 5101, 5102, 5201, 5301, 5302, 5304, 5311
+$portlar = 5001, 5101, 5102, 5201, 5301, 5302, 5303, 5304, 5305, 5309, 5311
 
 # Kullanıcının çalışan uygulamalarına dokunulmaz: portlardan biri doluysa ölçüm başlamaz.
 $dolu = Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $_.LocalPort -in $portlar }

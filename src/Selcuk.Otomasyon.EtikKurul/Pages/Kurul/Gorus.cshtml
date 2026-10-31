@@ -1,0 +1,57 @@
+@page
+@model Selcuk.Otomasyon.EtikKurul.Pages.Kurul.GorusModel
+@{
+    ViewData["Title"] = "Görüş";
+}
+<h1>Görüş</h1>
+<p class="giris-metni">
+    Kurul değerlendirmesindeki, sana atanan dosyalar. Her dosya için görüşünü seç ve gerekçeni yaz. Gönder temsilidir;
+    görüş kaydedilmez.
+</p>
+
+@if (Model.Dosyalar.Count == 0)
+{
+    <p class="bos-durum">@KayitTablosu.VarsayilanBosMetin</p>
+}
+else
+{
+    <form method="post">
+        <div class="tablo-kabi kayit-tablosu" role="region" aria-label="Görüş bekleyen dosyalar" tabindex="0">
+            <table class="tablo gorusler">
+                <caption class="gorunmez">Görüş bekleyen dosyalar</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Başvuru</th>
+                        <th scope="col">Görüş</th>
+                        <th scope="col">Gerekçe</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var dosya in Model.Dosyalar)
+                    {
+                        var benim = Model.BenimGorusum(dosya);
+                        <tr data-etik="@dosya.Id">
+                            <th scope="row">@dosya.ProjeBasligi<br /><span class="ipucu">@dosya.BasvuranAdi, @EtikKurulOtomasyonu.TurAdi(dosya.ArastirmaTuru)</span></th>
+                            <td>
+                                <label class="gorunmez" for="gorus-@dosya.Id">Görüş: @dosya.ProjeBasligi</label>
+                                <select id="gorus-@dosya.Id" name="gorus[@dosya.Id]" class="metin-alani">
+                                    @foreach (var tur in Enum.GetValues<GorusTuru>())
+                                    {
+                                        <option value="@tur" selected="@(benim?.Gorus == tur)">@EtikKurulOtomasyonu.GorusAdi(tur)</option>
+                                    }
+                                </select>
+                            </td>
+                            <td>
+                                <label class="gorunmez" for="gerekce-@dosya.Id">Gerekçe: @dosya.ProjeBasligi</label>
+                                <textarea id="gerekce-@dosya.Id" name="gerekce[@dosya.Id]" class="metin-alani" rows="2" maxlength="1000">@benim?.Gerekce</textarea>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="dugmeler">
+            <button type="submit" class="dugme dugme-uygulama">Görüşleri gönder</button>
+        </div>
+    </form>
+}

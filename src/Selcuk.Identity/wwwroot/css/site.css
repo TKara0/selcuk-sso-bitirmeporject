@@ -66,6 +66,21 @@
     background: #F5EED6;
 }
 
+.uygulama-simge-murdum {
+    color: #7A2E5C;
+    background: #F5E6EF;
+}
+
+.uygulama-simge-arduvaz {
+    color: #4A5F78;
+    background: #E6ECF2;
+}
+
+.uygulama-simge-cam {
+    color: #2E6B58;
+    background: #E1EFEA;
+}
+
 @media (prefers-color-scheme: dark) {
     .uygulama-simge-zeytin {
         color: #A9C98B;
@@ -85,6 +100,21 @@
     .uygulama-simge-hardal {
         color: #D9C068;
         background: #332B10;
+    }
+
+    .uygulama-simge-murdum {
+        color: #E3A3C9;
+        background: #38192B;
+    }
+
+    .uygulama-simge-arduvaz {
+        color: #A9BED6;
+        background: #1F2A36;
+    }
+
+    .uygulama-simge-cam {
+        color: #8FCDB8;
+        background: #163028;
     }
 }
 

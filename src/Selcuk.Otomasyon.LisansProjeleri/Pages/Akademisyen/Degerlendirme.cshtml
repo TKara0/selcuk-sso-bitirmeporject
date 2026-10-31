@@ -1,0 +1,59 @@
+@page
+@model Selcuk.Otomasyon.LisansProjeleri.Pages.Akademisyen.DegerlendirmeModel
+@{
+    ViewData["Title"] = "Değerlendirme";
+    string[] rubrik = ["Önerge", "Ara rapor", "Sunum"];
+}
+<h1>Değerlendirme</h1>
+<p class="giris-metni">
+    Hocası olduğun projelerin öğrencileri. Rubrik puanları (her biri 0-100) ve not girişi temsilidir; kaydedilmez.
+</p>
+
+@if (Model.Projeler.Count == 0)
+{
+    <p class="bos-durum">@KayitTablosu.VarsayilanBosMetin</p>
+}
+else
+{
+    <form method="post">
+        <div class="tablo-kabi kayit-tablosu" role="region" aria-label="Değerlendirilecek projeler" tabindex="0">
+            <table class="tablo degerlendirme">
+                <caption class="gorunmez">Değerlendirilecek projeler</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Öğrenci ve konu</th>
+                        <th scope="col">Aşama</th>
+                        @foreach (var r in rubrik)
+                        {
+                            <th scope="col">@r</th>
+                        }
+                        <th scope="col">Not</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in Model.Projeler)
+                    {
+                        <tr data-proje="@p.Id">
+                            <th scope="row">@p.OgrenciAdi <span class="mono ipucu">@p.OgrenciNo</span><br /><span class="ipucu">@p.KonuBasligi</span></th>
+                            <td><partial name="_DurumRozeti" model="LisansProjeleriOtomasyonu.Rozet(p.Asama)" /></td>
+                            @for (var i = 0; i < rubrik.Length; i++)
+                            {
+                                <td>
+                                    <label class="gorunmez" for="rubrik-@p.Id-@i">@rubrik[i] puanı: @p.OgrenciAdi</label>
+                                    <input id="rubrik-@p.Id-@i" name="rubrik[@p.Id][@i]" type="number" min="0" max="100" class="metin-alani puan" />
+                                </td>
+                            }
+                            <td>
+                                <label class="gorunmez" for="not-@p.Id">Not: @p.OgrenciAdi</label>
+                                <input id="not-@p.Id" name="not[@p.Id]" type="number" min="0" max="100" value="@p.Not" class="metin-alani puan" />
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="dugmeler">
+            <button type="submit" class="dugme dugme-uygulama">Değerlendirmeyi kaydet</button>
+        </div>
+    </form>
+}

@@ -94,6 +94,37 @@ public static class Istemciler
     public static readonly string[] CapYandalOtomasyonuIzinliRolleri =
         [Roller.Ogrenci, Roller.CapYandalKoordinatoru, Roller.BolumBaskani, Roller.BolumSekreteri];
 
+    public const string EtikKurulApiKaynagi = "etik-kurul-api";
+    public const string EtikKurulOkuKapsami = "etik-kurul.oku";
+    public const string EtikKurulYazKapsami = "etik-kurul.yaz";
+    public const string EtikKurulOtomasyonuClientId = "etik-kurul-otomasyonu";
+    private const string EtikKurulOtomasyonuAdres = "https://localhost:5303";
+    public const string EtikKurulOtomasyonuRedirectUri = EtikKurulOtomasyonuAdres + "/signin-oidc";
+
+    /// <summary>Etik Kurul Otomasyonu'na girebilen roller (en az biri).</summary>
+    public static readonly string[] EtikKurulOtomasyonuIzinliRolleri = [Roller.Akademisyen, Roller.EtikKurulUyesi, Roller.BolumBaskani];
+
+    public const string BolumKurulApiKaynagi = "bolum-kurul-api";
+    public const string BolumKurulOkuKapsami = "bolum-kurul.oku";
+    public const string BolumKurulYazKapsami = "bolum-kurul.yaz";
+    public const string BolumKurulOtomasyonuClientId = "bolum-kurul-otomasyonu";
+    private const string BolumKurulOtomasyonuAdres = "https://localhost:5305";
+    public const string BolumKurulOtomasyonuRedirectUri = BolumKurulOtomasyonuAdres + "/signin-oidc";
+
+    /// <summary>Bölüm Kurul Karar Otomasyonu'na girebilen roller (en az biri).</summary>
+    public static readonly string[] BolumKurulOtomasyonuIzinliRolleri =
+        [Roller.BolumBaskani, Roller.BolumKuruluUyesi, Roller.BolumSekreteri, Roller.FakulteSekreteri];
+
+    public const string LisansProjeleriApiKaynagi = "lisans-projeleri-api";
+    public const string LisansProjeleriOkuKapsami = "lisans-projeleri.oku";
+    public const string LisansProjeleriYazKapsami = "lisans-projeleri.yaz";
+    public const string LisansProjeleriOtomasyonuClientId = "lisans-projeleri-otomasyonu";
+    private const string LisansProjeleriOtomasyonuAdres = "https://localhost:5309";
+    public const string LisansProjeleriOtomasyonuRedirectUri = LisansProjeleriOtomasyonuAdres + "/signin-oidc";
+
+    /// <summary>Lisans Projeleri Otomasyonu'na girebilen roller (en az biri).</summary>
+    public static readonly string[] LisansProjeleriOtomasyonuIzinliRolleri = [Roller.Ogrenci, Roller.Akademisyen, Roller.BolumBaskani];
+
     public const string TekKapiClientId = "tek-kapi";
     private const string TekKapiAdres = "http://127.0.0.1:4545";
     public const string TekKapiRedirectUri = TekKapiAdres + "/auth/callback";
@@ -164,7 +195,25 @@ public static class Istemciler
         "Çift anadal ve yandal başvurusu, koordinatör sıralaması, bölüm onayı ve programdaki ilerleme (temsili, örnek veri).",
         clientSecret, CapYandalOkuKapsami, CapYandalYazKapsami, CapYandalOtomasyonuIzinliRolleri, "hardal", "ÇY");
 
-    /// <summary>İntibak, Mezuniyet ve ÇAP-Yandal API'lerinin kapsamları (tüm ortamlarda açılışta oluşturulur).</summary>
+    /// <summary>Etik Kurul Otomasyonu (temsili ekranlar, örnek veri): gizli web istemcisi, etik-kurul.oku/etik-kurul.yaz.</summary>
+    public static OpenIddictApplicationDescriptor EtikKurulOtomasyonu(string clientSecret) => OtomasyonTanimi(
+        EtikKurulOtomasyonuClientId, "Etik Kurul Otomasyonu", EtikKurulOtomasyonuAdres,
+        "Araştırmalar için etik kurul başvurusu, kurul üyelerinin görüşleri ve kurul kararları (temsili, örnek veri).",
+        clientSecret, EtikKurulOkuKapsami, EtikKurulYazKapsami, EtikKurulOtomasyonuIzinliRolleri, "murdum", "EK");
+
+    /// <summary>Bölüm Kurul Karar Otomasyonu (temsili ekranlar, örnek veri): gizli web istemcisi, bolum-kurul.oku/bolum-kurul.yaz.</summary>
+    public static OpenIddictApplicationDescriptor BolumKurulOtomasyonu(string clientSecret) => OtomasyonTanimi(
+        BolumKurulOtomasyonuClientId, "Bölüm Kurul Karar Otomasyonu", BolumKurulOtomasyonuAdres,
+        "Bölüm kurulu toplantıları, gündem, oylama, karar ve tutanak arşivi (temsili, örnek veri).",
+        clientSecret, BolumKurulOkuKapsami, BolumKurulYazKapsami, BolumKurulOtomasyonuIzinliRolleri, "arduvaz", "BK");
+
+    /// <summary>Lisans Projeleri Otomasyonu (temsili ekranlar, örnek veri): gizli web istemcisi, lisans-projeleri.oku/.yaz.</summary>
+    public static OpenIddictApplicationDescriptor LisansProjeleriOtomasyonu(string clientSecret) => OtomasyonTanimi(
+        LisansProjeleriOtomasyonuClientId, "Lisans Projeleri Otomasyonu", LisansProjeleriOtomasyonuAdres,
+        "Bitirme projelerinde konu önerisi ve seçimi, öğrenci-hoca eşleştirmesi, aşamalar ve değerlendirme (temsili, örnek veri).",
+        clientSecret, LisansProjeleriOkuKapsami, LisansProjeleriYazKapsami, LisansProjeleriOtomasyonuIzinliRolleri, "cam", "LP");
+
+    /// <summary>İntibak, Mezuniyet, ÇAP-Yandal, Etik Kurul, Bölüm Kurul Karar ve Lisans Projeleri API'lerinin kapsamları (tüm ortamlarda açılışta oluşturulur).</summary>
     public static IReadOnlyList<OpenIddictScopeDescriptor> OtomasyonKapsamlari() =>
     [
         new() { Name = IntibakOkuKapsami, DisplayName = "İntibak bilgilerini okuma", Resources = { IntibakApiKaynagi } },
@@ -173,6 +222,12 @@ public static class Istemciler
         new() { Name = MezuniyetYazKapsami, DisplayName = "Mezuniyet başvurusu ve onayı yazma", Resources = { MezuniyetApiKaynagi } },
         new() { Name = CapYandalOkuKapsami, DisplayName = "ÇAP ve yandal bilgilerini okuma", Resources = { CapYandalApiKaynagi } },
         new() { Name = CapYandalYazKapsami, DisplayName = "ÇAP ve yandal başvurusu ve onayı yazma", Resources = { CapYandalApiKaynagi } },
+        new() { Name = EtikKurulOkuKapsami, DisplayName = "Etik kurul bilgilerini okuma", Resources = { EtikKurulApiKaynagi } },
+        new() { Name = EtikKurulYazKapsami, DisplayName = "Etik başvurusu ve görüş yazma", Resources = { EtikKurulApiKaynagi } },
+        new() { Name = BolumKurulOkuKapsami, DisplayName = "Bölüm kurulu bilgilerini okuma", Resources = { BolumKurulApiKaynagi } },
+        new() { Name = BolumKurulYazKapsami, DisplayName = "Toplantı, gündem ve oy yazma", Resources = { BolumKurulApiKaynagi } },
+        new() { Name = LisansProjeleriOkuKapsami, DisplayName = "Lisans projesi bilgilerini okuma", Resources = { LisansProjeleriApiKaynagi } },
+        new() { Name = LisansProjeleriYazKapsami, DisplayName = "Konu, tercih ve değerlendirme yazma", Resources = { LisansProjeleriApiKaynagi } },
     ];
 
     /// <summary>Bölüm otomasyonu: gizli web istemcisi, oku/yaz kapsamları, izinli roller, vurgu rengi ve simge.</summary>

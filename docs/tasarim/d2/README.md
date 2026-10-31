@@ -237,3 +237,51 @@ Gözden geçirmede bulunup düzeltilenler: kayıt tablosunun son sütunundaki g�
 konumlu) kaydırma alanından taşıp dar ekranda sayfayı yatay genişletiyordu; kaydırma alanına `position: relative`
 verildi. Ders eşleştirmede önceki dersler ve müfredat iki sütuna sığmıyor, eşleştirme tablosu kırpılıyordu; önceki ders
 ile eşdeğer ders aynı satırda kaldı, müfredat altta tam genişlikte gösterilir. Geniş tablolarda sütunlar birleştirildi (Mezuniyet adaylarında eksik ders, staj ve GNO şartı tek "Kontrol sonucu" hücresinde, durum öğrenci hücresinde; İntibak listelerinde geliş türü ve önceki kurum tek hücrede; ÇAP-Yandal gelen başvurularında anadal sütunu kaldırıldı): işlem düğmeleri 1280px'te kaydırmadan görünür. "Bekliyor" rozeti taş zeminde seçilsin diye ince çerçeve aldı; tablodaki öğrenci numaraları kırılmaz.
+
+## Bölüm otomasyonları: Etik Kurul, Bölüm Kurul Karar, Lisans Projeleri
+
+İstenen vurgu renkleri ölçüldü; hepsi 4,5:1'in üstünde olduğu için değiştirilmedi. Açık vurgu zeminleri ve koyu tema
+karşılıkları Staj ve İntibak'taki gibi seçildi.
+
+| Uygulama | `--uygulama-vurgu` açık / koyu | `--uygulama-vurgu-acik` açık / koyu | Uygulamalarım simgesi |
+|---|---|---|---|
+| Etik Kurul (mürdüm) | #7A2E5C / #E3A3C9 | #F5E6EF / #38192B | EK |
+| Bölüm Kurul Karar (arduvaz) | #4A5F78 / #A9BED6 | #E6ECF2 / #1F2A36 | BK |
+| Lisans Projeleri (çam yeşili) | #2E6B58 / #8FCDB8 | #E1EFEA / #163028 | LP |
+
+| Metin / öğe | Zemin | Kullanım | Etik Kurul açık / koyu | Bölüm Kurul açık / koyu | Lisans Projeleri açık / koyu | Eşik | Sonuç |
+|---|---|---|---|---|---|---|---|
+| `--uygulama-vurgu` | `--tas` | Bağlantı, sayfa zemininde | 7.72 / 8.59 | 5.72 / 9.15 | 5.45 / 9.62 | 4.5:1 | ✓ |
+| `--uygulama-vurgu` | `--yuzey` | Menü, tablo, ikincil düğme metni | 8.85 / 7.48 | 6.56 / 7.97 | 6.25 / 8.38 | 4.5:1 | ✓ |
+| `--uygulama-vurgu` | `--uygulama-vurgu-acik` | Olumlu rozet, şu anki aşama, simge | 7.35 / 7.71 | 5.52 / 7.64 | 5.28 / 7.79 | 4.5:1 | ✓ |
+| `--murekkep` | `--uygulama-vurgu-acik` | Temsili işlem bandı | 12.79 / 13.30 | 12.94 / 12.37 | 13.00 / 12.00 | 4.5:1 | ✓ |
+| `--soluk` | `--uygulama-vurgu-acik` | İkincil metin vurgu zemininde | 5.76 / 7.82 | 5.82 / 7.27 | 5.85 / 7.05 | 4.5:1 | ✓ |
+| `--yuzey` | `--uygulama-vurgu` | Uygulama düğmesi metni | 8.85 / 7.48 | 6.56 / 7.97 | 6.25 / 8.38 | 4.5:1 | ✓ |
+
+Ekran görüntüleri `node --use-system-ca scripts/ekran-goruntuleri.mjs --sadece etik-kurul,bolum-kurul,lisans-projeleri`
+ile üretildi (diğer gruplarınkiler değişmedi). Kullanıcılar: hoca.test, etik.test, baskan.test, komisyon.test, 203011002.
+Görüntülerdeki öğrenci numaraları (203011…, ORN-…) ve notlar kurgusal test/örnek verisidir.
+
+| Uygulama | Ekran | Dosya önü | Mobil |
+|---|---|---|---|
+| Etik Kurul | Ana sayfa (akademisyen) | `etik-kurul-ana` | ✓ |
+| Etik Kurul | Başvurularım | `etik-kurul-basvurularim` | ✓ |
+| Etik Kurul | Etik başvurusu (belge alanı) | `etik-kurul-basvuru` | ✓ |
+| Etik Kurul | Atanan dosyalar (kurul üyesi) | `etik-kurul-atanan-dosyalar` | ✓ |
+| Etik Kurul | Görüş (kurul üyesi) | `etik-kurul-gorus` | ✓ |
+| Etik Kurul | Karar listesi (bölüm başkanı) | `etik-kurul-karar-listesi` | ✓ |
+| Bölüm Kurul Karar | Toplantı ve gündem (bölüm başkanı) | `bolum-kurul-toplantilar` | ✓ |
+| Bölüm Kurul Karar | Gündem (kurul üyesi) | `bolum-kurul-gundem` | ✓ |
+| Bölüm Kurul Karar | Oylama (kurul üyesi) | `bolum-kurul-oylama` | ✓ |
+| Bölüm Kurul Karar | Temsili işlem mesajı | `bolum-kurul-temsili-islem` | — |
+| Lisans Projeleri | Konu seçimi (öğrenci) | `lisans-projeleri-konu-secimi` | ✓ |
+| Lisans Projeleri | Proje aşamalarım (öğrenci) | `lisans-projeleri-asamalarim` | ✓ |
+| Lisans Projeleri | Değerlendirme (akademisyen) | `lisans-projeleri-degerlendirme` | ✓ |
+| Lisans Projeleri | Eşleştirme (bölüm başkanı) | `lisans-projeleri-eslestirme` | ✓ |
+
+Tez görselleri: `21-etik-kurul-basvurularim`, `22-etik-kurul-atanan-dosyalar`, `23-bolum-kurul-toplantilar`,
+`24-bolum-kurul-oylama`, `25-lisans-projeleri-asamalarim`, `26-lisans-projeleri-eslestirme`.
+
+Gözden geçirmede düzeltilen: Atanan dosyalar tablosu altı sütunla 1440px'te sığmıyordu (Durum kesik); bildirilen görüş
+ile yeterlilik rozeti ve araştırma türü ile başvuru birleştirildi (dört sütun). Oylama notundaki yüzde ekleri
+("%50'inden") ekten bağımsız bir cümleyle değiştirildi.

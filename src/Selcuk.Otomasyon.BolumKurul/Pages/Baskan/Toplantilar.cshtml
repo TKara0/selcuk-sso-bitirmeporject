@@ -1,0 +1,64 @@
+@page
+@model Selcuk.Otomasyon.BolumKurul.Pages.Baskan.ToplantilarModel
+@{
+    ViewData["Title"] = "Toplantı ve gündem";
+    var tablo = KayitTablosu.Olustur("Toplantılar", Model.Toplantilar, t => t.Id, "kurul",
+        new KayitSutunu<Toplanti>("Toplantı", t => t.No),
+        new KayitSutunu<Toplanti>("Tarih", t => BolumKurulOtomasyonu.Tarih(t.Tarih)),
+        new KayitSutunu<Toplanti>("Yer", t => t.Yer),
+        new KayitSutunu<Toplanti>("Gündem maddesi", t => t.Maddeler.Count, Sayi: true),
+        new KayitSutunu<Toplanti>("Durum", t => BolumKurulOtomasyonu.Rozet(t.Durum)));
+    var planlanan = Model.Toplantilar.Where(t => t.Durum == ToplantiDurumu.Planlandi).OrderBy(t => t.Tarih).ToList();
+}
+<h1>Toplantı ve gündem</h1>
+<p class="giris-metni">
+    Bölümünün kurul toplantıları. Yeni toplantı ve gündem maddesi formları temsilidir; kaydedilmez.
+</p>
+
+<partial name="_KayitTablosu" model="tablo" />
+
+<section aria-labelledby="yeni-toplanti">
+    <h2 id="yeni-toplanti">Yeni toplantı</h2>
+    <form method="post" asp-page-handler="YeniToplanti" class="form">
+        <div class="alan">
+            <label for="tarih">Tarih</label>
+            <input id="tarih" name="tarih" type="date" class="metin-alani" required />
+        </div>
+        <div class="alan">
+            <label for="yer">Yer</label>
+            <input id="yer" name="yer" class="metin-alani" required maxlength="150" />
+        </div>
+        <div class="dugmeler">
+            <button type="submit" class="dugme dugme-uygulama">Toplantı oluştur</button>
+        </div>
+    </form>
+</section>
+
+<section aria-labelledby="yeni-madde">
+    <h2 id="yeni-madde">Gündem maddesi ekle</h2>
+    @if (planlanan.Count == 0)
+    {
+        <p class="bos-durum">Planlanmış toplantı yok.</p>
+    }
+    else
+    {
+        <form method="post" asp-page-handler="MaddeEkle" class="form">
+            <div class="alan">
+                <label for="toplanti">Toplantı</label>
+                <select id="toplanti" name="toplantiId" class="metin-alani" required>
+                    @foreach (var t in planlanan)
+                    {
+                        <option value="@t.Id">@t.No, @BolumKurulOtomasyonu.Tarih(t.Tarih)</option>
+                    }
+                </select>
+            </div>
+            <div class="alan">
+                <label for="konu">Konu</label>
+                <textarea id="konu" name="konu" class="metin-alani" rows="2" required maxlength="500"></textarea>
+            </div>
+            <div class="dugmeler">
+                <button type="submit" class="dugme dugme-uygulama">Maddeyi ekle</button>
+            </div>
+        </form>
+    }
+</section>

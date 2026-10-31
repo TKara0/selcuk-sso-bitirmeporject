@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Selcuk.Otomasyon.Ortak\Selcuk.Otomasyon.Ortak.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>22435d42-69cb-4de6-b3d8-79f59607d105</UserSecretsId>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,33 @@
+@page
+@model Selcuk.Otomasyon.LisansProjeleri.Pages.Ogrenci.AsamalarimModel
+@{
+    ViewData["Title"] = "Proje aşamalarım";
+}
+<h1>Proje aşamalarım</h1>
+<p class="giris-metni">Lisans projenin hangi aşamada olduğu.</p>
+
+@if (Model.Projeler.Count == 0)
+{
+    <p>Lisans projesi kaydın yok.</p>
+}
+@foreach (var proje in Model.Projeler)
+{
+    <section class="basvuru" data-proje="@proje.Id" aria-labelledby="proje-@proje.Id">
+        <h2 id="proje-@proje.Id">@(proje.KonuBasligi ?? "Konu henüz belirlenmedi") (@proje.Donem)</h2>
+        <p>Durum: <partial name="_DurumRozeti" model="LisansProjeleriOtomasyonu.Rozet(proje.Asama)" /></p>
+        <partial name="_BasvuruAdimlari" model="LisansProjeleriOtomasyonu.Adimlar(proje.Asama)" />
+        <dl class="tanimlar">
+            <div>
+                <dt>Hoca</dt>
+                <dd>@(proje.HocaAdi ?? "Eşleştirme bekleniyor")</dd>
+            </div>
+            @if (proje.Not is { } not)
+            {
+                <div>
+                    <dt>Not</dt>
+                    <dd>@not</dd>
+                </div>
+            }
+        </dl>
+    </section>
+}

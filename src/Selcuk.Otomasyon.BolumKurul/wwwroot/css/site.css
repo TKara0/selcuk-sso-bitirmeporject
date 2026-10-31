@@ -1,0 +1,17 @@
+/*
+ * Bölüm Kurul Karar Otomasyonu: yalnızca uygulamanın vurgu rengi (arduvaz). Yerleşim ortak otomasyon şablonunda
+ * (_content/Selcuk.Otomasyon.Ortak/css/otomasyon.css), token'lar selcuk.css'te. Kontrast (WCAG 2.1, metin):
+ * #4A5F78 beyaz zeminde 6,56:1, taş (#EDF0EF) zeminde 5,72:1, açık arduvaz (#E6ECF2) zeminde 5,52:1;
+ * koyu temada #A9BED6 yüzey (#15273A) zemininde 7,97:1, koyu açık arduvaz (#1F2A36) zemininde 7,64:1.
+ */
+:root {
+    --uygulama-vurgu: #4A5F78;
+    --uygulama-vurgu-acik: #E6ECF2;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --uygulama-vurgu: #A9BED6;
+        --uygulama-vurgu-acik: #1F2A36;
+    }
+}

@@ -1,0 +1,37 @@
+@page
+@model Selcuk.Otomasyon.EtikKurul.Pages.Akademisyen.BasvurularimModel
+@{
+    ViewData["Title"] = "Başvurularım";
+}
+<h1>Başvurularım</h1>
+<p class="giris-metni">Etik kurul başvurularının durumu ve hangi aşamada olduğu.</p>
+
+@if (Model.Basvurular.Count == 0)
+{
+    <p>Henüz etik başvurun yok. <a href="/Akademisyen/Basvuru">Etik başvurusu</a> yapabilirsin.</p>
+}
+@foreach (var basvuru in Model.Basvurular)
+{
+    <section class="basvuru" data-etik="@basvuru.Id" aria-labelledby="basvuru-@basvuru.Id">
+        <h2 id="basvuru-@basvuru.Id">@basvuru.ProjeBasligi</h2>
+        <p>Durum: <partial name="_DurumRozeti" model="EtikKurulOtomasyonu.Rozet(basvuru.Durum)" /></p>
+        <partial name="_BasvuruAdimlari" model="EtikKurulOtomasyonu.Adimlar(basvuru.Durum)" />
+        <dl class="tanimlar">
+            <div>
+                <dt>Araştırma türü ve katılımcılar</dt>
+                <dd>@EtikKurulOtomasyonu.TurAdi(basvuru.ArastirmaTuru), @basvuru.KatilimciGrubu</dd>
+            </div>
+            <div>
+                <dt>Başvuru tarihi</dt>
+                <dd>@EtikKurulOtomasyonu.Tarih(basvuru.BasvuruTarihi)</dd>
+            </div>
+            @if (basvuru.KararNotu is not null)
+            {
+                <div>
+                    <dt>Kurul notu</dt>
+                    <dd>@basvuru.KararNotu</dd>
+                </div>
+            }
+        </dl>
+    </section>
+}

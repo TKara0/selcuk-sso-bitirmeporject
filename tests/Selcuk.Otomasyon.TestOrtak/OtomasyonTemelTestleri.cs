@@ -76,6 +76,12 @@ public abstract partial class OtomasyonTemelTestleri<TProgram> : IDisposable whe
 
     protected abstract IReadOnlyList<TemsiliIslemOrnegi> TemsiliIslemler { get; }
 
+    /// <summary>
+    /// Api, Back-Channel Logout ve adresle yetki reddi testlerinde kullanılan rol (varsayılan ogrenci; öğrenci rolü
+    /// olmayan otomasyonlar, ör. Etik Kurul, kendi rolünü verir).
+    /// </summary>
+    protected virtual string AnaRol => Roller.Ogrenci;
+
     protected HttpClient Istemci(string rol, OtomasyonFactory<TProgram>? fabrika = null)
     {
         var k = Kullanicilar[rol];
@@ -140,8 +146,8 @@ public abstract partial class OtomasyonTemelTestleri<TProgram> : IDisposable whe
     [Fact]
     public async Task Ogrenci_baska_rolun_sayfasina_adresle_giremiyor_Turkce_sayfa_goruyor()
     {
-        var client = Istemci(Roller.Ogrenci);
-        var sayfa = Menu.First(o => !o.Roller.Contains(Roller.Ogrenci)).Sayfa;
+        var client = Istemci(AnaRol);
+        var sayfa = Menu.First(o => !o.Roller.Contains(AnaRol)).Sayfa;
 
         var yanit = await client.GetAsync(sayfa);
 
@@ -388,7 +394,7 @@ public abstract partial class OtomasyonTemelTestleri<TProgram> : IDisposable whe
         var api = new SahteApi(_ => SahteApi.Json(govde));
         using var factory = new OtomasyonFactory<TProgram>(ayarlar: ApiAyarlari(), api: api, accessToken: token);
 
-        var yanit = await Istemci(Roller.Ogrenci, factory).GetAsync(sayfa);
+        var yanit = await Istemci(AnaRol, factory).GetAsync(sayfa);
 
         Assert.Equal(HttpStatusCode.OK, yanit.StatusCode);
         var html = await OtomasyonFactory.MetinAsync(yanit);
@@ -421,7 +427,7 @@ public abstract partial class OtomasyonTemelTestleri<TProgram> : IDisposable whe
         });
         using var factory = new OtomasyonFactory<TProgram>(ayarlar: ApiAyarlari("00:00:00.300"), api: api);
 
-        var yanit = await Istemci(Roller.Ogrenci, factory).GetAsync(ApiOrnegi.Sayfa);
+        var yanit = await Istemci(AnaRol, factory).GetAsync(ApiOrnegi.Sayfa);
 
         Assert.Equal(HttpStatusCode.ServiceUnavailable, yanit.StatusCode);
         var html = await OtomasyonFactory.MetinAsync(yanit);
@@ -437,7 +443,7 @@ public abstract partial class OtomasyonTemelTestleri<TProgram> : IDisposable whe
         using var factory = new OtomasyonFactory<TProgram>(ayarlar: ApiAyarlari(),
             api: new SahteApi(_ => Task.FromResult(new HttpResponseMessage(durum))));
 
-        var yanit = await Istemci(Roller.Ogrenci, factory).GetAsync(ApiOrnegi.Sayfa);
+        var yanit = await Istemci(AnaRol, factory).GetAsync(ApiOrnegi.Sayfa);
 
         Assert.Equal(HttpStatusCode.Forbidden, yanit.StatusCode);
         var html = await OtomasyonFactory.MetinAsync(yanit);
@@ -471,7 +477,7 @@ public abstract partial class OtomasyonTemelTestleri<TProgram> : IDisposable whe
         var identity = new ClaimsIdentity(
         [
             new Claim("sub", "sub-203011001"), new Claim("sid", sid), new Claim("name", "Test Öğrenci"),
-            new Claim("preferred_username", "203011001"), new Claim("role", Roller.Ogrenci),
+            new Claim("preferred_username", Kullanicilar[AnaRol].KullaniciAdi), new Claim("role", AnaRol),
             new Claim("bolum", OtomasyonFactory.Bilgisayar), new Claim("fakulte", OtomasyonFactory.Teknoloji),
         ], "test", "name", "role");
         var ozellikler = new AuthenticationProperties { IssuedUtc = DateTimeOffset.UtcNow, ExpiresUtc = DateTimeOffset.UtcNow.AddHours(1) };
@@ -499,11 +505,11 @@ public abstract partial class OtomasyonTemelTestleri<TProgram> : IDisposable whe
         using var factory = new OtomasyonFactory<TProgram>(sahteKimlik: false);
         const string Sid = "oturum-bcl-1";
         var (client, anahtar, ayarlar) = await GercekOturumAsync(factory, Sid);
-        var ogrenciSayfasi = Menu.First(o => o.Roller.Contains(Roller.Ogrenci)).Sayfa;
+        var ogrenciSayfasi = Menu.First(o => o.Roller.Contains(AnaRol)).Sayfa;
 
         Assert.Equal(CerezAdi, ayarlar.Cookie.Name);
         Assert.Equal(HttpStatusCode.OK, (await client.GetAsync(ogrenciSayfasi)).StatusCode);
-        var red = await client.GetAsync(Menu.First(o => !o.Roller.Contains(Roller.Ogrenci)).Sayfa);
+        var red = await client.GetAsync(Menu.First(o => !o.Roller.Contains(AnaRol)).Sayfa);
         Assert.StartsWith("/ErisimReddedildi", red.Headers.Location!.PathAndQuery);
 
         var simdi = DateTime.UtcNow;

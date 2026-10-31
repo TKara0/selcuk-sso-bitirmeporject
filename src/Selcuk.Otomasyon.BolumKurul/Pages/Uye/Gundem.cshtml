@@ -1,0 +1,27 @@
+@page
+@model Selcuk.Otomasyon.BolumKurul.Pages.Uye.GundemModel
+@{
+    ViewData["Title"] = "Gündem";
+}
+<h1>Gündem</h1>
+<p class="giris-metni">Bölümünün planlanmış kurul toplantıları ve gündem maddeleri.</p>
+
+@if (Model.Toplantilar.Count == 0)
+{
+    <p class="bos-durum">@KayitTablosu.VarsayilanBosMetin</p>
+}
+@foreach (var toplanti in Model.Toplantilar)
+{
+    <section data-kurul="@toplanti.Id" aria-labelledby="toplanti-@toplanti.Id">
+        <h2 id="toplanti-@toplanti.Id">Toplantı @toplanti.No, @BolumKurulOtomasyonu.Tarih(toplanti.Tarih)</h2>
+        <p class="ipucu">@toplanti.Yer</p>
+        <ol class="satirlar gundem">
+            @foreach (var madde in toplanti.Maddeler)
+            {
+                <li>
+                    <p class="satir-baslik">@madde.Konu <partial name="_DurumRozeti" model="BolumKurulOtomasyonu.Rozet(madde.Durum)" /></p>
+                </li>
+            }
+        </ol>
+    </section>
+}

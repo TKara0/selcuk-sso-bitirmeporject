@@ -32,7 +32,7 @@ public class IndexModel(
     }
 
     /// <summary>Uygulamalarım'da tanımlı vurgu renkleri (site.css); başka bir değer yok sayılır.</summary>
-    public static readonly IReadOnlySet<string> VurguRenkleri = new HashSet<string>(StringComparer.Ordinal) { "zeytin", "eflatun", "bakir", "hardal" };
+    public static readonly IReadOnlySet<string> VurguRenkleri = new HashSet<string>(StringComparer.Ordinal) { "zeytin", "eflatun", "bakir", "hardal", "murdum", "arduvaz", "cam" };
 
     public List<UygulamaKarti> Uygulamalar { get; } = [];
 

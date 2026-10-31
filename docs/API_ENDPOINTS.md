@@ -16,7 +16,7 @@ otomasyon API sözleşmeleri (henüz uygulanmamış): [api-sozlesmeleri/](api-so
 | `/connect/revoke` | POST | RFC 7009; gizli istemci | Çıkışta refresh iptali |
 
 Kapsamlar (`Program.cs` `RegisterScopes`): `openid profile email roles offline_access`; ayrıca `notlar.oku` (aud
-`demo-api`), `<otomasyon>.oku/.yaz` (aud `<otomasyon>-api`; ÇAP-Yandal: `cap-yandal.*`). Hangi istemcinin hangi
+`demo-api`), `<otomasyon>.oku/.yaz` (aud `<otomasyon>-api`; ör. `cap-yandal.*`, `etik-kurul.*`, `bolum-kurul.*`, `lisans-projeleri.*`). Hangi istemcinin hangi
 kapsamı alabildiği `Data/Istemciler.cs`'te. Token ömürleri: access 15 dk, refresh 8 sa, mutlak 12 sa (`Tokenlar:*`).
 
 ### Kimlik sunucusu sayfaları (Razor)
@@ -46,5 +46,15 @@ Parametreyle başka kullanıcı istenemez; `no-store` ve güvenlik başlıkları
 
 ## Otomasyon API'leri
 
-`staj-api`, `intibak-api`, `mezuniyet-api`, `cap-yandal-api`: **yok** (yalnızca sözleşme belgeleri). Otomasyonlar
-`VeriKaynagi:Mod=Api` ile Bearer access token kullanacak şekilde hazırlanmıştır.
+Hiçbiri **yok** (yalnızca sözleşme belgeleri). Otomasyonlar `VeriKaynagi:Mod=Api` ile Bearer access token kullanacak
+şekilde hazırlanmıştır.
+
+| Otomasyon (port) | `aud` | Kapsamlar | Sözleşme |
+|---|---|---|---|
+| İntibak (5301) | `intibak-api` | `intibak.oku`, `intibak.yaz` | [intibak.md](api-sozlesmeleri/intibak.md) |
+| Staj (5302) | `staj-api` | `staj.oku`, `staj.yaz` | [staj.md](api-sozlesmeleri/staj.md) |
+| Etik Kurul (5303) | `etik-kurul-api` | `etik-kurul.oku`, `etik-kurul.yaz` | [etik-kurul.md](api-sozlesmeleri/etik-kurul.md) |
+| Mezuniyet (5304) | `mezuniyet-api` | `mezuniyet.oku`, `mezuniyet.yaz` | [mezuniyet.md](api-sozlesmeleri/mezuniyet.md) |
+| Bölüm Kurul Karar (5305) | `bolum-kurul-api` | `bolum-kurul.oku`, `bolum-kurul.yaz` | [bolum-kurul.md](api-sozlesmeleri/bolum-kurul.md) |
+| Lisans Projeleri (5309) | `lisans-projeleri-api` | `lisans-projeleri.oku`, `lisans-projeleri.yaz` | [lisans-projeleri.md](api-sozlesmeleri/lisans-projeleri.md) |
+| ÇAP-Yandal (5311) | `cap-yandal-api` | `cap-yandal.oku`, `cap-yandal.yaz` | [cap-yandal.md](api-sozlesmeleri/cap-yandal.md) |

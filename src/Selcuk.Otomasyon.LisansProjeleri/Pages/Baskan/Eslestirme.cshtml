@@ -1,0 +1,47 @@
+@page
+@model Selcuk.Otomasyon.LisansProjeleri.Pages.Baskan.EslestirmeModel
+@{
+    ViewData["Title"] = "Eşleştirme";
+    var enFazla = Model.Sartlar.HocaBasinaEnFazlaProje;
+    var eslesen = Model.Projeler.Where(p => p.HocaKullaniciAdi is not null).ToList();
+    var bekleyen = Model.Projeler.Where(p => p.HocaKullaniciAdi is null).ToList();
+    var hocalar = eslesen.GroupBy(p => p.HocaAdi!).Select(g => (Hoca: g.Key, Sayi: g.Count())).OrderBy(h => h.Hoca, StringComparer.Create(LisansProjeleriOtomasyonu.Tr, false)).ToList();
+    Func<LisansProjesi, object> ogrenci = @<text>@item.OgrenciAdi <span class="mono ipucu">@item.OgrenciNo</span></text>;
+    var eslesmeler = KayitTablosu.Olustur("Öğrenci-hoca eşleştirmesi", eslesen, p => p.Id, "proje",
+        new KayitSutunu<LisansProjesi>("Öğrenci", ogrenci),
+        new KayitSutunu<LisansProjesi>("Konu", p => p.KonuBasligi),
+        new KayitSutunu<LisansProjesi>("Hoca", p => p.HocaAdi),
+        new KayitSutunu<LisansProjesi>("Aşama", p => LisansProjeleriOtomasyonu.Rozet(p.Asama)));
+    var kontenjan = KayitTablosu.Olustur("Hoca başına proje", hocalar, h => h.Hoca, null,
+        new KayitSutunu<(string Hoca, int Sayi)>("Hoca", h => h.Hoca),
+        new KayitSutunu<(string Hoca, int Sayi)>("Proje / en fazla", h => $"{h.Sayi} / {enFazla}", Sayi: true),
+        new KayitSutunu<(string Hoca, int Sayi)>("Kontenjan", h => h.Sayi > enFazla ? new DurumRozeti("Aşıldı", DurumTuru.Olumsuz)
+            : h.Sayi == enFazla ? new DurumRozeti("Dolu", DurumTuru.Bekliyor) : new DurumRozeti("Yer var", DurumTuru.Olumlu)));
+    Func<LisansProjesi, object> eslestir = @<form method="post" class="satir-islemleri">
+        <input type="hidden" name="id" value="@item.Id" />
+        <label class="gorunmez" for="konu-@item.Id">Konu: @item.OgrenciAdi</label>
+        <select id="konu-@item.Id" name="konuId" class="metin-alani">
+            @foreach (var k in Model.Konular.Where(k => k.Acik))
+            {
+                <option value="@k.Id" selected="@(item.Tercihler?.FirstOrDefault() == k.Id)">@k.Baslik (@k.HocaAdi)</option>
+            }
+        </select>
+        <button type="submit" class="dugme dugme-uygulama">Eşleştir<span class="gorunmez">: @item.OgrenciAdi</span></button>
+    </form>;
+    var bekleyenler = KayitTablosu.Olustur("Eşleştirme bekleyen öğrenciler", bekleyen, p => p.Id, "proje",
+        new KayitSutunu<LisansProjesi>("Öğrenci", ogrenci),
+        new KayitSutunu<LisansProjesi>("Tercih sayısı", p => p.Tercihler?.Count ?? 0, Sayi: true),
+        new KayitSutunu<LisansProjesi>("Eşleştir", eslestir));
+}
+<h1>Eşleştirme</h1>
+<p class="giris-metni">
+    Bölümünde @Selcuk.Otomasyon.LisansProjeleri.Veri.OrnekLisansProjeleriVerisi.GuncelDonem dönemi lisans projelerinin
+    öğrenci-hoca eşleştirmesi. Eşleştir temsilidir; kaydedilmez.
+</p>
+<p class="sart-notu" data-sart="hoca-kontenjani">
+    Hoca başına en fazla proje: <strong>@enFazla</strong>. Şart değerleri örnektir.
+</p>
+
+<partial name="_KayitTablosu" model="kontenjan" />
+<partial name="_KayitTablosu" model="bekleyenler" />
+<partial name="_KayitTablosu" model="eslesmeler" />

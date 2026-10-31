@@ -54,7 +54,10 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
     bolum_sekreteri; `vurgu` eflatun/bakir/hardal; kapsamlar `<ad>.oku`/`<ad>.yaz`, `aud` `<ad>-api`
     (`Istemciler.OtomasyonKapsamlari`; `cap-yandal.*`). `simge` özelliği (iki harf; Staj "ST", İntibak "İN", Mezuniyet
     "ME", ÇAP-Yandal "ÇY"): Uygulamalarım kartı bunu gösterir (`IndexModel.GecerliSimge`), yoksa veya geçersizse addan
-    üretir (`BasHarfler`). Adres kuralı: https veya yalnızca `http://127.0.0.1`
+    üretir (`BasHarfler`). `etik-kurul-otomasyonu` (5303; akademisyen/etik_kurul_uyesi/bolum_baskani, "murdum", "EK"),
+    `bolum-kurul-otomasyonu` (5305; bolum_baskani/bolum_kurulu_uyesi/bolum_sekreteri/fakulte_sekreteri, "arduvaz", "BK"),
+    `lisans-projeleri-otomasyonu` (5309; ogrenci/akademisyen/bolum_baskani, "cam", "LP"): aynı biçimde, kapsamlar
+    `etik-kurul.*`, `bolum-kurul.*`, `lisans-projeleri.*`. Adres kuralı: https veya yalnızca `http://127.0.0.1`
     (kayıtta `Istemciler.AdresleriDogrula`; authorize `redirect_uri` ve end-session `post_logout_redirect_uri` için
     OpenIddict doğrulama işleyicisi, `Program.cs`). Back-Channel Logout da yalnızca https veya `http://127.0.0.1`'e
     gönderilir.
@@ -197,6 +200,14 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   Elektrik-Elektronik'ten; İntibak ve Mezuniyet'te biri Mühendislik Fakültesi'nden. ÇAP-Yandal'da bölüm rolleri
   programı açan bölümü görür. Mezuniyet'teki staj durumu örnek veridir (Staj çağrılmaz). Sözleşmeler
   `docs/api-sozlesmeleri/intibak.md`, `mezuniyet.md`, `cap-yandal.md`; API projesi yok.
+- `src/Selcuk.Otomasyon.EtikKurul` (5303), `src/Selcuk.Otomasyon.BolumKurul` (5305),
+  `src/Selcuk.Otomasyon.LisansProjeleri` (5309): aynı yapı ve ortak parçalar. Vurgu mürdüm #7A2E5C / #E3A3C9, arduvaz
+  #4A5F78 / #A9BED6, çam yeşili #2E6B58 / #8FCDB8. Şartlar appsettings'te: `EtikKurulSartlari` (inceleme süresi hedefi,
+  karar için gereken görüş), `ToplantiSartlari` (yeter sayı ve karar çoğunluğu oranı), `ProjeSartlari` (hoca başına en
+  fazla proje, tercih sayısı). Kişiye bağlı ilişkiler rol değil kayıt verisidir: kurul üyesi yalnızca kendisine atanan
+  dosyaları (`UyeGorusu.UyeKullaniciAdi`, bölümden bağımsız), akademisyen yalnızca hocası olduğu projeleri
+  (`HocaKullaniciAdi`) görür. Örnek veri 15-18 kayıt, en az biri Elektrik-Elektronik'ten; Bölüm Kurul'da ikisi
+  Mühendislik Fakültesi'nden. Sözleşmeler `docs/api-sozlesmeleri/etik-kurul.md`, `bolum-kurul.md`, `lisans-projeleri.md`.
 - `src/Selcuk.Demo.Obis` (https://localhost:5101): ortak düzen (`Selcuk.Arayuz`, simge "DO", vurgu lacivert
   #2F4F8F / koyu #9DB5E8). Rol bazlı sayfalar (Notlarım: ogrenci, Ders Yönetimi: akademisyen), Profilim, yalnızca
   Development'ta Token İnceleme (her claim bir satır: Mono ad/değer, Türkçe açıklama `TokenIncelemeModel.Aciklamalar`;
@@ -242,8 +253,10 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   test projeleri (`tests/Selcuk.Otomasyon.Intibak.Tests`, `.Mezuniyet.Tests`, `.CapYandal.Tests`)
   `tests/Selcuk.Otomasyon.TestOrtak/*.cs`'i bağlantıyla derler (ayrı proje değil): `OtomasyonFactory<TProgram>`
   (StajFactory'nin genel hâli) ve `OtomasyonTemelTestleri<TProgram>` (menü, yetki, düzen, başlıklar, kontrast,
-  temsili işlem, Mock/Api, Api hataları, Back-Channel Logout ve çıkışta bilet silme); kapsam ve şart testleri
-  `<Ad>EkranTests`'te. Kimlik sunucusu tarafı `OtomasyonIstemcileriTests` (kayıt, access_denied, aud, kart, simge).
+  temsili işlem, Mock/Api, Api hataları, Back-Channel Logout ve çıkışta bilet silme; öğrencisi olmayan otomasyon
+  `AnaRol`'ü verir); Etik Kurul, Bölüm Kurul ve Lisans Projeleri test projeleri de aynı; kapsam ve şart testleri
+  `<Ad>EkranTests`'te. Kimlik sunucusu tarafı `OtomasyonIstemcileriTests` ve `KurulVeProjeIstemcileriTests` (kayıt,
+  access_denied, aud, kart, simge).
 - `tests/Selcuk.Demo.Obis.Tests`, `tests/Selcuk.Demo.Yemekhane.Tests`: yönlendirme, rol, önbellek (`no-store`), ortak
   düzen ve `_content` dosyaları, Notlarım özeti ve Token İnceleme (Development, sahte JWT'ler) testleri; gerçek kimlik
   sunucusu yerine sabit discovery bilgisi ve sahte kimlik doğrulama şeması kullanır (`ObisFactory`: `ortam`,
@@ -286,10 +299,10 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   veritabanı ve rastgele test şifreleri (yalnızca ortam değişkeni), `run-all.ps1 -TarayiciAcma`, Tek Kapı geçici
   `PORTAL_DATA_DIR` ile (gerçek kasa okunmaz, sistem açılmaz), QR/anahtar/kurtarma kodları örnek değerle, sonunda
   yalnızca kendi süreçlerini durdurur ve veritabanını siler. `--sadece <gruplar>` (kimlik, obis, yemekhane, staj,
-  tekkapi, intibak, mezuniyet, cap) yalnızca o grupları çeker ve yalnızca onların eski PNG'lerini siler; verilmezse
-  hepsi. Tez görselleri 01-20.
+  tekkapi, intibak, mezuniyet, cap, etik-kurul, bolum-kurul, lisans-projeleri) yalnızca o grupları çeker ve yalnızca
+  onların eski PNG'lerini siler; verilmezse hepsi. Tez görselleri 01-26.
 - `scripts/run-all.ps1`: önce `dotnet build SelcukSSO.sln` (başarısızsa durur), sonra kimlik sunucusu, iki demo,
-  Demo API ve bölüm otomasyonlarını (İntibak, Staj, Mezuniyet, ÇAP-Yandal) ayrı pencerelerde `dotnet run --no-build` ile başlatır; `-TekKapi` ile Tek Kapı'yı da SSO modunda
+  Demo API ve yedi bölüm otomasyonunu (5301-5305, 5309, 5311) ayrı pencerelerde `dotnet run --no-build` ile başlatır; `-TekKapi` ile Tek Kapı'yı da SSO modunda
   başlatır; `-TarayiciAcma` ile sonda tarayıcı açılmaz.
 
 Ayrıntılar için `README.md` dosyasına bakın.

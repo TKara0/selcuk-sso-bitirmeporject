@@ -300,6 +300,11 @@
     font-size: var(--boyut-kucuk);
 }
 
+/* Tablodaki puan alanları (ör. rubrik) dar. */
+.tablo input.puan {
+    width: 6em;
+}
+
 .tablo select.metin-alani {
     min-width: 12em;
 }

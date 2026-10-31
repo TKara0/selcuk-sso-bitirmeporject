@@ -2,7 +2,8 @@
 
 Bilgisayar Mühendisliği Bölümü'nün 11 otomasyonu ayrı web uygulamalarıdır ve aynı şablonla kurulur:
 `src/Selcuk.Otomasyon.Ortak` (Razor Class Library). İlk örnek Staj Otomasyonu'dur (`src/Selcuk.Otomasyon.Staj`,
-https://localhost:5302); İntibak (5301), Mezuniyet (5304) ve ÇAP-Yandal (5311) aşağıdaki ortak parçaları da kullanır. Portlar ve `client_id`'ler: [mimari.md > Port ve istemci düzeni](mimari.md#port-ve-istemci-düzeni).
+https://localhost:5302); İntibak (5301), Etik Kurul (5303), Mezuniyet (5304), Bölüm Kurul Karar (5305), Lisans Projeleri
+(5309) ve ÇAP-Yandal (5311) aşağıdaki ortak parçaları da kullanır. Portlar ve `client_id`'ler: [mimari.md > Port ve istemci düzeni](mimari.md#port-ve-istemci-düzeni).
 Roller ve plan matrisi: [roller.md](roller.md).
 
 ## Şablon ne verir
@@ -113,7 +114,8 @@ karşılığına bakın.
 11. **Testler.** `tests/Selcuk.Otomasyon.<Ad>.Tests`. Ortak testler hazırdır: projeye
     `tests/Selcuk.Otomasyon.TestOrtak/*.cs` bağlantıyla eklenir (csproj'da `<Compile Include=… Link=…>`; İntibak'taki
     gibi), `OtomasyonTemelTestleri<Program>`'dan türeyen bir sınıf otomasyonun değerlerini verir (ad, simge, client_id,
-    çerez, aud, menü, veri kaynağı türleri, rol başına test kullanıcısı, Api örneği, temsili işlemler) ve aşağıdakilerin
+    çerez, aud, menü, veri kaynağı türleri, rol başına test kullanıcısı, Api örneği, temsili işlemler; öğrenci rolü
+    yoksa `AnaRol`, ör. Etik Kurul'da akademisyen) ve aşağıdakilerin
     çoğu kendiliğinden gelir; kapsam ve şart testleri otomasyonun kendi sınıfında:
     menü (her rol yalnızca kendi öğeleri, çok rollü birleşim), adresle yetki reddi, kapsam (öğrenci kendi kaydı, başka
     bölüm görünmez), temsili işlem (antiforgery'siz 400; mesaj ve değişmeyen veri), Mock/Api seçimi, Api modu (Bearer,

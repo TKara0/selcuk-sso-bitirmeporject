@@ -1,0 +1,30 @@
+@page
+@model Selcuk.Otomasyon.EtikKurul.Pages.Baskan.KararListesiModel
+@{
+    ViewData["Title"] = "Karar listesi";
+    var hedef = Model.Sartlar.IncelemeSuresiHedefiGun;
+    bool HedefIcinde(EtikBasvurusu b) => EtikKurulOtomasyonu.KararSuresi(b) <= hedef;
+    Func<EtikBasvurusu, object> basvuru = @<text>@item.ProjeBasligi<br /><span class="ipucu">@item.BasvuranAdi</span></text>;
+    var tablo = KayitTablosu.Olustur("Kurul kararları", Model.Kararlar, b => b.Id, "etik",
+        new KayitSutunu<EtikBasvurusu>("Başvuru", basvuru),
+        new KayitSutunu<EtikBasvurusu>("Karar tarihi", b => EtikKurulOtomasyonu.Tarih(b.KararTarihi)),
+        new KayitSutunu<EtikBasvurusu>("Süre (gün)", b => EtikKurulOtomasyonu.KararSuresi(b), Sayi: true),
+        new KayitSutunu<EtikBasvurusu>("Süre hedefi", b => HedefIcinde(b)
+            ? new DurumRozeti("Hedef içinde", DurumTuru.Olumlu) : new DurumRozeti("Hedefi aştı", DurumTuru.Olumsuz)),
+        new KayitSutunu<EtikBasvurusu>("Karar", b => EtikKurulOtomasyonu.Rozet(b.Durum)));
+    IReadOnlyList<SayiKarti> kartlar =
+    [
+        new("Karar", Model.Kararlar.Count, "karar"),
+        new("Onaylanan", Model.Kararlar.Count(b => b.Durum == EtikDurumu.Onaylandi), "onaylanan"),
+        new("Reddedilen", Model.Kararlar.Count(b => b.Durum == EtikDurumu.Reddedildi), "reddedilen"),
+        new("Süre hedefini aşan", Model.Kararlar.Count(b => !HedefIcinde(b)), "hedefi-asan"),
+    ];
+}
+<h1>Karar listesi</h1>
+<p class="giris-metni">Bölümündeki akademisyenlerin etik başvuruları için kurulun verdiği kararlar.</p>
+<p class="sart-notu" data-sart="sure">
+    İnceleme süresi hedefi: <strong>@hedef gün</strong>. Şart değerleri örnektir.
+</p>
+
+<partial name="_SayiKartlari" model="kartlar" />
+<partial name="_KayitTablosu" model="tablo" />

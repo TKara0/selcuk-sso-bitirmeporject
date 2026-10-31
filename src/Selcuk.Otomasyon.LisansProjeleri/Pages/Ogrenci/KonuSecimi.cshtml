@@ -1,0 +1,57 @@
+@page
+@model Selcuk.Otomasyon.LisansProjeleri.Pages.Ogrenci.KonuSecimiModel
+@{
+    ViewData["Title"] = "Konu seçimi";
+    var acik = Model.Konular.Where(k => k.Acik).ToList();
+    var proje = Model.GuncelProje;
+    var tercihSayisi = Model.Sartlar.OgrenciBasinaTercihSayisi;
+    var konular = KayitTablosu.Olustur("Açık konular", acik, k => k.Id, "konu",
+        new KayitSutunu<ProjeKonusu>("Konu", k => k.Baslik),
+        new KayitSutunu<ProjeKonusu>("Hoca", k => k.HocaAdi),
+        new KayitSutunu<ProjeKonusu>("Kontenjan", k => k.Kontenjan, Sayi: true));
+}
+<h1>Konu seçimi</h1>
+<p class="giris-metni">
+    Bölümünün @Selcuk.Otomasyon.LisansProjeleri.Veri.OrnekLisansProjeleriVerisi.GuncelDonem dönemi için açık proje konuları. Tercih formu temsilidir; kaydedilmez.
+</p>
+
+<partial name="_KayitTablosu" model="konular" />
+
+@if (proje?.KonuId is not null)
+{
+    <section data-proje="@proje.Id" aria-labelledby="konum">
+        <h2 id="konum">Konun</h2>
+        <p>@proje.KonuBasligi (@proje.HocaAdi). Konu seçimi tamamlandı; aşamalar için <a href="/Ogrenci/Asamalarim">Proje aşamalarım</a>.</p>
+    </section>
+}
+else if (proje is not null)
+{
+    <section data-proje="@proje.Id" aria-labelledby="tercihlerim">
+        <h2 id="tercihlerim">Tercihlerin</h2>
+        <p class="sart-notu" data-sart="tercih">En fazla <strong>@tercihSayisi</strong> tercih yapabilirsin. Şart değerleri örnektir.</p>
+        <form method="post" class="form">
+            @for (var i = 0; i < tercihSayisi; i++)
+            {
+                var secili = proje.Tercihler is { } t && i < t.Count ? t[i] : null;
+                <div class="alan">
+                    <label for="tercih-@(i + 1)">@(i + 1). tercih</label>
+                    <select id="tercih-@(i + 1)" name="tercihler[@i]" class="metin-alani">
+                        <option value="" selected="@(secili is null)">Seçilmedi</option>
+                        @foreach (var k in acik)
+                        {
+                            <option value="@k.Id" selected="@(k.Id == secili)">@k.Baslik (@k.HocaAdi)</option>
+                        }
+                    </select>
+                </div>
+            }
+            <div class="dugmeler">
+                <button type="submit" class="dugme dugme-uygulama">Tercihleri kaydet</button>
+            </div>
+        </form>
+    </section>
+}
+else
+{
+    <p>Bu dönem için lisans projesi kaydın bulunamadı.</p>
+}
+

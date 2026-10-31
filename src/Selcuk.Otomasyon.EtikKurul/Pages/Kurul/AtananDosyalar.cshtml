@@ -1,0 +1,25 @@
+@page
+@model Selcuk.Otomasyon.EtikKurul.Pages.Kurul.AtananDosyalarModel
+@{
+    ViewData["Title"] = "Atanan dosyalar";
+    var gereken = Model.Sartlar.KararIcinGerekenGorusSayisi;
+    Func<EtikBasvurusu, object> basvuru = @<text>@item.ProjeBasligi<br /><span class="ipucu">@EtikKurulOtomasyonu.TurAdi(item.ArastirmaTuru); @item.BasvuranAdi, @item.Bolum</span></text>;
+    Func<EtikBasvurusu, object> gorusler = @<text>@Model.GorusSayisi(item) / @gereken<br /><partial name="_DurumRozeti" model="@(Model.GorusSayisi(item) >= gereken
+        ? new DurumRozeti("Görüşler yeterli", DurumTuru.Olumlu) : new DurumRozeti("Görüş bekleniyor", DurumTuru.Bekliyor))" /></text>;
+    var tablo = KayitTablosu.Olustur("Sana atanan dosyalar", Model.Dosyalar, b => b.Id, "etik",
+        new KayitSutunu<EtikBasvurusu>("Başvuru", basvuru),
+        new KayitSutunu<EtikBasvurusu>("Bildirilen görüş / gereken", gorusler),
+        new KayitSutunu<EtikBasvurusu>("Senin görüşün", b => EtikKurulOtomasyonu.GorusRozeti(Model.BenimGorusum(b))),
+        new KayitSutunu<EtikBasvurusu>("Durum", b => EtikKurulOtomasyonu.Rozet(b.Durum)));
+}
+<h1>Atanan dosyalar</h1>
+<p class="giris-metni">
+    Görüşün istenen etik başvuruları. Dosya ataması kişiye bağlıdır: yalnızca sana atanan dosyaları görürsün, başka
+    bölümden de olabilir. Görüş bildirmek için <a href="/Kurul/Gorus">Görüş</a> ekranını kullan.
+</p>
+<p class="sart-notu" data-sart="gorus">
+    Karar için gereken üye görüşü: <strong>@gereken</strong>; inceleme süresi hedefi:
+    <strong>@Model.Sartlar.IncelemeSuresiHedefiGun gün</strong>. Şart değerleri örnektir.
+</p>
+
+<partial name="_KayitTablosu" model="tablo" />

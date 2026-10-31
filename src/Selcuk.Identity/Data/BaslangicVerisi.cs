@@ -8,8 +8,8 @@ namespace Selcuk.Identity.Data;
 /// Uygulama açılışında rol kataloğundaki (Selcuk.Roller) bütün rolleri oluşturur. Yalnızca Development ortamında,
 /// şifreleri user-secrets'tan okunan test kullanıcılarını (rolleri <see cref="RolDogrulayici"/>'dan geçer; var olan
 /// kullanıcıya yalnızca eksik rolleri eklenir), ölçüm kullanıcılarını (<see cref="OlcumKullanicilari"/>), demo
-/// istemcileri (demo-obis, demo-yemekhane), bölüm otomasyonlarını (staj-, intibak-, mezuniyet- ve
-/// cap-yandal-otomasyonu) ve Tek Kapı'yı (public istemci,
+/// istemcileri (demo-obis, demo-yemekhane), bölüm otomasyonlarını (intibak-, staj-, etik-kurul-, mezuniyet-,
+/// bolum-kurul-, lisans-projeleri- ve cap-yandal-otomasyonu) ve Tek Kapı'yı (public istemci,
 /// izinli kullanıcılar Istemciler:TekKapi:IzinliKullaniciAdlari ayarından) ekler veya günceller.
 /// </summary>
 public sealed class BaslangicVerisi(
@@ -86,7 +86,7 @@ public sealed class BaslangicVerisi(
         }
 
         // Demo API kapsamı (notlar.oku -> aud demo-api) her ortamda tanımlı olmalı: authorize kaynakları buradan okur.
-        // Staj, İntibak, Mezuniyet ve ÇAP-Yandal API'lerinin kapsamları (<ad>.oku, <ad>.yaz -> aud <ad>-api) da aynı şekilde.
+        // Bölüm otomasyonlarının API kapsamları (<ad>.oku, <ad>.yaz -> aud <ad>-api) da aynı şekilde.
         var scopeManager = scope.ServiceProvider.GetRequiredService<IOpenIddictScopeManager>();
         foreach (var kapsam in (IEnumerable<OpenIddictScopeDescriptor>)[Istemciler.NotlarOku(), .. Istemciler.StajKapsamlari(), .. Istemciler.OtomasyonKapsamlari()])
         {
@@ -118,6 +118,9 @@ public sealed class BaslangicVerisi(
             await IstemciKaydetAsync(applicationManager, "Istemciler:IntibakOtomasyonu:ClientSecret", Istemciler.IntibakOtomasyonu);
             await IstemciKaydetAsync(applicationManager, "Istemciler:MezuniyetOtomasyonu:ClientSecret", Istemciler.MezuniyetOtomasyonu);
             await IstemciKaydetAsync(applicationManager, "Istemciler:CapYandalOtomasyonu:ClientSecret", Istemciler.CapYandalOtomasyonu);
+            await IstemciKaydetAsync(applicationManager, "Istemciler:EtikKurulOtomasyonu:ClientSecret", Istemciler.EtikKurulOtomasyonu);
+            await IstemciKaydetAsync(applicationManager, "Istemciler:BolumKurulOtomasyonu:ClientSecret", Istemciler.BolumKurulOtomasyonu);
+            await IstemciKaydetAsync(applicationManager, "Istemciler:LisansProjeleriOtomasyonu:ClientSecret", Istemciler.LisansProjeleriOtomasyonu);
 
             // Public istemci: secret yok. Liste yoksa veya boşsa varsayılan izinli kullanıcı (herkese açılmaz).
             var izinliler = configuration.GetSection(Istemciler.TekKapiAyarlari + ":IzinliKullaniciAdlari").Get<string[]>() ?? [];

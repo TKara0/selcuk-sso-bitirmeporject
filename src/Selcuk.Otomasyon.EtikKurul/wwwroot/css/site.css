@@ -1,0 +1,17 @@
+/*
+ * Etik Kurul Otomasyonu: yalnızca uygulamanın vurgu rengi (mürdüm). Yerleşim ortak otomasyon şablonunda
+ * (_content/Selcuk.Otomasyon.Ortak/css/otomasyon.css), token'lar selcuk.css'te. Kontrast (WCAG 2.1, metin):
+ * #7A2E5C beyaz zeminde 8,85:1, taş (#EDF0EF) zeminde 7,72:1, açık mürdüm (#F5E6EF) zeminde 7,35:1;
+ * koyu temada #E3A3C9 yüzey (#15273A) zemininde 7,48:1, koyu açık mürdüm (#38192B) zemininde 7,71:1.
+ */
+:root {
+    --uygulama-vurgu: #7A2E5C;
+    --uygulama-vurgu-acik: #F5E6EF;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --uygulama-vurgu: #E3A3C9;
+        --uygulama-vurgu-acik: #38192B;
+    }
+}

@@ -1,0 +1,32 @@
+@page
+@model Selcuk.Otomasyon.LisansProjeleri.Pages.Akademisyen.KonuOnerisiModel
+@{
+    ViewData["Title"] = "Konu önerisi";
+    var tablo = KayitTablosu.Olustur("Önerdiğin konular", Model.Konular, k => k.Id, "konu",
+        new KayitSutunu<ProjeKonusu>("Konu", k => k.Baslik),
+        new KayitSutunu<ProjeKonusu>("Dönem", k => k.Donem),
+        new KayitSutunu<ProjeKonusu>("Kontenjan", k => k.Kontenjan, Sayi: true),
+        new KayitSutunu<ProjeKonusu>("Durum", k => k.Acik ? new DurumRozeti("Seçime açık", DurumTuru.Olumlu) : new DurumRozeti("Dolu", DurumTuru.Bekliyor)));
+}
+<h1>Konu önerisi</h1>
+<p class="giris-metni">Lisans projesi için yeni konu öner. Form temsilidir; konu kaydedilmez.</p>
+
+<form method="post" class="form basvuru-formu">
+    <div class="alan">
+        <label for="baslik">Konu başlığı</label>
+        <input id="baslik" name="baslik" class="metin-alani" required maxlength="200" />
+    </div>
+    <div class="alan">
+        <label for="aciklama">Açıklama</label>
+        <textarea id="aciklama" name="aciklama" class="metin-alani" rows="4" required maxlength="2000"></textarea>
+    </div>
+    <div class="alan">
+        <label for="kontenjan">Öğrenci kontenjanı</label>
+        <input id="kontenjan" name="kontenjan" type="number" min="1" max="4" value="1" class="metin-alani" required />
+    </div>
+    <div class="dugmeler">
+        <button type="submit" class="dugme dugme-uygulama">Konuyu öner</button>
+    </div>
+</form>
+
+<partial name="_KayitTablosu" model="tablo" />

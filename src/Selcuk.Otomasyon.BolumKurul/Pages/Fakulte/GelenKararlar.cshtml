@@ -1,0 +1,29 @@
+@page
+@model Selcuk.Otomasyon.BolumKurul.Pages.Fakulte.GelenKararlarModel
+@{
+    ViewData["Title"] = "Gelen kararlar";
+    var gruplar = Model.Toplantilar.GroupBy(t => t.Bolum).ToList();
+    IReadOnlyList<SayiKarti> kartlar =
+    [
+        new("Karar", Model.Toplantilar.Sum(t => t.Maddeler.Count(m => m.KararNo is not null)), "karar"),
+        new("Bölüm", gruplar.Count, "bolum"),
+    ];
+}
+<h1>Gelen kararlar</h1>
+<p class="giris-metni">Fakültendeki bölüm kurullarının kararları, bölümlere göre.</p>
+
+<partial name="_SayiKartlari" model="kartlar" />
+
+@if (gruplar.Count == 0)
+{
+    <p class="bos-durum">@KayitTablosu.VarsayilanBosMetin</p>
+}
+@foreach (var grup in gruplar)
+{
+    var kararlar = grup.SelectMany(t => t.Maddeler.Where(m => m.KararNo is not null).Select(m => (Toplanti: t, Madde: m)));
+    <partial name="_KayitTablosu" model="@(KayitTablosu.Olustur(grup.Key, kararlar, k => k.Madde.Id, "kurul",
+        new KayitSutunu<(Toplanti Toplanti, GundemMaddesi Madde)>("Karar no", k => k.Madde.KararNo),
+        new KayitSutunu<(Toplanti Toplanti, GundemMaddesi Madde)>("Konu", k => k.Madde.Konu),
+        new KayitSutunu<(Toplanti Toplanti, GundemMaddesi Madde)>("Tarih", k => BolumKurulOtomasyonu.Tarih(k.Toplanti.Tarih)),
+        new KayitSutunu<(Toplanti Toplanti, GundemMaddesi Madde)>("Karar", k => BolumKurulOtomasyonu.Rozet(k.Madde.Durum))))" />
+}

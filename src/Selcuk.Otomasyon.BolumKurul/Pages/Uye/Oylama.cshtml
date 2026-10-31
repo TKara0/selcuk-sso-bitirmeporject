@@ -1,0 +1,52 @@
+@page
+@model Selcuk.Otomasyon.BolumKurul.Pages.Uye.OylamaModel
+@{
+    ViewData["Title"] = "Oylama";
+    var sartlar = Model.Sartlar;
+}
+<h1>Oylama</h1>
+<p class="giris-metni">
+    Oylamaya açık gündem maddeleri. Kabul, Ret ve Çekimser temsilidir; oy kaydedilmez, sayılar değişmez.
+</p>
+<p class="sart-notu" data-sart="yeter-sayi">
+    Toplantı yeter sayısı oranı: <strong>%@((sartlar.YeterSayiOrani * 100).ToString("0", BolumKurulOtomasyonu.Tr))</strong> (katılan
+    üye sayısı, üye tamsayısının bu oranını aşmalı). Karar çoğunluğu oranı:
+    <strong>%@((sartlar.KararCogunluguOrani * 100).ToString("0", BolumKurulOtomasyonu.Tr))</strong> (kabul oyu, katılanların bu
+    oranını aşmalı). Şart değerleri örnektir.
+</p>
+
+@if (Model.Toplantilar.Count == 0)
+{
+    <p class="bos-durum">@KayitTablosu.VarsayilanBosMetin</p>
+}
+@foreach (var toplanti in Model.Toplantilar)
+{
+    var yeter = sartlar.YeterSayiVar(toplanti);
+    IReadOnlyList<SayiKarti> kartlar =
+    [
+        new("Katılan / üye", $"{toplanti.KatilanSayisi} / {toplanti.UyeSayisi}", "katilim-" + toplanti.Id),
+        new("Yeter sayı için gereken", sartlar.GerekenKatilim(toplanti), "gereken-" + toplanti.Id),
+    ];
+    Func<GundemMaddesi, object> sonuc = @<text>@BolumKurulOtomasyonu.Oylar(item)<br /><partial name="_DurumRozeti" model="@(sartlar.KabulCogunluguVar(item, toplanti.KatilanSayisi)
+            ? new DurumRozeti("Kabul çoğunluğu var", DurumTuru.Olumlu) : new DurumRozeti("Kabul çoğunluğu yok", DurumTuru.Bekliyor))" /></text>;
+    Func<GundemMaddesi, object> oy = @<div class="satir-islemleri">
+        @foreach (var (handler, ad) in new[] { ("Kabul", "Kabul"), ("Ret", "Ret"), ("Cekimser", "Çekimser") })
+        {
+            <form method="post" asp-page-handler="@handler">
+                <input type="hidden" name="id" value="@item.Id" />
+                <button type="submit" class="dugme @(handler == "Kabul" ? "dugme-uygulama" : "dugme-ikincil")">@ad<span class="gorunmez">: @item.Konu</span></button>
+            </form>
+        }
+    </div>;
+    <section aria-labelledby="oylama-@toplanti.Id">
+        <h2 id="oylama-@toplanti.Id">Toplantı @toplanti.No, @BolumKurulOtomasyonu.Tarih(toplanti.Tarih)</h2>
+        <partial name="_SayiKartlari" model="kartlar" />
+        <p data-yeter-sayi="@toplanti.Id">
+            <partial name="_DurumRozeti" model="@(yeter ? new DurumRozeti("Toplantı yeter sayısı sağlandı", DurumTuru.Olumlu) : new DurumRozeti("Toplantı yeter sayısı sağlanmadı", DurumTuru.Olumsuz))" />
+        </p>
+        <partial name="_KayitTablosu" model="@(KayitTablosu.Olustur("Oylamaya açık maddeler", toplanti.Maddeler.Where(m => m.Durum == MaddeDurumu.OylamaAcik), m => m.Id, "kurul",
+            new KayitSutunu<GundemMaddesi>("Madde", m => $"{m.Sira}. {m.Konu}"),
+            new KayitSutunu<GundemMaddesi>("Sonuç", sonuc),
+            new KayitSutunu<GundemMaddesi>("Oyun", oy)) with { Kimlik = "maddeler-" + toplanti.Id, BaslikDuzeyi = 3 })" />
+    </section>
+}

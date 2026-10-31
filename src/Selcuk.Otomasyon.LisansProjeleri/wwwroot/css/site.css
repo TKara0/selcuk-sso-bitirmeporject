@@ -1,0 +1,17 @@
+/*
+ * Lisans Projeleri Otomasyonu: yalnızca uygulamanın vurgu rengi (çam yeşili). Yerleşim ortak otomasyon şablonunda
+ * (_content/Selcuk.Otomasyon.Ortak/css/otomasyon.css), token'lar selcuk.css'te. Kontrast (WCAG 2.1, metin):
+ * #2E6B58 beyaz zeminde 6,25:1, taş (#EDF0EF) zeminde 5,45:1, açık çam yeşili (#E1EFEA) zeminde 5,28:1;
+ * koyu temada #8FCDB8 yüzey (#15273A) zemininde 8,38:1, koyu açık çam yeşili (#163028) zemininde 7,79:1.
+ */
+:root {
+    --uygulama-vurgu: #2E6B58;
+    --uygulama-vurgu-acik: #E1EFEA;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --uygulama-vurgu: #8FCDB8;
+        --uygulama-vurgu-acik: #163028;
+    }
+}

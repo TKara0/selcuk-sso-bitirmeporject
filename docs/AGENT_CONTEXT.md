@@ -16,11 +16,11 @@ Türkçe. Tüm veri kurgusaldır; gerçek Selçuk sistemlerine yalnızca `aracla
 | `src/Selcuk.Identity` (:5001) | Kimlik sunucusu: OIDC uç noktaları, Razor Pages, 2FA, denetim, e-posta |
 | `src/Selcuk.Istemci.Ortak` | `AddSelcukSSO`: alt uygulamaların çerez+OIDC, Back-Channel alıcısı, token yenileme |
 | `src/Selcuk.Otomasyon.Ortak` | Bölüm otomasyon şablonu (menü, rol yetkisi, Mock/Api veri kaynağı) |
-| `src/Selcuk.Otomasyon.{Intibak,Staj,Mezuniyet,CapYandal}` (:5301/5302/5304/5311) | Temsili ekranlar, örnek veri |
+| `src/Selcuk.Otomasyon.{Intibak,Staj,EtikKurul,Mezuniyet,BolumKurul,LisansProjeleri,CapYandal}` (:5301/5302/5303/5304/5305/5309/5311) | Temsili ekranlar, örnek veri |
 | `src/Selcuk.Demo.{Obis,Yemekhane,Api}` (:5101/5102/5201) | Demo istemciler ve kaynak sunucusu |
 | `src/Selcuk.Roller`, `src/Selcuk.Arayuz` | Rol kataloğu (tek kaynak), ortak tasarım sistemi |
 | `araclar/tek-kapi` (:4545) | Node.js yerel ESSO portalı; kendi `AGENTS.md`'si var |
-| `tools/Selcuk.Olcum`, `tests/` | Ölçüm aracı, 11 .NET test projesi (+ `TestOrtak`) |
+| `tools/Selcuk.Olcum`, `tests/` | Ölçüm aracı, 14 .NET test projesi (+ `TestOrtak`, bağlantıyla derlenen ortak kaynak) |
 
 Kritik dosyalar: `src/Selcuk.Identity/Program.cs` (OpenIddict/Identity/ara katman kurulumu), `Data/Istemciler.cs`
 (istemci kayıtları), `Oidc/` (token yaşam döngüsü, tek çıkış, erişim izni), `Data/BaslangicVerisi.cs` (seed).
