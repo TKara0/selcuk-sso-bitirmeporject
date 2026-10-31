@@ -159,3 +159,147 @@
 .alt-bilgi .veri-rozeti {
     font-weight: 700;
 }
+
+/* ---------- Ortak parçalar (_DurumRozeti, _BasvuruAdimlari, _SayiKartlari, _KayitTablosu) ---------- */
+
+/* Durum rozeti: anlam metindedir; "bilgi" türü çerçeveli, uygulama renginde. */
+/* Bekleyen durum nötr etikettir; taş zeminde de seçilsin diye ince çerçeveli (kontrol çizgisi, 3:1). */
+.durum-rozeti.etiket-notr {
+    box-shadow: inset 0 0 0 1px var(--kontrol-cizgi);
+}
+
+.durum-bilgi {
+    color: var(--uygulama-vurgu);
+    background: var(--yuzey);
+    box-shadow: inset 0 0 0 1px var(--uygulama-vurgu);
+}
+
+/* Başvuru aşamaları: dar ekranda dikey, genişte yatay. Durum metni her aşamada yazılır; renk ve çizgi destekler. */
+.basvuru-adimlari {
+    display: grid;
+    gap: var(--a2);
+    margin: 0 0 var(--a6);
+    padding: 0;
+    list-style: none;
+}
+
+.basvuru-adimlari > li {
+    display: flex;
+    flex-direction: column;
+    gap: var(--a1);
+    padding: var(--a2) var(--a3);
+    background: var(--yuzey);
+    border: 1px solid var(--cizgi);
+    border-left: 4px solid var(--cizgi);
+    border-radius: var(--kose-kontrol);
+}
+
+.basvuru-adimlari .adim-adi {
+    font-weight: 700;
+}
+
+.basvuru-adimlari .adim-durumu {
+    color: var(--soluk);
+    font-size: var(--boyut-kucuk);
+}
+
+.basvuru-adimlari > .adim-tamamlandi {
+    border-left-color: var(--uygulama-vurgu);
+}
+
+.basvuru-adimlari > .adim-su-an {
+    background: var(--uygulama-vurgu-acik);
+    border-color: var(--uygulama-vurgu);
+    border-left-width: 4px;
+}
+
+.basvuru-adimlari > .adim-su-an .adim-durumu {
+    color: var(--uygulama-vurgu);
+    font-weight: 700;
+}
+
+.basvuru-adimlari > .adim-bekliyor {
+    border-style: dashed;
+    border-left-style: solid;
+}
+
+@media (min-width: 960px) {
+    .basvuru-adimlari {
+        grid-auto-columns: minmax(0, 1fr);
+        grid-auto-flow: column;
+    }
+}
+
+/* Kayıt tablosu: dar ekranda yığılmaz, yatay kaydırılır (kaydırma alanı klavyeyle odaklanır). position: relative,
+   hücrelerdeki görünmez metinlerin (.gorunmez, mutlak konumlu) kaydırma alanından taşıp sayfayı genişletmesini önler. */
+.kayit-tablosu {
+    position: relative;
+    overflow-x: auto;
+}
+
+.kayit-tablosu:focus-visible {
+    outline: 2px solid var(--uygulama-vurgu);
+    outline-offset: 2px;
+}
+
+@media (max-width: 719.98px) {
+    .kayit-tablosu > .tablo {
+        width: max-content;
+        min-width: 100%;
+    }
+}
+
+/* Öğrenci numarası gibi kısa kodlar kırılmaz. */
+.kayit-tablosu .mono {
+    white-space: nowrap;
+}
+
+/* Hücre içinde etiketli kontrol sonuçları (ör. eksik ders, staj, GNO şartı), alt alta. */
+.kontrol-listesi {
+    display: grid;
+    gap: var(--a1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    white-space: nowrap;
+}
+
+.bos-durum {
+    color: var(--soluk);
+}
+
+/* Liste seçimi (ör. eşleştirilecek başvuru): etiket üstte, seçim ve düğme yan yana. */
+.kayit-secimi {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--a2) var(--a3);
+    margin: 0 0 var(--a6);
+}
+
+.kayit-secimi label {
+    flex-basis: 100%;
+}
+
+/* min-width: 0: seçim kutusu en uzun seçeneğin genişliğini alıp dar ekranda taşmasın. */
+.kayit-secimi select {
+    flex: 1 1 20em;
+    width: auto;
+    min-width: 0;
+    max-width: 100%;
+}
+
+/* İçerikteki bölümler (ör. bir başvuru, eşleştirme formu) arasında boşluk. */
+.otomasyon-icerik section {
+    margin-bottom: var(--a8);
+}
+
+/* Ayardan gelen şart değerlerinin notu ("Şart değerleri örnektir."). */
+.sart-notu {
+    color: var(--soluk);
+    font-size: var(--boyut-kucuk);
+}
+
+.tablo select.metin-alani {
+    min-width: 12em;
+}

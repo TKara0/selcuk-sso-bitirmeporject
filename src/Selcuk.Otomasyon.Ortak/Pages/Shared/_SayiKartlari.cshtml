@@ -1,0 +1,11 @@
+@* Başlık ve sayı içeren kartlar (özet sayıları). Model: IReadOnlyList<SayiKarti>. *@
+@model IReadOnlyList<SayiKarti>
+<dl class="ozetler sayi-kartlari">
+    @foreach (var kart in Model)
+    {
+        <div class="ozet">
+            <dt>@kart.Baslik</dt>
+            <dd data-ozet="@kart.Anahtar">@kart.Sayi</dd>
+        </div>
+    }
+</dl>

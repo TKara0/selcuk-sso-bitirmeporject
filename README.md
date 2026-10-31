@@ -957,6 +957,101 @@ API'si için `staj.oku` ve `staj.yaz` kapsamları (`aud` `staj-api`) istenir; s�
 Şifreler README > [Roller ve test kullanıcıları](#roller-ve-test-kullanıcıları)'ndaki anahtarlarla user-secrets'ta.
 Rolü olmayan bir ekranın adresine doğrudan gidilirse "Bu ekrana erişim yetkin yok" sayfası (403) açılır.
 
+### Ortak parçalar ve açılış denetimi
+
+İntibak, Mezuniyet ve ÇAP-Yandal şablonun ortak parçalarını kullanır: `_DurumRozeti` (durum adı metin olarak; tür
+bekliyor / olumlu / olumsuz / bilgi yalnızca rengi belirler), `_BasvuruAdimlari` (`<ol>`, şu anki aşama
+`aria-current="step"`, her aşamada "Tamamlandı / Şu an / Bekliyor"), `_SayiKartlari` ve `_KayitTablosu` (başlıklı,
+kayıt yoksa "Kayıt yok.", dar ekranda yatay kaydırılır). Yönetmelik şartları (GNO alt sınırı, AKTS toplamı, kontenjan,
+muafiyet notu) koda gömülmez, her uygulamanın `appsettings.json`'ındadır; ekranda "Şart değerleri örnektir." notu
+vardır. Açılışta `Pages/` altında menüde olmayan ve rol istemeyen bir sayfa bulunursa uygulama açılmaz (ortak
+sayfalar `/Index`, `/Profilim`, giriş/çıkış ve hata sayfaları istisna). Uygulamalar birbirini çağırmaz: Mezuniyet'teki
+staj durumu örnek veridir (ileride Staj API'sinden alınacak).
+
+### İntibak Otomasyonu (`src/Selcuk.Otomasyon.Intibak`, https://localhost:5301)
+
+Vurgu rengi eflatun (`#6B4C8A`, beyaz zeminde 6,94:1; koyu temada `#C9B3E3`), simge "İN". Kimlik sunucusunda
+`intibak-otomasyonu` gizli istemcisi (code + PKCE, explicit onay); `ogrenci`, `intibak_komisyonu`, `bolum_baskani`,
+`bolum_sekreteri` ve `fakulte_sekreteri` rollerine açık. Kapsamlar `intibak.oku`, `intibak.yaz` (`aud` `intibak-api`);
+sözleşme [docs/api-sozlesmeleri/intibak.md](docs/api-sozlesmeleri/intibak.md). Şartlar `IntibakSartlari`
+(muafiyet için en düşük harf notu CC, en fazla 120 AKTS muafiyet; örnek). Örnek veri: 2024-2026'ya yayılan 22 başvuru
+(yatay/dikey geçiş, ek yerleştirme, af; altı durumun hepsi), dördü Elektrik-Elektronik Mühendisliği'nden, biri
+Mühendislik Fakültesi'nden (Makine); önceki kurumlar uydurma.
+
+| Rol | Ekranlar |
+|---|---|
+| `ogrenci` | İntibak başvurusu (geliş türü, önceki üniversite ve bölüm, transkript alanı; dosya kaydedilmez), Başvurum (durum ve aşamalar: Başvuru → Komisyon incelemesi → Bölüm başkanı onayı → Yönetim kurulu → Sonuçlandı), İntibak sonucu (önceki ders → eşdeğer ders, harf notu, muaf / muaf değil) |
+| `intibak_komisyonu` | Bekleyen başvurular, Ders eşleştirme (önceki ders ile eşdeğer ders aynı satırda, satır başına eşdeğer ders ve muafiyet kararı; altta bölüm müfredatı), Komisyon kararları |
+| `bolum_baskani` | Onay listesi (Onayla, Geri gönder) |
+| `bolum_sekreteri` | İntibak raporları (karar listesi, sayılar, Yazdır) |
+| `fakulte_sekreteri` | Yönetim kurulu evrakı (fakülte kapsamı, bölümlere göre) |
+
+| Test kullanıcısı | Gördüğü ekranlar |
+|---|---|
+| `203011001` | Öğrenci ekranları; yatay geçiş başvurusu sonuçlanmış (İntibak sonucu dolu) |
+| `203011002` | Öğrenci ekranları; başvurusu bölüm başkanı onayında |
+| `203011003` | Öğrenci ekranları; dikey geçiş başvurusu komisyon incelemesinde |
+| `komisyon.test` | İntibak komisyonu ekranları (Bilgisayar Mühendisliği) |
+| `baskan.test` | Onay listesi |
+| `sekreter.test` | İntibak raporları |
+| `fakultesekreter.test` | Yönetim kurulu evrakı (Teknoloji Fakültesi: Bilgisayar ve Elektrik-Elektronik) |
+| `etik.test`, `iskur.test`, `hoca.test`, `personel.test`, `koordinator.test` | Giremez (`access_denied`) |
+
+### Mezuniyet Otomasyonu (`src/Selcuk.Otomasyon.Mezuniyet`, https://localhost:5304)
+
+Vurgu rengi bakır (`#8A4B1F`, beyaz zeminde 6,76:1; koyu temada `#E8B48E`), simge "ME". `mezuniyet-otomasyonu` gizli
+istemcisi; `ogrenci`, `mezuniyet_komisyonu`, `bolum_sekreteri` ve `fakulte_sekreteri` rollerine açık. Kapsamlar
+`mezuniyet.oku`, `mezuniyet.yaz` (`aud` `mezuniyet-api`); sözleşme
+[docs/api-sozlesmeleri/mezuniyet.md](docs/api-sozlesmeleri/mezuniyet.md). Şartlar `MezuniyetSartlari` (gereken 240
+AKTS, GNO alt sınırı 2,00; örnek); eksikler ve kontrol sonuçları bu ayarla hesaplanır. Staj durumu örnek veridir
+(ileride Staj API'sinden). Örnek veri: 2023-2024'ten 2026-2027 Güz'e 19 kayıt (yedi durumun hepsi), üçü
+Elektrik-Elektronik'ten, ikisi Mühendislik Fakültesi'nden.
+
+| Rol | Ekranlar |
+|---|---|
+| `ogrenci` | Mezuniyet durumum (toplam AKTS / gereken, GNO, zorunlu dersler, staj, eksikler), Mezuniyet başvurusu (form ve aşamalar: Başvuru → Komisyon kontrolü → Bölüm onayı → Dekanlık → Diploma hazırlığı), İlişik kesme (birimlerin durumu) |
+| `mezuniyet_komisyonu` | Mezuniyet adayları (eksik ders, eksik staj, GNO şartı; Onayla, Eksik bildir) |
+| `bolum_sekreteri` | Dekanlığa gidecek liste (gönderilecek ve gönderilmiş adaylar) |
+| `fakulte_sekreteri` | Gelen mezuniyet listeleri (bölümlere göre, diploma hazırlık durumu) |
+
+| Test kullanıcısı | Gördüğü ekranlar |
+|---|---|
+| `203011001` | Öğrenci ekranları; eksiği yok, başvurusu bölüm onayında |
+| `203011002` | Öğrenci ekranları; 4 AKTS, Bitirme Projesi ve staj eksik, komisyon kontrolünde, kütüphane borcu |
+| `203011003` | Öğrenci ekranları; başvuru yapılmadı, GNO şartın altında |
+| `komisyon.test` | Mezuniyet adayları (Bilgisayar Mühendisliği) |
+| `sekreter.test` | Dekanlığa gidecek liste |
+| `fakultesekreter.test` | Gelen mezuniyet listeleri (Teknoloji Fakültesi) |
+| `baskan.test`, `koordinator.test`, `hoca.test`, `etik.test`, `iskur.test` | Giremez (`access_denied`) |
+
+### ÇAP-Yandal Otomasyonu (`src/Selcuk.Otomasyon.CapYandal`, https://localhost:5311)
+
+Vurgu rengi koyu hardal (`#735A00`, beyaz zeminde 6,58:1; koyu temada `#D9C068`), simge "ÇY".
+`cap-yandal-otomasyonu` gizli istemcisi; `ogrenci`, `cap_yandal_koordinatoru`, `bolum_baskani` ve `bolum_sekreteri`
+rollerine açık. Kapsamlar `cap-yandal.oku`, `cap-yandal.yaz` (`aud` `cap-yandal-api`); sözleşme
+[docs/api-sozlesmeleri/cap-yandal.md](docs/api-sozlesmeleri/cap-yandal.md). Şartlar `CapYandalSartlari` (ÇAP: GNO ≥ 3,00
+ve sınıfın ilk %20'si, devam için 2,50, kontenjan 4; yandal: GNO ≥ 2,50, devam için 2,00, kontenjan 6; örnek).
+Koordinatör, bölüm başkanı ve sekreter **programı açan bölümün** başvurularını görür. Örnek veri: 20 başvuru
+(2024-2026, beş durumun hepsi); test öğrencileri Elektrik-Elektronik'in programlarına, uydurma öğrenciler
+Bilgisayar'ın programlarına başvurmuştur.
+
+| Rol | Ekranlar |
+|---|---|
+| `ogrenci` | Başvuru (program türü ve program, kendi GNO'su ve başarı sırası, şartı karşılıyor mu göstergesi), Başvurularım (durum ve aşamalar: Başvuru → Koordinatör değerlendirmesi → Bölüm başkanı onayı → Kesin kayıt), Programdaki ilerlemem (alınan ve kalan dersler, dönemlik GNO) |
+| `cap_yandal_koordinatoru` | Gelen başvurular (program başına GNO'ya göre sıralı, kontenjan içinde / yedek), Öğrenci takibi (GNO'su devam şartının altına düşenlere uyarı) |
+| `bolum_baskani` | Başvuru onayı (koordinatörün sıraladığı liste, Onayla) |
+| `bolum_sekreteri` | Evrak (kesin kayıt evrakları) |
+
+| Test kullanıcısı | Gördüğü ekranlar |
+|---|---|
+| `203011001` | Öğrenci ekranları; Elektrik-Elektronik ÇAP'ında kesin kayıtlı (ilerleme dolu) |
+| `203011002` | Öğrenci ekranları; yandal başvurusu bölüm başkanı onayında; ÇAP şartını karşılamıyor, yandal şartını karşılıyor |
+| `203011003` | Öğrenci ekranları; ÇAP başvurusu reddedildi, yandal başvurusu koordinatörde |
+| `koordinator.test` | Gelen başvurular, Öğrenci takibi (Bilgisayar Mühendisliği'nin programları) |
+| `baskan.test` | Başvuru onayı |
+| `sekreter.test` | Evrak |
+| `komisyon.test`, `fakultesekreter.test`, `hoca.test`, `etik.test`, `iskur.test` | Giremez (`access_denied`) |
+
 ## Yeni bir uygulamayı sisteme bağlamak
 
 Bölüm otomasyonu ekleniyorsa [docs/otomasyon-sablonu.md](docs/otomasyon-sablonu.md)'yi izleyin; aşağıdaki adımlar
@@ -1007,11 +1102,11 @@ Bölüm otomasyonu ekleniyorsa [docs/otomasyon-sablonu.md](docs/otomasyon-sablon
 SelcukSSO.sln
 dotnet-tools.json                 dotnet-ef yerel aracı
 .gitattributes                    Satır sonu kuralları
-scripts/run-all.ps1               Beş uygulamayı (kimlik, iki demo, Demo API, Staj) ayrı pencerelerde başlatır (-TekKapi: Tek Kapı da, SSO modunda)
+scripts/run-all.ps1               Sekiz uygulamayı (kimlik, iki demo, Demo API, İntibak, Staj, Mezuniyet, ÇAP-Yandal) ayrı pencerelerde başlatır (-TekKapi: Tek Kapı da, SSO modunda)
 scripts/olcum-calistir.ps1        Otomatik ölçüm: derle, uygulamaları ölçüm modunda başlat, ölç, durdur
 scripts/olcum_analiz.py           Ölçüm analizi (Python 3, standart kütüphane; matplotlib varsa PNG)
 scripts/arayuz-esitle.ps1         Ortak tasarım dosyalarını (selcuk.css, yazı tipleri, kapı SVG'leri) Tek Kapı'ya kopyalar
-scripts/ekran-goruntuleri.mjs     Ekran görüntüleri (Playwright; geçici veritabanı ve Tek Kapı veri klasörü)
+scripts/ekran-goruntuleri.mjs     Ekran görüntüleri (Playwright; geçici veritabanı ve Tek Kapı veri klasörü; --sadece <gruplar>)
 tools/Selcuk.Olcum/               Otomatik ölçüm aracı (konsol; yalnızca localhost)
 docs/                             Değerlendirme belgeleri: mimari, güvenlik karşılaştırması, tehdit modeli, test kapsamı
   tasarim/d1/                     Tasarım D1: token'lar, kontrast tablosu, yazı tipi kaynağı, ekran görüntüleri
@@ -1057,16 +1152,25 @@ src/Selcuk.Demo.Yemekhane/        Haftalık menü, Rezervasyonlarım, Yemekhane 
 src/Selcuk.Demo.Api/              Demo API (kaynak sunucusu): GET /api/notlar, JWT Bearer
 src/Selcuk.Otomasyon.Ortak/       Otomasyon şablonu (Razor Class Library): AddSelcukOtomasyon / UseSelcukOtomasyon,
                                   rol tabanlı menü, _OtomasyonDuzen, ortak sayfalar, veri kaynağı (Mock/Api),
-                                  KullaniciKapsami, TemsiliIslem, otomasyon.css
+                                  KullaniciKapsami, TemsiliIslem, ortak parçalar (_DurumRozeti, _BasvuruAdimlari,
+                                  _SayiKartlari, _KayitTablosu), şart ayarları (Ayarlar<T>), SayfaYetkiDenetimi
+                                  (açılış denetimi), OturumBiletDeposu, otomasyon.css
 src/Selcuk.Otomasyon.Staj/        Staj Otomasyonu (:5302): temsili ekranlar, Sozlesme/ (DTO'lar, IStajVeriKaynagi),
                                   Veri/ (örnek veri, Mock ve Api veri kaynakları)
+src/Selcuk.Otomasyon.Intibak/     İntibak Otomasyonu (:5301): aynı yapı; IntibakSartlari
+src/Selcuk.Otomasyon.Mezuniyet/   Mezuniyet Otomasyonu (:5304): aynı yapı; MezuniyetSartlari, MezuniyetKontrolu
+src/Selcuk.Otomasyon.CapYandal/   ÇAP-Yandal Otomasyonu (:5311): aynı yapı; CapYandalSartlari, SartDurumu
 tests/Selcuk.Identity.Tests/      Kimlik sunucusu entegrasyon, protokol, tek giriş/çıkış testleri
 tests/Selcuk.Istemci.Ortak.Tests/ Back-Channel Logout alıcısı testleri (yerel anahtar + sahte JWKS)
 tests/Selcuk.Demo.Obis.Tests/     Demo OBİS yönlendirme ve rol testleri
 tests/Selcuk.Demo.Yemekhane.Tests/ Demo Yemekhane yönlendirme ve rol testleri
 tests/Selcuk.Demo.Api.Tests/      Demo API token doğrulama ve yetkilendirme testleri (yerel anahtar)
-tests/Selcuk.Otomasyon.Ortak.Tests/ Şablon: menü, kapsam, veri kaynağı ayarları ve seçimi, Api istemcisi
+tests/Selcuk.Otomasyon.Ortak.Tests/ Şablon: menü, kapsam, veri kaynağı ayarları ve seçimi, Api istemcisi, açılış denetimi
+                                  (Pages/Gizli: sahte sayfalar), oturum bileti süreleri, ortak parçalar
 tests/Selcuk.Otomasyon.Staj.Tests/ Staj: menü, yetki, kapsam, temsili işlem, Api modu, Back-Channel Logout, kontrast
+tests/Selcuk.Otomasyon.TestOrtak/ Yeni otomasyonların ortak fabrikası ve testleri (OtomasyonTemelTestleri; test
+                                  projelerine bağlantıyla eklenir, ayrı proje değil)
+tests/Selcuk.Otomasyon.Intibak.Tests/, .Mezuniyet.Tests/, .CapYandal.Tests/  Ortak testler + kapsam, şartlar, ortak parçalar
 tests/Selcuk.Olcum.Tests/         Ölçüm aracı: localhost dışı reddi, istatistik, dört uygulamayla bellek içi uçtan uca tur
 ```
 
@@ -1107,11 +1211,13 @@ Hiçbir şifre veya secret repoda yoktur. Development'ta `dotnet user-secrets` k
 | `src/Selcuk.Identity` | `Istemciler:DemoObis:ClientSecret` | demo-obis secret'ı |
 | `src/Selcuk.Identity` | `Istemciler:DemoYemekhane:ClientSecret` | demo-yemekhane secret'ı |
 | `src/Selcuk.Identity` | `Istemciler:StajOtomasyonu:ClientSecret` | staj-otomasyonu secret'ı |
+| `src/Selcuk.Identity` | `Istemciler:IntibakOtomasyonu:ClientSecret`, `Istemciler:MezuniyetOtomasyonu:ClientSecret`, `Istemciler:CapYandalOtomasyonu:ClientSecret` | intibak-, mezuniyet- ve cap-yandal-otomasyonu secret'ları |
 | `src/Selcuk.Identity` | `OlcumKullanicilari:Sifre` | Ölçüm kullanıcılarının (`olcum.kullanici.01`…`50`) ortak şifresi; isteğe bağlı, yoksa seed edilmez. Ölçüm aracı da buradan okur ([Ölçüm ve değerlendirme](#ölçüm-ve-değerlendirme)) |
 | `src/Selcuk.Identity` | `Denetim:KullaniciAdiOzetAnahtari` | Anahtarlı özet (HMAC) anahtarı, base64, 32 bayt. Development dışında zorunlu (ortam değişkeni `Denetim__KullaniciAdiOzetAnahtari`) |
 | `src/Selcuk.Demo.Obis` | `Kimlik:ClientSecret` | demo-obis secret'ı (kimlik sunucusundakiyle aynı) |
 | `src/Selcuk.Demo.Yemekhane` | `Kimlik:ClientSecret` | demo-yemekhane secret'ı (kimlik sunucusundakiyle aynı) |
 | `src/Selcuk.Otomasyon.Staj` | `Kimlik:ClientSecret` | staj-otomasyonu secret'ı (kimlik sunucusundakiyle aynı) |
+| `src/Selcuk.Otomasyon.Intibak`, `.Mezuniyet`, `.CapYandal` | `Kimlik:ClientSecret` | Kendi istemcisinin secret'ı (kimlik sunucusundakiyle aynı) |
 | `src/Selcuk.Identity` (yalnızca Development dışı) | `Eposta:Smtp:Sifre` | SMTP şifresi; ortam değişkeni olarak `Eposta__Smtp__Sifre`. Development'ta SMTP kullanılmaz |
 
 Görmek için:
@@ -1152,7 +1258,8 @@ powershell -ExecutionPolicy Bypass -File scripts\run-all.ps1
 ```
 
 Betik önce çözümü bir kez derler (`dotnet build SelcukSSO.sln`; başarısızsa durur), sonra kimlik sunucusunu
-(5001), Demo OBİS'i (5101), Demo Yemekhane'yi (5102), Demo API'yi (5201) ve Staj Otomasyonu'nu (5302) ayrı PowerShell pencerelerinde
+(5001), Demo OBİS'i (5101), Demo Yemekhane'yi (5102), Demo API'yi (5201) ve bölüm otomasyonlarını (İntibak 5301, Staj 5302,
+Mezuniyet 5304, ÇAP-Yandal 5311) ayrı PowerShell pencerelerinde
 `dotnet run --no-build` ile başlatır, hepsi hazır olunca tarayıcıda https://localhost:5001 adresini açar
 (`-TarayiciAcma` verilirse açmaz). Durdurmak için pencerelerde `Ctrl+C`.
 Önceden her pencere kendisi derlediği için ortak projelerin (`Selcuk.Istemci.Ortak`) dosyalarında kilit hatası
@@ -1166,7 +1273,10 @@ Tek tek:
 dotnet run --project src/Selcuk.Identity          # https://localhost:5001
 dotnet run --project src/Selcuk.Demo.Obis         # https://localhost:5101
 dotnet run --project src/Selcuk.Demo.Yemekhane    # https://localhost:5102
-dotnet run --project src/Selcuk.Otomasyon.Staj   # https://localhost:5302
+dotnet run --project src/Selcuk.Otomasyon.Intibak    # https://localhost:5301
+dotnet run --project src/Selcuk.Otomasyon.Staj       # https://localhost:5302
+dotnet run --project src/Selcuk.Otomasyon.Mezuniyet  # https://localhost:5304
+dotnet run --project src/Selcuk.Otomasyon.CapYandal  # https://localhost:5311
 ```
 
 Kimlik sunucusu açılışta rolleri (yoksa) oluşturur. Development'ta test kullanıcılarını ve iki demo istemciyi de
@@ -1179,9 +1289,13 @@ ekler.
 
 ```powershell
 node --use-system-ca scripts/ekran-goruntuleri.mjs
+node --use-system-ca scripts/ekran-goruntuleri.mjs --sadece intibak,mezuniyet,cap
 ```
 
-- 4545, 5001, 5101, 5102, 5201 portlarından biri doluysa durur; çalışan uygulamalara dokunmaz.
+- `--sadece` yalnızca verilen grupların ekranlarını çeker ve yalnızca onların eski PNG'lerini siler (gruplar: `kimlik`,
+  `obis`, `yemekhane`, `staj`, `tekkapi`, `intibak`, `mezuniyet`, `cap`). Verilmezse davranış eskisi gibidir: hepsi
+  çekilir, bütün eski PNG'ler silinir.
+- 4545, 5001, 5101, 5102, 5201, 5301, 5302, 5304, 5311 portlarından biri doluysa durur; çalışan uygulamalara dokunmaz.
 - Kimlik sunucusu için geçici bir LocalDB veritabanı (`SelcukSSO_Ekran_<rastgele>`) kurar (`dotnet ef database update`,
   bağlantı ortam değişkeniyle); test kullanıcılarının şifreleri ve demo istemci sırrı o çalıştırma için rastgele
   üretilir, yalnızca bellekte ve başlatılan süreçlerin ortam değişkenlerinde durur. user-secrets'taki şifre ve sırların
@@ -1196,7 +1310,7 @@ node --use-system-ca scripts/ekran-goruntuleri.mjs
   çekilir. QR kod, anahtar ve kurtarma kodları çekimden önce örnek değerlerle değiştirilir; her çekimden önce sayfada
   o çalıştırmanın sırlarından biri var mı diye bakılır.
 - Çıktı: `docs/tasarim/d2/` (her ekranın açık ve koyu 1280 × 800 ile 390px mobil hâli) ve `docs/tez-gorselleri/`
-  (tez için seçilmiş on ekran, açık tema, 1440px). Sonda 390px'te yatay taşma, konsol/CSP hatası ve açıklaması olmayan
+  (tez için seçilmiş ekranlar 01-20, açık tema, 1440px). Sonda 390px'te yatay taşma, konsol/CSP hatası ve açıklaması olmayan
   claim varsa listelenir.
 - Bitince yalnızca kendi başlattığı pencereleri ve Tek Kapı sürecini durdurur, geçici veritabanını ve veri klasörünü
   siler. Kimlik sunucusunun Development e-postaları her zamanki gibi `App_Data/eposta/`'ya yazılır (git'e girmez).
@@ -1505,6 +1619,11 @@ yakalanır.
 | `Izinli_rolu_olmayan_kullanici_access_denied_aliyor` (×3) | `etik.test`, `iskur.test`, `hoca.test`: authorize `error=access_denied`, kod yok |
 | `Izinli_dort_rol_giris_yapiyor_access_token_staj_api_icin` (×4) | 203011001, komisyon.test, sekreter.test, baskan.test: kod + token; access token `aud` `staj-api`, `scope` `staj.oku staj.yaz`, rol, refresh token |
 | `Uygulamalarimda_Staj_karti_izinli_rollere_gorunuyor_digerlerine_gorunmuyor` | Kart (ad, açıklama, zeytin simge, `initiate_login_uri?iss=`) izinlilere görünür, etik.test ve iskur.test'e görünmez |
+| `Kayit_gizli_istemci_PKCE_adresler_kapsamlar_izinli_roller_vurgu_simge` (OtomasyonIstemcileriTests, ×3) | intibak-, mezuniyet-, cap-yandal-otomasyonu: gizli, PKCE, 5301/5304/5311 adresleri, back-channel, `<ad>.oku`/`<ad>.yaz` (implicit/password yok), izinli roller, vurgu (eflatun, bakır, hardal), simge (İN, ME, ÇY), `mfaZorunlu` false; kapsamların kaynağı `<ad>-api` |
+| `Izinli_rolu_olmayan_kullanici_access_denied_aliyor` (×9) | Her otomasyon için izinli olmayan üç test kullanıcısı: `error=access_denied`, kod yok |
+| `Izinli_roller_giris_yapiyor_access_token_kendi_API_kaynagi_icin` (×13) | Her izinli rol: kod + token; `aud` kendi `<ad>-api`'si (`staj-api` değil), `scope` oku/yaz, rol |
+| `Uygulamalarim_kartlari_izinli_rollere_gorunuyor_kayittaki_simgeyle` | sekreter.test üç kartı (simge, vurgu, `initiate_login_uri?iss=`), fakültesekreter.test İntibak ve Mezuniyet'i, koordinator.test yalnızca ÇAP-Yandal'ı, etik.test hiçbirini görmez |
+| `Simge_kayittan_geliyor_simgesiz_veya_gecersiz_simgede_addan_uretiliyor` | Staj "ST" (kayıttan), Demo OBİS "DO" (simgesiz: addan), geçersiz simge ("UZUN") yerine "İO"; `GecerliSimge` bir-iki harf |
 | **Selcuk.Istemci.Ortak.Tests** | |
 | `Cok_rollu_kullanicida_IsInRole_her_rolde_true_olmayan_rolde_false` | Tam OIDC girişi (sahte sunucu, imzalı id_token'da `role` dizisi): her rolde `IsInRole` true, katalogdaki diğer rollerde ve dizinin metin hâlinde false |
 | `Tek_rollu_kullanicida_metin_bicimi_ayni_sekilde_isleniyor` | `role` metin olduğunda da `IsInRole` doğru |
@@ -1563,9 +1682,15 @@ yakalanır.
 | `Girissiz_kullanici_eslestirme_cerezi_olmadan_donuste_GirisHatasi_sayfasina_yonlendiriliyor` | Yemekhane'de giriş yapmamış: `/GirisHatasi?neden=oturum-suresi` |
 | **Selcuk.Otomasyon.Ortak.Tests** | |
 | `SablonTests` (28) | Menü: öğrenci yalnızca öğrenci öğeleri, çok rollü birleşim katalog sırasıyla rol başlıkları altında (ortak öğe bir kez), uygun öğe yoksa boş; kapsam: claim'lerden okuma, kendi/bölüm/fakülte süzmesi, aynı adlı bölüm başka fakültede kapsam dışı, boş bilgi hiçbir kayda uymaz; `VeriKaynagi` doğrulaması (Mock, Api + https; http, boş, küçük harfli mod reddedilir); moda göre Mock/Api seçimi ve geçersiz modda `OptionsValidationException`; hatalı şablon tanımları (ad yok, `/` yok, ortak açık sayfa, katalog dışı rol, rolsüz öğe, veri kaynağı yok, aynı sayfa iki kez); oturum bileti deposu (şifreli, çerezde anahtar); Api istemcisi: Bearer, JSON, 5xx/404 → ulaşılamıyor, 401/403 → yetki, bağlantı hatası, token yoksa istek yapılmaz |
+| `AcilisVeParcaTests` (8) | Açılış denetimi: menüde olmayan, rol istemeyen (`/Gizli/Rapor`, `[AllowAnonymous]` `/Gizli/Acik`) sayfa açılışı Türkçe hatayla durdurur, kendi rolünü taşıyan (`/Gizli/Ozel`) durdurmaz; menüdekiler ve istisna listesindeki ortak sayfalar durdurmaz. Oturum bileti: kaydın süresi çerez ömrüyle aynı (bitişsiz bilette `Kimlik:OturumSuresi`), yenilemede uzar; süresi dolan kayıt okununca silinir, dolmuş bilet yazılmaz; çıkış (`RemoveAsync`), Back-Channel Logout sid'i ve sub'ı kayıtları hemen siler. Ortak parçalar: rozet sınıfı/verisi, aşama durumları, tablo başlık kimliği ve veri adı doğrulaması |
 | **Selcuk.Otomasyon.Staj.Tests** | |
 | `StajEkranTests` (20) | Menü (öğrenci, komisyon.test, çok rollü; girişsiz menü yok), adresle yetki reddi ve Türkçe 403 sayfası, her menü sayfası (GET ve POST) rolü olmayana kapalı, her rol kendi ekranlarını açar; kapsam: 203011001 yalnızca kendi üç kaydı, bölüm başkanı/komisyon/sekreter Elektrik-Elektronik kayıtlarını görmez, EEM'deki bölüm başkanı yalnızca kendi bölümünü, bölümsüz kullanıcı hiçbir şey; temsili işlem: antiforgery'siz 400, Onayla/Reddet/Kaydet mesajı gösterir ve kayıtlar değişmez, öğrenci formları; düzen (bant, rozet, simge, menü, stiller), başka uygulamanın TempData çerezi, Profilim, 404; güvenlik başlıkları ve `no-store`; zeytin kontrastı (beyaz 6,03:1) |
 | `VeriKaynagiTests` (17) | Mock/Api seçimi, geçersiz mod ve adres açılışı durdurur, rozet; Api modu: oturumdaki token Bearer olarak gider (aud `staj-api`, `staj.oku`), durum filtresi ve yıl sorgu dizesinde; API kapalı, 500, 503, zaman aşımı, bozuk JSON → 503 "Veri kaynağına şu an ulaşılamıyor"; 401/403 → 403 yetki sayfası; stack trace yok; gerçek çerezle (Testing ve Development) Back-Channel Logout oturumu kapatır, çerez küçük (bilet sunucuda) |
+| **Selcuk.Otomasyon.Intibak.Tests, .Mezuniyet.Tests, .CapYandal.Tests** | |
+| `<Ad>TemelTestleri` (her biri 25; `OtomasyonTemelTestleri`) | Her rol menüde yalnızca kendi öğeleri, çok rollü birleşim katalog sırasıyla, girişsiz menü yok; adresle yetki reddi (403 Türkçe), her menü sayfası (GET/POST) izinsiz role ve uygulamanın diğer rollerine kapalı, girişsize 401; her rol kendi ekranlarını açar (tek `<h1>`); düzen (bant, rozet, simge, menü, stiller), Profilim, 404; güvenlik başlıkları ve `no-store`, betik yok; vurgu kontrastı (açık: beyaz/taş/açık vurgu, koyu: yüzey/taş/koyu açık vurgu ≥ 4,5:1); temsili işlem antiforgery'siz 400, mesaj ve değişmeyen kayıtlar; Mock/Api seçimi, geçersiz ayar açılışı durdurur; Api modunda Bearer token, `aud` `<ad>-api`, `<ad>.oku`; API kapalı/500/503/zaman aşımı/bozuk JSON → 503, 401/403 → 403, stack trace yok; gerçek çerezle Back-Channel Logout oturumu kapatır ve bileti hemen siler; çıkış bileti hemen siler |
+| `IntibakEkranTests` (10) | Öğrenci yalnızca kendi başvurusu ve sonucu (muaf AKTS); bölüm süzmesi (komisyon, başkan, sekreter; EEM kullanıcısı yalnızca EEM); başka bölümün başvurusu adresle eşleştirmede açılmaz; fakülte sekreteri yalnızca kendi fakültesi, bölümlere göre (Mühendislik'teki yalnızca kendi kaydı); bölümsüz kullanıcıda tablonun "Kayıt yok."u; kaydırılabilir tablo bölgesi; aşamalarda tek `aria-current="step"` ve metinli durum, rozet; muafiyet notu şartı ayardan (CC → AA önerilen kararı değiştirir), geçersiz şart açılışı durdurur; transkript alanlı form antiforgery korumalı ve temsili |
+| `MezuniyetEkranTests` (6) | Öğrencinin AKTS / gereken, GNO, zorunlu ders sayıları ve eksikler listesi; şartlar ayardan (230 AKTS, 2,70 GNO: eksikler ve komisyonun GNO şartı göstergesi değişir), geçersiz şart; başvuru aşamaları ve ilişik kesme (borç rozeti, kaydı olmayan öğrencide "Kayıt yok."); komisyon ve sekreter bölüm süzmesi; fakülte sekreteri yalnızca kendi fakültesi, sayılar |
+| `CapYandalEkranTests` (7) | Öğrenci kendi başvuruları, aşamalar ve ilerleme; şart göstergesi (GNO, başarı sırası yüzdesi), kendi bölümünün programları listelenmez, form temsili; şartlar ayardan (ÇAP GNO alt sınırı 2,75 ve ilk %40 → "Başvurabilirsin"; kontenjan 2 → C26-03 yedek); geçersiz şart; koordinatör GNO sırası ve kontenjan, EEM koordinatörü yalnızca kendi programları; öğrenci takibinde devam şartının altındakilere uyarı; başkan ve sekreter bölüm süzmesi, eksik evrak, bölümsüz kullanıcıda "Kayıt yok." |
 | **Selcuk.Olcum.Tests** | |
 | `Yerel_hedefler_kabul_ediliyor_varsayilanlar_dogru` | `localhost`, `127.0.0.1`, `[::1]` kabul; varsayılan tekrar 100, ısınma 5, kullanıcı 50, eşzamanlılık 1/10/25/50 |
 | `Localhost_disi_veya_https_olmayan_hedef_reddediliyor` (×8) | `obis.selcuk.edu.tr`, `example.com`, `localhost.example.com`, `192.168.1.10`, `10.0.0.1`, `0.0.0.0`, `http://localhost`, şemasız adres: ölçüm başlamaz |

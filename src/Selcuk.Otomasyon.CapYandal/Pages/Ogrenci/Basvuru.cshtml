@@ -1,0 +1,88 @@
+@page
+@model Selcuk.Otomasyon.CapYandal.Pages.Ogrenci.BasvuruModel
+@{
+    ViewData["Title"] = "ÇAP veya yandal başvurusu";
+    var bilgi = Model.Bilgi;
+}
+<h1>ÇAP veya yandal başvurusu</h1>
+<p class="giris-metni">
+    Başvurun programı açan bölümün koordinatörüne, ardından bölüm başkanının onayına gider. Bu ekran temsilidir; başvuru
+    kaydedilmez.
+</p>
+
+@if (bilgi is null)
+{
+    <p>Anadal not bilgilerin bulunamadı; şart göstergesi hesaplanamıyor.</p>
+}
+else
+{
+    IReadOnlyList<SayiKarti> kartlar =
+    [
+        new("Genel not ortalaman", CapYandalOtomasyonu.Gno(bilgi.Gno), "gno"),
+        new("Başarı sıran", $"{bilgi.BasariSirasi} / {bilgi.SinifMevcudu}", "sira"),
+    ];
+    <partial name="_SayiKartlari" model="kartlar" />
+
+    <h2>Şartları karşılıyor musun?</h2>
+    <div class="tablo-kabi kayit-tablosu" role="region" aria-label="Başvuru şartları" tabindex="0">
+        <table class="tablo">
+            <caption class="gorunmez">Program türüne göre başvuru şartları</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Program türü</th>
+                    <th scope="col">GNO şartı</th>
+                    <th scope="col">Başarı sırası şartı</th>
+                    <th scope="col">Sonuç</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var tur in Enum.GetValues<ProgramTuru>())
+                {
+                    var sart = Model.Sartlar.Sart(tur);
+                    var durum = SartDurumu.Hesapla(bilgi.Gno, bilgi.BasariSirasi, bilgi.SinifMevcudu, sart);
+                    <tr data-cap-sart="@tur.ToString().ToLowerInvariant()">
+                        <th scope="row">@CapYandalOtomasyonu.TurAdi(tur)</th>
+                        <td>
+                            En az @CapYandalOtomasyonu.Gno(sart.BasvuruGnoAltSiniri):
+                            <partial name="_DurumRozeti" model="CapYandalOtomasyonu.SartRozeti(durum.GnoTamam)" />
+                        </td>
+                        <td>
+                            @(sart.BasariYuzdesiUstSiniri is { } ust ? $"İlk %{ust} (sen %{durum.BasariYuzdesi.ToString("0.#", CapYandalOtomasyonu.Tr)}):" : "")
+                            <partial name="_DurumRozeti" model="CapYandalOtomasyonu.SartRozeti(durum.SiraTamam)" />
+                        </td>
+                        <td>
+                            <partial name="_DurumRozeti" model="@(durum.Uygun ? new DurumRozeti("Başvurabilirsin", DurumTuru.Olumlu) : new DurumRozeti("Şartları karşılamıyorsun", DurumTuru.Olumsuz))" />
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <p class="sart-notu">Şart değerleri örnektir.</p>
+}
+
+<h2>Başvuru formu</h2>
+<form method="post" class="form basvuru-formu">
+    <div class="alan">
+        <label for="tur">Program türü</label>
+        <select id="tur" name="tur" class="metin-alani" required>
+            @foreach (var tur in Enum.GetValues<ProgramTuru>())
+            {
+                <option value="@tur">@CapYandalOtomasyonu.TurAdi(tur)</option>
+            }
+        </select>
+    </div>
+    <div class="alan">
+        <label for="program">Program</label>
+        <select id="program" name="programKodu" class="metin-alani" required>
+            @foreach (var program in Model.Programlar)
+            {
+                <option value="@program.Kod">@program.Ad</option>
+            }
+        </select>
+        <p class="ipucu">Kendi anadal bölümünün programları listelenmez.</p>
+    </div>
+    <div class="dugmeler">
+        <button type="submit" class="dugme dugme-uygulama">Başvur</button>
+    </div>
+</form>

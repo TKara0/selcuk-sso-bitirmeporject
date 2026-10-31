@@ -1,0 +1,29 @@
+@page
+@model Selcuk.Otomasyon.CapYandal.Pages.Koordinator.OgrenciTakibiModel
+@{
+    ViewData["Title"] = "Öğrenci takibi";
+    Func<ProgramIlerlemesi, object> ogrenci = @<text>@item.Basvuru.OgrenciAdi <span class="mono ipucu">@item.Basvuru.OgrenciNo</span></text>;
+    bool Altinda(ProgramIlerlemesi i) => i.GuncelGno < Model.Sartlar.Sart(i.Basvuru.Tur).DevamGnoAltSiniri;
+    var tablo = KayitTablosu.Olustur("Programdaki öğrenciler", Model.Ogrenciler, i => i.Basvuru.Id, "cap",
+        new KayitSutunu<ProgramIlerlemesi>("Öğrenci", ogrenci),
+        new KayitSutunu<ProgramIlerlemesi>("Program", i => i.Basvuru.ProgramAdi),
+        new KayitSutunu<ProgramIlerlemesi>("Alınan / kalan ders", i => $"{i.AlinanDersler.Count} / {i.KalanDersler.Count}", Sayi: true),
+        new KayitSutunu<ProgramIlerlemesi>("Son dönem GNO", i => i.GuncelGno is { } g ? CapYandalOtomasyonu.Gno(g) : null, Sayi: true),
+        new KayitSutunu<ProgramIlerlemesi>("GNO durumu", i => Altinda(i)
+            ? new DurumRozeti("Uyarı: GNO şartın altında", DurumTuru.Olumsuz)
+            : new DurumRozeti("Şartı karşılıyor", DurumTuru.Olumlu)));
+    IReadOnlyList<SayiKarti> kartlar =
+    [
+        new("Programdaki öğrenci", Model.Ogrenciler.Count, "ogrenci"),
+        new("GNO şartın altında", Model.Ogrenciler.Count(Altinda), "uyari"),
+    ];
+}
+<h1>Öğrenci takibi</h1>
+<p class="giris-metni">Bölümünün ÇAP ve yandal programlarında kesin kaydı yapılmış öğrenciler ve son dönem not ortalamaları.</p>
+<p class="sart-notu">
+    Devam için GNO alt sınırı: ÇAP <strong>@CapYandalOtomasyonu.Gno(Model.Sartlar.Cap.DevamGnoAltSiniri)</strong>, yandal
+    <strong>@CapYandalOtomasyonu.Gno(Model.Sartlar.Yandal.DevamGnoAltSiniri)</strong>. Şart değerleri örnektir.
+</p>
+
+<partial name="_SayiKartlari" model="kartlar" />
+<partial name="_KayitTablosu" model="tablo" />

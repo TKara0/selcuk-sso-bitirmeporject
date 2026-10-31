@@ -27,6 +27,26 @@ public sealed class OtomasyonSecenekleri
 
     internal Action<IServiceCollection>? VeriKaynagiKaydi { get; private set; }
 
+    internal List<Action<IServiceCollection, IConfiguration>> AyarKayitlari { get; } = [];
+
+    /// <summary>
+    /// Otomasyona özgü ayarlar (ör. yönetmelik şartları: GNO alt sınırı, AKTS toplamı, kontenjan): appsettings'teki
+    /// bölüm T'ye bağlanır, sayfalar IOptions&lt;T&gt; ile okur. Değerler koda gömülmez; T.Hata() null değilse açılış
+    /// Türkçe bir hatayla durur (ValidateOnStart).
+    /// </summary>
+    public void Ayarlar<T>(string bolum) where T : class, IDogrulanabilirAyar =>
+        AyarKayitlari.Add((services, configuration) =>
+        {
+            services.AddOptions<T>().Bind(configuration.GetSection(bolum)).ValidateOnStart();
+            services.AddSingleton<IValidateOptions<T>>(new AyarDogrulayici<T>(bolum));
+        });
+
+    private sealed class AyarDogrulayici<T>(string bolum) : IValidateOptions<T> where T : class, IDogrulanabilirAyar
+    {
+        public ValidateOptionsResult Validate(string? name, T options) =>
+            options.Hata() is { } hata ? ValidateOptionsResult.Fail($"'{bolum}' ayarı geçersiz: {hata}") : ValidateOptionsResult.Success;
+    }
+
     /// <summary>
     /// Otomasyonun veri kaynağı arayüzü ve iki uygulaması: VeriKaynagi:Mod "Mock" ise TMock (örnek veri), "Api" ise
     /// TApi (<see cref="OtomasyonApiIstemcisi"/> ile kaynak sunucusu). Sayfalar yalnızca TArayuz'u kullanır.
@@ -45,6 +65,13 @@ public sealed class OtomasyonSecenekleri
                 : sp.GetRequiredService<TMock>());
         };
     }
+}
+
+/// <summary>Açılışta doğrulanan otomasyon ayarı (<see cref="OtomasyonSecenekleri.Ayarlar{T}"/>).</summary>
+public interface IDogrulanabilirAyar
+{
+    /// <summary>Ayar geçerliyse null, değilse Türkçe açıklama.</summary>
+    string? Hata();
 }
 
 /// <summary>Düzenin okuduğu otomasyon bilgileri.</summary>
@@ -109,16 +136,23 @@ public static class OtomasyonUzantilari
         services.AddScoped<OtomasyonApiIstemcisi>();
         services.AddHttpClient(OtomasyonApiIstemcisi.HttpIstemciAdi).ConfigureHttpClient(OtomasyonApiIstemcisi.Yapilandir);
         secenekler.VeriKaynagiKaydi!(services);
+        foreach (var kayit in secenekler.AyarKayitlari)
+        {
+            kayit(services, configuration);
+        }
+
         return services;
     }
 
     /// <summary>
     /// İstek hattı: güvenlik başlıkları (giriş isteyen sayfalarda no-store), her ortamda Türkçe hata sayfası (/Hata;
     /// istisna ayrıntısı ve stack trace gösterilmez, veri kaynağı hatası 503/403), durum kodu sayfaları, HTTPS, statik
-    /// dosyalar, kimlik doğrulama, yetkilendirme, Razor Pages ve Back-Channel Logout alıcısı.
+    /// dosyalar, kimlik doğrulama, yetkilendirme, Razor Pages ve Back-Channel Logout alıcısı. Önce sayfaların yetkisi
+    /// denetlenir: menüde olmayan ve rol istemeyen bir sayfa varsa açılış durur (<see cref="SayfaYetkiDenetimi"/>).
     /// </summary>
     public static WebApplication UseSelcukOtomasyon(this WebApplication app)
     {
+        SayfaYetkiDenetimi.Denetle(app);
         app.UseSelcukGuvenlikBasliklari();
         app.UseExceptionHandler("/Hata");
         // Back-Channel Logout yanıtları (sunucudan sunucuya) HTML hata sayfasına çevrilmez.

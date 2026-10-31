@@ -1,0 +1,17 @@
+/*
+ * İntibak Otomasyonu: yalnızca uygulamanın vurgu rengi (eflatun). Yerleşim ortak otomasyon şablonunda
+ * (_content/Selcuk.Otomasyon.Ortak/css/otomasyon.css), token'lar selcuk.css'te. Kontrast (WCAG 2.1, metin):
+ * #6B4C8A beyaz zeminde 6,94:1, taş (#EDF0EF) zeminde 6,05:1, açık eflatun (#EFE9F5) zeminde 5,83:1;
+ * koyu temada #C9B3E3 yüzey (#15273A) zemininde 7,98:1, koyu açık eflatun (#2B2238) zemininde 7,95:1.
+ */
+:root {
+    --uygulama-vurgu: #6B4C8A;
+    --uygulama-vurgu-acik: #EFE9F5;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --uygulama-vurgu: #C9B3E3;
+        --uygulama-vurgu-acik: #2B2238;
+    }
+}

@@ -190,7 +190,9 @@ builder.Services.AddOpenIddict()
         options.Configure(server => server.CodeChallengeMethods.Remove(CodeChallengeMethods.Plain));
 
         options.RegisterScopes(Scopes.OpenId, Scopes.Profile, Scopes.Email, Scopes.Roles, Scopes.OfflineAccess,
-            Istemciler.NotlarOkuKapsami, Istemciler.StajOkuKapsami, Istemciler.StajYazKapsami);
+            Istemciler.NotlarOkuKapsami, Istemciler.StajOkuKapsami, Istemciler.StajYazKapsami,
+            Istemciler.IntibakOkuKapsami, Istemciler.IntibakYazKapsami, Istemciler.MezuniyetOkuKapsami,
+            Istemciler.MezuniyetYazKapsami, Istemciler.CapYandalOkuKapsami, Istemciler.CapYandalYazKapsami);
         options.RegisterClaims(Claims.Subject, Claims.Name, Claims.Email, Claims.Role,
             OidcKimlik.FakulteClaim, OidcKimlik.BolumClaim, OidcKimlik.SidClaim, Claims.AuthenticationMethodReference);
 

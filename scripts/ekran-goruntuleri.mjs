@@ -1,18 +1,23 @@
-// Ekran görüntüleri: kimlik sunucusu, Demo OBİS, Demo Yemekhane, Staj Otomasyonu ve Tek Kapı ekranlarını Playwright
-// ile çeker.
+// Ekran görüntüleri: kimlik sunucusu, Demo OBİS, Demo Yemekhane, bölüm otomasyonları (Staj, İntibak, Mezuniyet,
+// ÇAP-Yandal) ve Tek Kapı ekranlarını Playwright ile çeker.
 //
 //   docs/tasarim/d2/    gözden geçirme için her ekranın açık, koyu (1280 × 800) ve 390px (mobil) hâli, tam sayfa
 //   docs/tez-gorselleri/ tez için seçilmiş ekranlar, açık tema, 1440px genişlik, tam sayfa
 //
 // Kullanım (proje kökünden; bir kez: cd araclar\tek-kapi; npm ci):
 //   node --use-system-ca scripts/ekran-goruntuleri.mjs
+//   node --use-system-ca scripts/ekran-goruntuleri.mjs --sadece intibak,mezuniyet,cap
+//
+// --sadece: yalnızca verilen grupların ekranları çekilir ve yalnızca onların eski PNG'leri silinir (diğer PNG'lere
+// dokunulmaz). Gruplar: kimlik, obis, yemekhane, staj, tekkapi, intibak, mezuniyet, cap. Verilmezse hepsi (ve bütün
+// eski PNG'ler silinir).
 //
 // Ne yapar:
-//   - 4545, 5001, 5101, 5102, 5201, 5302 portlarından biri doluysa durur (kullanıcının uygulamalarına dokunmaz).
+//   - 4545, 5001, 5101, 5102, 5201, 5301, 5302, 5304, 5311 portlarından biri doluysa durur (kullanıcının uygulamalarına dokunmaz).
 //   - Kimlik sunucusu için geçici bir LocalDB veritabanı (SelcukSSO_Ekran_<rastgele>) kurar; test kullanıcılarının
 //     şifreleri ve demo istemci sırrı bu çalıştırma için rastgele üretilir, yalnızca bellekte ve başlatılan süreçlerin
 //     ortam değişkenlerinde durur (yazdırılmaz, dosyaya yazılmaz). Yalnızca test kullanıcıları (203011001,
-//     hoca.test, personel.test, komisyon.test, baskan.test) kullanılır.
+//     203011002, hoca.test, personel.test, komisyon.test, baskan.test, koordinator.test) kullanılır.
 //   - Uygulamaları scripts/run-all.ps1 -TarayiciAcma ile başlatır; Tek Kapı'yı GEÇİCİ bir veri klasörüyle
 //     (PORTAL_DATA_DIR) SSO modunda kendisi başlatır. Gerçek kasaya (araclar/tek-kapi/data) dokunmaz, okumaz.
 //     Tek Kapı'da yalnızca portal ekranları çekilir: hiçbir sistem "Aç"ılmaz, yönetilen tarayıcı başlatılmaz; kasaya
@@ -45,13 +50,32 @@ const KIMLIK = 'https://localhost:5001';
 const OBIS = 'https://localhost:5101';
 const YEMEKHANE = 'https://localhost:5102';
 const STAJ = 'https://localhost:5302';
+const INTIBAK = 'https://localhost:5301';
+const MEZUNIYET = 'https://localhost:5304';
+const CAP = 'https://localhost:5311';
 const TEK_KAPI_ADRES = 'http://127.0.0.1:4545';
-const PORTLAR = [4545, 5001, 5101, 5102, 5201, 5302];
+const PORTLAR = [4545, 5001, 5101, 5102, 5201, 5301, 5302, 5304, 5311];
+
+// Ekran grupları (--sadece). Ekran adının öneki grubunu belirler; önekli olmayanlar kimlik sunucusunundur.
+const GRUPLAR = ['kimlik', 'obis', 'yemekhane', 'staj', 'tekkapi', 'intibak', 'mezuniyet', 'cap'];
+const ESKI_GRUPLAR = ['kimlik', 'obis', 'yemekhane', 'staj', 'tekkapi'];
+const grubu = (ad) => GRUPLAR.find((g) => g !== 'kimlik' && ad.startsWith(g + '-')) ?? 'kimlik';
+const sadeceArg = process.argv.indexOf('--sadece');
+const SECILI = sadeceArg >= 0 ? (process.argv[sadeceArg + 1] ?? '').split(',').map((g) => g.trim()).filter(Boolean) : GRUPLAR;
+const bilinmeyen = SECILI.filter((g) => !GRUPLAR.includes(g));
+if (sadeceArg >= 0 && (SECILI.length === 0 || bilinmeyen.length)) {
+  console.error(`--sadece: geçersiz grup (${bilinmeyen.join(', ') || 'boş'}). Gruplar: ${GRUPLAR.join(', ')}`);
+  process.exit(1);
+}
+const seciliMi = (ad) => SECILI.includes(grubu(ad));
 
 // Bu çalıştırmanın sırları: yalnızca bellekte.
 const rastgele = (n) => crypto.randomBytes(n).toString('base64url');
 const sifreUret = () => `Ek${rastgele(12)}7a`;
-const SIFRELER = { ogrenci: sifreUret(), akademisyen: sifreUret(), personel: sifreUret(), komisyon: sifreUret(), baskan: sifreUret() };
+const SIFRELER = {
+  ogrenci: sifreUret(), ogrenci2: sifreUret(), akademisyen: sifreUret(), personel: sifreUret(), komisyon: sifreUret(),
+  baskan: sifreUret(), koordinator: sifreUret(),
+};
 const ISTEMCI_SIRRI = rastgele(32);
 const ANA_SIFRE = `Kasa-${rastgele(12)}`;
 const sirlar = [...Object.values(SIFRELER), ISTEMCI_SIRRI, ANA_SIFRE, SAHTE.obisPass, SAHTE.mailPass];
@@ -65,10 +89,15 @@ const ORTAM = {
   TestKullanicilari__Personel__Sifre: SIFRELER.personel,
   TestKullanicilari__Komisyon__Sifre: SIFRELER.komisyon,
   TestKullanicilari__BolumBaskani__Sifre: SIFRELER.baskan,
+  TestKullanicilari__Ogrenci2__Sifre: SIFRELER.ogrenci2,
+  TestKullanicilari__Koordinator__Sifre: SIFRELER.koordinator,
   // Gizli istemciler aynı sırrı kullanır (hepsi Kimlik:ClientSecret okur; ortam değişkeni ortak).
   Istemciler__DemoObis__ClientSecret: ISTEMCI_SIRRI,
   Istemciler__DemoYemekhane__ClientSecret: ISTEMCI_SIRRI,
   Istemciler__StajOtomasyonu__ClientSecret: ISTEMCI_SIRRI,
+  Istemciler__IntibakOtomasyonu__ClientSecret: ISTEMCI_SIRRI,
+  Istemciler__MezuniyetOtomasyonu__ClientSecret: ISTEMCI_SIRRI,
+  Istemciler__CapYandalOtomasyonu__ClientSecret: ISTEMCI_SIRRI,
   Kimlik__ClientSecret: ISTEMCI_SIRRI,
 };
 delete ORTAM.Olcum__HizSiniriGevset;
@@ -145,9 +174,12 @@ async function tasmaKontrolu(sayfa, ad, gorunum) {
 
 const TEZ_SIRASI = ['giris', 'onay', 'uygulamalarim', 'obis-notlarim', 'obis-token-inceleme', 'yemekhane-menu',
   'tekkapi-ana', 'tekkapi-kilit', 'guvenlik-gecmisi', 'iki-adim-kurulum',
-  'staj-stajlarim', 'staj-basvuru-inceleme', 'staj-ozet', 'staj-erisim-reddedildi'];
+  'staj-stajlarim', 'staj-basvuru-inceleme', 'staj-ozet', 'staj-erisim-reddedildi',
+  'intibak-basvurum', 'intibak-ders-eslestirme', 'mezuniyet-durumum', 'mezuniyet-adaylar', 'cap-basvurularim',
+  'cap-gelen-basvurular'];
 
 async function cek(sayfa, ad, { mobil = true } = {}) {
+  if (!seciliMi(ad)) return;
   await hazirla(sayfa);
   await sirKontrolu(sayfa, ad);
   const dosya = (son) => path.join(D2, `${ad}-${son}.png`);
@@ -245,7 +277,90 @@ async function yeniBaglam(tarayici) {
   return { baglam, sayfa };
 }
 
+// Uygulamaya Tek Şifre ile girer: kimlik sunucusunda oturum yoksa giriş formu, ilk kez giriliyorsa onay ekranı gelir.
+async function uygulamayaGir(sayfa, adres, kullaniciAdi, sifre) {
+  await git(sayfa, adres + '/Giris');
+  if (await sayfa.$('#Input_KullaniciAdi')) await girisYap(sayfa, kullaniciAdi, sifre);
+  if (await sayfa.$('button[name=karar][value=kabul]')) await izinVer(sayfa);
+  await adresiBekle(sayfa, new RegExp(`^${adres}/$`));
+}
+
+// İntibak, Mezuniyet ve ÇAP-Yandal (temsili, örnek veri): öğrenci (203011002), komisyon üyesi ve koordinatör.
+async function otomasyonCekimleri(tarayici) {
+  const gruplar = ['intibak', 'mezuniyet', 'cap'].filter((g) => SECILI.includes(g));
+  if (gruplar.length === 0) return;
+  console.log('İntibak, Mezuniyet ve ÇAP-Yandal otomasyonları (temsili, örnek veri)');
+
+  const ogrenci = await yeniBaglam(tarayici);
+  if (gruplar.includes('intibak')) {
+    await uygulamayaGir(ogrenci.sayfa, INTIBAK, '203011002', SIFRELER.ogrenci2);
+    await cek(ogrenci.sayfa, 'intibak-ana');
+    await git(ogrenci.sayfa, INTIBAK + '/Ogrenci/Basvurum');
+    await cek(ogrenci.sayfa, 'intibak-basvurum');
+    await git(ogrenci.sayfa, INTIBAK + '/Ogrenci/Basvuru');
+    await cek(ogrenci.sayfa, 'intibak-basvuru');
+  }
+  if (gruplar.includes('mezuniyet')) {
+    await uygulamayaGir(ogrenci.sayfa, MEZUNIYET, '203011002', SIFRELER.ogrenci2);
+    await git(ogrenci.sayfa, MEZUNIYET + '/Ogrenci/Durumum');
+    await cek(ogrenci.sayfa, 'mezuniyet-durumum');
+    await git(ogrenci.sayfa, MEZUNIYET + '/Ogrenci/Basvuru');
+    await cek(ogrenci.sayfa, 'mezuniyet-basvuru');
+    await git(ogrenci.sayfa, MEZUNIYET + '/Ogrenci/IlisikKesme');
+    await cek(ogrenci.sayfa, 'mezuniyet-ilisik-kesme');
+  }
+  if (gruplar.includes('cap')) {
+    await uygulamayaGir(ogrenci.sayfa, CAP, '203011002', SIFRELER.ogrenci2);
+    await git(ogrenci.sayfa, CAP + '/Ogrenci/Basvurularim');
+    await cek(ogrenci.sayfa, 'cap-basvurularim');
+    await git(ogrenci.sayfa, CAP + '/Ogrenci/Basvuru');
+    await cek(ogrenci.sayfa, 'cap-basvuru');
+    await git(ogrenci.sayfa, CAP + '/Koordinator/GelenBasvurular');
+    await adresiBekle(ogrenci.sayfa, /ErisimReddedildi/);
+    await cek(ogrenci.sayfa, 'cap-erisim-reddedildi');
+  }
+  await ogrenci.baglam.close();
+
+  if (gruplar.includes('intibak') || gruplar.includes('mezuniyet')) {
+    const komisyon = await yeniBaglam(tarayici);
+    if (gruplar.includes('intibak')) {
+      await uygulamayaGir(komisyon.sayfa, INTIBAK, 'komisyon.test', SIFRELER.komisyon);
+      await git(komisyon.sayfa, INTIBAK + '/Komisyon/BekleyenBasvurular');
+      await cek(komisyon.sayfa, 'intibak-bekleyen-basvurular');
+      await git(komisyon.sayfa, INTIBAK + '/Komisyon/DersEslestirme?id=I26-02');
+      await cek(komisyon.sayfa, 'intibak-ders-eslestirme');
+    }
+    if (gruplar.includes('mezuniyet')) {
+      await uygulamayaGir(komisyon.sayfa, MEZUNIYET, 'komisyon.test', SIFRELER.komisyon);
+      await git(komisyon.sayfa, MEZUNIYET + '/Komisyon/Adaylar');
+      await cek(komisyon.sayfa, 'mezuniyet-adaylar');
+      // Temsili işlem: Onayla gerçek bir POST yapar, veri değişmez, mesaj gösterilir.
+      await Promise.all([komisyon.sayfa.waitForNavigation(), komisyon.sayfa.click('form[action*="handler=Onayla"] button')]);
+      await komisyon.sayfa.waitForSelector('.bant-uygulama[role=status]');
+      await cek(komisyon.sayfa, 'mezuniyet-temsili-islem', { mobil: false });
+    }
+    await komisyon.baglam.close();
+  }
+
+  if (gruplar.includes('cap')) {
+    const koordinator = await yeniBaglam(tarayici);
+    await uygulamayaGir(koordinator.sayfa, CAP, 'koordinator.test', SIFRELER.koordinator);
+    await git(koordinator.sayfa, CAP + '/Koordinator/GelenBasvurular');
+    await cek(koordinator.sayfa, 'cap-gelen-basvurular');
+    await git(koordinator.sayfa, CAP + '/Koordinator/OgrenciTakibi');
+    await cek(koordinator.sayfa, 'cap-ogrenci-takibi');
+    await koordinator.baglam.close();
+  }
+}
+
 async function cekimler(tarayici) {
+  // Mevcut ekranlar tek akıştır (kimlik sunucusu oturumu, 2FA kurulumu ve Tek Kapı birbirine bağlı); bu gruplardan
+  // biri seçilmişse akış baştan sona yürür, seçilmeyen grupların ekranları çekilmez (cek).
+  if (ESKI_GRUPLAR.some((g) => SECILI.includes(g))) await mevcutCekimler(tarayici);
+  await otomasyonCekimleri(tarayici);
+}
+
+async function mevcutCekimler(tarayici) {
   console.log('Kimlik sunucusu');
   const { sayfa } = await yeniBaglam(tarayici);
   await git(sayfa, KIMLIK + '/');
@@ -456,8 +571,12 @@ async function main() {
 
   fs.mkdirSync(D2, { recursive: true });
   fs.mkdirSync(TEZ, { recursive: true });
-  for (const klasor of [D2, TEZ]) {
-    for (const f of fs.readdirSync(klasor).filter((x) => x.endsWith('.png'))) fs.rmSync(path.join(klasor, f));
+  // Yalnızca seçili grupların eski PNG'leri silinir (d2: <ad>-acik.png; tez: NN-<ad>.png).
+  for (const f of fs.readdirSync(D2).filter((x) => x.endsWith('.png'))) {
+    if (seciliMi(f.replace(/-(acik|koyu|mobil)\.png$/, ''))) fs.rmSync(path.join(D2, f));
+  }
+  for (const f of fs.readdirSync(TEZ).filter((x) => x.endsWith('.png'))) {
+    if (seciliMi(f.replace(/^\d+-/, '').replace(/\.png$/, ''))) fs.rmSync(path.join(TEZ, f));
   }
 
   const baslangic = new Date();
@@ -521,7 +640,7 @@ async function main() {
     fs.rmSync(tekKapiVeri, { recursive: true, force: true });
   }
 
-  console.log(`\n${cekilenler.length} ekran çekildi: docs/tasarim/d2/, ${TEZ_SIRASI.length} tez görseli: docs/tez-gorselleri/`);
+  console.log(`\n${cekilenler.length} ekran çekildi: docs/tasarim/d2/, ${cekilenler.filter((a) => TEZ_SIRASI.includes(a)).length} tez görseli: docs/tez-gorselleri/`);
   if (sorunlar.length) {
     console.log('\nDikkat:');
     for (const s of [...new Set(sorunlar)]) console.log('  - ' + s);

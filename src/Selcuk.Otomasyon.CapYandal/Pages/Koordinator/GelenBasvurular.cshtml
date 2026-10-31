@@ -1,0 +1,41 @@
+@page
+@model Selcuk.Otomasyon.CapYandal.Pages.Koordinator.GelenBasvurularModel
+@{
+    ViewData["Title"] = "Gelen başvurular";
+    Func<CapBasvurusu, object> ogrenci = @<text>@item.OgrenciAdi <span class="mono ipucu">@item.OgrenciNo</span></text>;
+}
+<h1>Gelen başvurular</h1>
+<p class="giris-metni">
+    Bölümünün ÇAP ve yandal programlarına gelen, süreci devam eden başvurular. Her programda başvurular GNO'ya göre
+    sıralıdır; kontenjan içindekiler bölüm başkanının onayına gider.
+</p>
+<p class="sart-notu">
+    ÇAP kontenjanı <strong data-kontenjan="cap">@Model.Sartlar.Cap.Kontenjan</strong>, yandal kontenjanı
+    <strong data-kontenjan="yandal">@Model.Sartlar.Yandal.Kontenjan</strong>. Şart değerleri örnektir.
+</p>
+
+@if (Model.Programlar.Count == 0)
+{
+    <p class="bos-durum">@KayitTablosu.VarsayilanBosMetin</p>
+}
+@foreach (var (program, basvurular) in Model.Programlar)
+{
+    var kontenjan = Model.Sartlar.Sart(program.Tur).Kontenjan;
+    IReadOnlyList<SayiKarti> kartlar =
+    [
+        new("Başvuru", basvurular.Count, "basvuru-" + program.Kod),
+        new("Kontenjan", kontenjan, "kontenjan-" + program.Kod),
+    ];
+    var sirali = basvurular.Select((b, i) => (Basvuru: b, Sira: i + 1)).ToList();
+    <section aria-labelledby="tablo-@program.Kod">
+        <partial name="_KayitTablosu" model="@(KayitTablosu.Olustur(program.Ad, sirali, s => s.Basvuru.Id, "cap",
+            new KayitSutunu<(CapBasvurusu Basvuru, int Sira)>("Sıra", s => s.Sira, Sayi: true),
+            new KayitSutunu<(CapBasvurusu Basvuru, int Sira)>("Öğrenci", s => ogrenci(s.Basvuru)),
+            new KayitSutunu<(CapBasvurusu Basvuru, int Sira)>("GNO", s => CapYandalOtomasyonu.Gno(s.Basvuru.Gno), Sayi: true),
+            new KayitSutunu<(CapBasvurusu Basvuru, int Sira)>("Başarı sırası", s => $"{s.Basvuru.BasariSirasi} / {s.Basvuru.SinifMevcudu}", Sayi: true),
+            new KayitSutunu<(CapBasvurusu Basvuru, int Sira)>("Kontenjan", s => s.Sira <= kontenjan
+                ? new DurumRozeti("Kontenjan içinde", DurumTuru.Olumlu) : new DurumRozeti("Yedek", DurumTuru.Bekliyor)),
+            new KayitSutunu<(CapBasvurusu Basvuru, int Sira)>("Durum", s => CapYandalOtomasyonu.Rozet(s.Basvuru.Durum))) with { Kimlik = "tablo-" + program.Kod })" />
+        <partial name="_SayiKartlari" model="kartlar" />
+    </section>
+}

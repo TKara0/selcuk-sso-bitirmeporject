@@ -1,0 +1,17 @@
+/*
+ * Mezuniyet Otomasyonu: yalnızca uygulamanın vurgu rengi (bakır). Yerleşim ortak otomasyon şablonunda
+ * (_content/Selcuk.Otomasyon.Ortak/css/otomasyon.css), token'lar selcuk.css'te. Kontrast (WCAG 2.1, metin):
+ * #8A4B1F beyaz zeminde 6,76:1, taş (#EDF0EF) zeminde 5,89:1, açık bakır (#F6EBE2) zeminde 5,76:1;
+ * koyu temada #E8B48E yüzey (#15273A) zemininde 8,21:1, koyu açık bakır (#3A2618) zemininde 7,72:1.
+ */
+:root {
+    --uygulama-vurgu: #8A4B1F;
+    --uygulama-vurgu-acik: #F6EBE2;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --uygulama-vurgu: #E8B48E;
+        --uygulama-vurgu-acik: #3A2618;
+    }
+}

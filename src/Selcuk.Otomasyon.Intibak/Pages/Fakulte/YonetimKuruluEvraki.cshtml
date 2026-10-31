@@ -1,0 +1,30 @@
+@page
+@model Selcuk.Otomasyon.Intibak.Pages.Fakulte.YonetimKuruluEvrakiModel
+@{
+    ViewData["Title"] = "Yönetim kurulu evrakı";
+    Func<IntibakBasvurusu, object> ogrenci = @<text>@item.OgrenciAdi <span class="mono ipucu">@item.OgrenciNo</span></text>;
+    var gruplar = Model.Evrak.GroupBy(b => b.Bolum).ToList();
+    IReadOnlyList<SayiKarti> kartlar =
+    [
+        new("Gidecek karar", Model.Evrak.Count, "toplam"),
+        new("Bölüm", gruplar.Count, "bolum"),
+    ];
+}
+<h1>Yönetim kurulu evrakı</h1>
+<p class="giris-metni">Fakültendeki bölümlerin, bölüm başkanınca onaylanıp yönetim kuruluna gidecek intibak kararları.</p>
+
+<partial name="_SayiKartlari" model="kartlar" />
+
+@if (gruplar.Count == 0)
+{
+    <p class="bos-durum">@KayitTablosu.VarsayilanBosMetin</p>
+}
+@foreach (var grup in gruplar)
+{
+    <partial name="_KayitTablosu" model="@KayitTablosu.Olustur(grup.Key, grup, b => b.Id, "intibak",
+        new KayitSutunu<IntibakBasvurusu>("Öğrenci", ogrenci),
+        new KayitSutunu<IntibakBasvurusu>("Geliş türü", b => IntibakOtomasyonu.GelisTuruAdi(b.GelisTuru)),
+        new KayitSutunu<IntibakBasvurusu>("Önceki kurum", b => b.OncekiUniversite),
+        new KayitSutunu<IntibakBasvurusu>("Muaf AKTS", b => IntibakOtomasyonu.MuafAkts(b), Sayi: true),
+        new KayitSutunu<IntibakBasvurusu>("Durum", b => IntibakOtomasyonu.Rozet(b.Durum)))" />
+}

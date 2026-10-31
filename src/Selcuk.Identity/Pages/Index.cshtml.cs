@@ -24,11 +24,15 @@ public class IndexModel(
     IOptionsMonitor<OpenIddictServerOptions> serverAyarlari) : PageModel
 {
     /// <param name="Vurgu">Simgenin vurgu rengi adı (site.css'te .uygulama-simge-&lt;ad&gt;); yoksa firuze.</param>
+    /// <param name="Simge">İstemci kaydındaki simge harfleri; yoksa addan üretilir (<see cref="BasHarfler"/>).</param>
     public sealed record UygulamaKarti(string Ad, string Aciklama, string AnaSayfa, string GirisAdresi, bool MfaGerekli,
-        string? Vurgu = null);
+        string? Vurgu = null, string? Simge = null)
+    {
+        public string SimgeMetni => Simge ?? BasHarfler(Ad);
+    }
 
     /// <summary>Uygulamalarım'da tanımlı vurgu renkleri (site.css); başka bir değer yok sayılır.</summary>
-    public static readonly IReadOnlySet<string> VurguRenkleri = new HashSet<string>(StringComparer.Ordinal) { "zeytin" };
+    public static readonly IReadOnlySet<string> VurguRenkleri = new HashSet<string>(StringComparer.Ordinal) { "zeytin", "eflatun", "bakir", "hardal" };
 
     public List<UygulamaKarti> Uygulamalar { get; } = [];
 
@@ -41,6 +45,10 @@ public class IndexModel(
         .Where(kelime => char.IsLetter(kelime[0]))
         .Take(2)
         .Select(kelime => char.ToUpper(kelime[0], CultureInfo.GetCultureInfo("tr-TR"))));
+
+    /// <summary>İstemci kaydındaki simge: bir veya iki harf (ör. "ST", "ÇY"); başka bir değer yok sayılır.</summary>
+    public static string? GecerliSimge(string? simge) =>
+        simge is { Length: 1 or 2 } && simge.All(char.IsLetter) ? simge : null;
 
     public async Task OnGetAsync()
     {
@@ -71,8 +79,11 @@ public class IndexModel(
             var vurgu = ozellikler.TryGetValue(Istemciler.VurguOzelligi, out var v) && v.ValueKind == System.Text.Json.JsonValueKind.String
                 && VurguRenkleri.Contains(v.GetString()!) ? v.GetString() : null;
 
+            var simge = ozellikler.TryGetValue(Istemciler.SimgeOzelligi, out var s) && s.ValueKind == System.Text.Json.JsonValueKind.String
+                ? GecerliSimge(s.GetString()) : null;
+
             Uygulamalar.Add(new UygulamaKarti(ad, aciklama, anaSayfa.GetString()!, girisAdresi,
-                IstemciErisimi.MfaZorunlu(ozellikler), vurgu));
+                IstemciErisimi.MfaZorunlu(ozellikler), vurgu, simge));
         }
 
         Uygulamalar.Sort((x, y) => string.Compare(x.Ad, y.Ad, StringComparison.CurrentCulture));

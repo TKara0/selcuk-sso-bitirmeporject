@@ -1,0 +1,20 @@
+@*
+    Başvurunun aşamaları: sıralı liste (ol/li). Şu anki aşama aria-current="step"; her aşamanın durumu (Tamamlandı,
+    Şu an, Bekliyor) metin olarak da yazılır. Model: BasvuruAdimlari.
+*@
+@model BasvuruAdimlari
+<ol class="basvuru-adimlari" aria-label="@Model.Baslik">
+    @foreach (var adim in Model.Adimlar)
+    {
+        var sinif = adim.Durum switch
+        {
+            AdimDurumu.Tamamlandi => "adim-tamamlandi",
+            AdimDurumu.SuAn => "adim-su-an",
+            _ => "adim-bekliyor",
+        };
+        <li class="@sinif" aria-current="@(adim.Durum == AdimDurumu.SuAn ? "step" : null)">
+            <span class="adim-adi">@adim.Ad</span>
+            <span class="adim-durumu">@adim.DurumAdi</span>
+        </li>
+    }
+</ol>

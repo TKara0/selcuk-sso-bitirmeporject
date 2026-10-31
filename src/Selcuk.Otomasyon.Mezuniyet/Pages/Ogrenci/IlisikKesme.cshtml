@@ -1,0 +1,16 @@
+@page
+@model Selcuk.Otomasyon.Mezuniyet.Pages.Ogrenci.IlisikKesmeModel
+@{
+    ViewData["Title"] = "İlişik kesme";
+    var tablo = KayitTablosu.Olustur("Birimlerin durumu", Model.Birimler, b => b.Birim, "birim",
+        new KayitSutunu<IlisikKesmeBirimi>("Birim", b => b.Birim),
+        new KayitSutunu<IlisikKesmeBirimi>("Durum", b => MezuniyetOtomasyonu.BirimRozeti(b.Durum)),
+        new KayitSutunu<IlisikKesmeBirimi>("Açıklama", b => b.Aciklama));
+}
+<h1>İlişik kesme</h1>
+<p class="giris-metni">
+    Mezuniyet için her birimin seninle ilişiğini kesmesi gerekir. Durumlar temsilidir; birimlerin onayı bu ekrandan
+    verilmez.
+</p>
+
+<partial name="_KayitTablosu" model="tablo" />

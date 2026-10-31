@@ -1,0 +1,29 @@
+@page
+@model Selcuk.Otomasyon.Mezuniyet.Pages.Sekreter.DekanlikListesiModel
+@{
+    ViewData["Title"] = "Dekanlığa gidecek liste";
+    Func<MezuniyetAdayi, object> ogrenci = @<text>@item.OgrenciAdi <span class="mono ipucu">@item.OgrenciNo</span></text>;
+    KayitTablosu Tablo(string baslik, IEnumerable<MezuniyetAdayi> adaylar) => KayitTablosu.Olustur(baslik, adaylar, a => a.Id, "mezuniyet",
+        new KayitSutunu<MezuniyetAdayi>("Öğrenci", ogrenci),
+        new KayitSutunu<MezuniyetAdayi>("Dönem", a => a.Donem),
+        new KayitSutunu<MezuniyetAdayi>("AKTS", a => a.ToplamAkts, Sayi: true),
+        new KayitSutunu<MezuniyetAdayi>("GNO", a => MezuniyetOtomasyonu.Gno(a.Gno), Sayi: true),
+        new KayitSutunu<MezuniyetAdayi>("Durum", a => MezuniyetOtomasyonu.Rozet(a.Durum)));
+    var gonderilecekler = Tablo("Gönderilecek adaylar", Model.Gonderilecekler);
+    var gonderilenler = Tablo("Dekanlığa gönderilenler", Model.Gonderilenler);
+}
+<h1>Dekanlığa gidecek liste</h1>
+<p class="giris-metni">
+    Mezuniyet komisyonunun onayladığı, bölüm onayıyla dekanlığa gönderilecek adaylar ve gönderilmiş liste.
+</p>
+
+<partial name="_KayitTablosu" model="gonderilecekler" />
+@if (Model.Gonderilecekler.Count > 0)
+{
+    <form method="post" class="dugmeler">
+        <button type="submit" class="dugme dugme-uygulama">Listeyi dekanlığa gönder</button>
+        <p class="ipucu">Temsili: liste gönderilmez, yalnızca işlem mesajı gösterilir.</p>
+    </form>
+}
+
+<partial name="_KayitTablosu" model="gonderilenler" />

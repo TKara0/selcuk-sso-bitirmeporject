@@ -24,6 +24,8 @@ public static class Istemciler
     public const string MfaZorunluOzelligi = "mfaZorunlu";
     // Uygulamalarım kartındaki simgenin vurgu rengi (site.css'te tanımlı bir ad, ör. "zeytin"); yoksa firuze.
     public const string VurguOzelligi = "vurgu";
+    // Uygulamalarım kartındaki simgenin harfleri (en fazla iki harf, ör. "ST"); yoksa addan üretilir.
+    public const string SimgeOzelligi = "simge";
 
     // Demo API (kaynak sunucusu): notlar.oku kapsamıyla verilen access token'ın aud'u demo-api olur.
     public const string DemoApiKaynagi = "demo-api";
@@ -56,6 +58,41 @@ public static class Istemciler
     /// <summary>Staj Otomasyonu'na girebilen roller (en az biri).</summary>
     public static readonly string[] StajOtomasyonuIzinliRolleri =
         [Roller.Ogrenci, Roller.StajKomisyonu, Roller.BolumSekreteri, Roller.BolumBaskani];
+
+    // İntibak, Mezuniyet ve ÇAP-Yandal otomasyonları: gelecekteki API'leri için <ad>.oku / <ad>.yaz kapsamları,
+    // access token'ın aud'u <ad>-api.
+    public const string IntibakApiKaynagi = "intibak-api";
+    public const string IntibakOkuKapsami = "intibak.oku";
+    public const string IntibakYazKapsami = "intibak.yaz";
+    public const string IntibakOtomasyonuClientId = "intibak-otomasyonu";
+    private const string IntibakOtomasyonuAdres = "https://localhost:5301";
+    public const string IntibakOtomasyonuRedirectUri = IntibakOtomasyonuAdres + "/signin-oidc";
+
+    /// <summary>İntibak Otomasyonu'na girebilen roller (en az biri).</summary>
+    public static readonly string[] IntibakOtomasyonuIzinliRolleri =
+        [Roller.Ogrenci, Roller.IntibakKomisyonu, Roller.BolumBaskani, Roller.BolumSekreteri, Roller.FakulteSekreteri];
+
+    public const string MezuniyetApiKaynagi = "mezuniyet-api";
+    public const string MezuniyetOkuKapsami = "mezuniyet.oku";
+    public const string MezuniyetYazKapsami = "mezuniyet.yaz";
+    public const string MezuniyetOtomasyonuClientId = "mezuniyet-otomasyonu";
+    private const string MezuniyetOtomasyonuAdres = "https://localhost:5304";
+    public const string MezuniyetOtomasyonuRedirectUri = MezuniyetOtomasyonuAdres + "/signin-oidc";
+
+    /// <summary>Mezuniyet Otomasyonu'na girebilen roller (en az biri).</summary>
+    public static readonly string[] MezuniyetOtomasyonuIzinliRolleri =
+        [Roller.Ogrenci, Roller.MezuniyetKomisyonu, Roller.BolumSekreteri, Roller.FakulteSekreteri];
+
+    public const string CapYandalApiKaynagi = "cap-yandal-api";
+    public const string CapYandalOkuKapsami = "cap-yandal.oku";
+    public const string CapYandalYazKapsami = "cap-yandal.yaz";
+    public const string CapYandalOtomasyonuClientId = "cap-yandal-otomasyonu";
+    private const string CapYandalOtomasyonuAdres = "https://localhost:5311";
+    public const string CapYandalOtomasyonuRedirectUri = CapYandalOtomasyonuAdres + "/signin-oidc";
+
+    /// <summary>ÇAP-Yandal Otomasyonu'na girebilen roller (en az biri).</summary>
+    public static readonly string[] CapYandalOtomasyonuIzinliRolleri =
+        [Roller.Ogrenci, Roller.CapYandalKoordinatoru, Roller.BolumBaskani, Roller.BolumSekreteri];
 
     public const string TekKapiClientId = "tek-kapi";
     private const string TekKapiAdres = "http://127.0.0.1:4545";
@@ -98,6 +135,7 @@ public static class Istemciler
         tanim.Permissions.Add(Permissions.Prefixes.Scope + StajYazKapsami);
         tanim.Properties[IzinliRollerOzelligi] = JsonSerializer.SerializeToElement(StajOtomasyonuIzinliRolleri);
         tanim.Properties[VurguOzelligi] = JsonSerializer.SerializeToElement("zeytin");
+        tanim.Properties[SimgeOzelligi] = JsonSerializer.SerializeToElement("ST");
         return tanim;
     }
 
@@ -107,6 +145,48 @@ public static class Istemciler
         new() { Name = StajOkuKapsami, DisplayName = "Staj bilgilerini okuma", Resources = { StajApiKaynagi } },
         new() { Name = StajYazKapsami, DisplayName = "Staj başvurusu ve değerlendirmesi yazma", Resources = { StajApiKaynagi } },
     ];
+
+    /// <summary>İntibak Otomasyonu (temsili ekranlar, örnek veri): gizli web istemcisi, intibak.oku/intibak.yaz.</summary>
+    public static OpenIddictApplicationDescriptor IntibakOtomasyonu(string clientSecret) => OtomasyonTanimi(
+        IntibakOtomasyonuClientId, "İntibak Otomasyonu", IntibakOtomasyonuAdres,
+        "Geçiş öğrencilerinin intibak başvurusu, ders eşleştirme, komisyon kararı ve yönetim kurulu evrakı (temsili, örnek veri).",
+        clientSecret, IntibakOkuKapsami, IntibakYazKapsami, IntibakOtomasyonuIzinliRolleri, "eflatun", "İN");
+
+    /// <summary>Mezuniyet Otomasyonu (temsili ekranlar, örnek veri): gizli web istemcisi, mezuniyet.oku/mezuniyet.yaz.</summary>
+    public static OpenIddictApplicationDescriptor MezuniyetOtomasyonu(string clientSecret) => OtomasyonTanimi(
+        MezuniyetOtomasyonuClientId, "Mezuniyet Otomasyonu", MezuniyetOtomasyonuAdres,
+        "Mezuniyet durumu ve başvurusu, ilişik kesme, komisyon kontrolü ve diploma hazırlığı (temsili, örnek veri).",
+        clientSecret, MezuniyetOkuKapsami, MezuniyetYazKapsami, MezuniyetOtomasyonuIzinliRolleri, "bakir", "ME");
+
+    /// <summary>ÇAP-Yandal Otomasyonu (temsili ekranlar, örnek veri): gizli web istemcisi, cap-yandal.oku/cap-yandal.yaz.</summary>
+    public static OpenIddictApplicationDescriptor CapYandalOtomasyonu(string clientSecret) => OtomasyonTanimi(
+        CapYandalOtomasyonuClientId, "ÇAP-Yandal Otomasyonu", CapYandalOtomasyonuAdres,
+        "Çift anadal ve yandal başvurusu, koordinatör sıralaması, bölüm onayı ve programdaki ilerleme (temsili, örnek veri).",
+        clientSecret, CapYandalOkuKapsami, CapYandalYazKapsami, CapYandalOtomasyonuIzinliRolleri, "hardal", "ÇY");
+
+    /// <summary>İntibak, Mezuniyet ve ÇAP-Yandal API'lerinin kapsamları (tüm ortamlarda açılışta oluşturulur).</summary>
+    public static IReadOnlyList<OpenIddictScopeDescriptor> OtomasyonKapsamlari() =>
+    [
+        new() { Name = IntibakOkuKapsami, DisplayName = "İntibak bilgilerini okuma", Resources = { IntibakApiKaynagi } },
+        new() { Name = IntibakYazKapsami, DisplayName = "İntibak başvurusu ve kararı yazma", Resources = { IntibakApiKaynagi } },
+        new() { Name = MezuniyetOkuKapsami, DisplayName = "Mezuniyet bilgilerini okuma", Resources = { MezuniyetApiKaynagi } },
+        new() { Name = MezuniyetYazKapsami, DisplayName = "Mezuniyet başvurusu ve onayı yazma", Resources = { MezuniyetApiKaynagi } },
+        new() { Name = CapYandalOkuKapsami, DisplayName = "ÇAP ve yandal bilgilerini okuma", Resources = { CapYandalApiKaynagi } },
+        new() { Name = CapYandalYazKapsami, DisplayName = "ÇAP ve yandal başvurusu ve onayı yazma", Resources = { CapYandalApiKaynagi } },
+    ];
+
+    /// <summary>Bölüm otomasyonu: gizli web istemcisi, oku/yaz kapsamları, izinli roller, vurgu rengi ve simge.</summary>
+    private static OpenIddictApplicationDescriptor OtomasyonTanimi(string clientId, string ad, string adres, string aciklama,
+        string clientSecret, string okuKapsami, string yazKapsami, string[] izinliRoller, string vurgu, string simge)
+    {
+        var tanim = Tanim(clientId, ad, adres, aciklama, clientSecret);
+        tanim.Permissions.Add(Permissions.Prefixes.Scope + okuKapsami);
+        tanim.Permissions.Add(Permissions.Prefixes.Scope + yazKapsami);
+        tanim.Properties[IzinliRollerOzelligi] = JsonSerializer.SerializeToElement(izinliRoller);
+        tanim.Properties[VurguOzelligi] = JsonSerializer.SerializeToElement(vurgu);
+        tanim.Properties[SimgeOzelligi] = JsonSerializer.SerializeToElement(simge);
+        return tanim;
+    }
 
     public static OpenIddictApplicationDescriptor DemoYemekhane(string clientSecret) => Tanim(
         DemoYemekhaneClientId, "Demo Yemekhane", DemoYemekhaneAdres,

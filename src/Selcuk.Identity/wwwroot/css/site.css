@@ -51,10 +51,40 @@
     background: #E7EEDE;
 }
 
+.uygulama-simge-eflatun {
+    color: #6B4C8A;
+    background: #EFE9F5;
+}
+
+.uygulama-simge-bakir {
+    color: #8A4B1F;
+    background: #F6EBE2;
+}
+
+.uygulama-simge-hardal {
+    color: #735A00;
+    background: #F5EED6;
+}
+
 @media (prefers-color-scheme: dark) {
     .uygulama-simge-zeytin {
         color: #A9C98B;
         background: #22331C;
+    }
+
+    .uygulama-simge-eflatun {
+        color: #C9B3E3;
+        background: #2B2238;
+    }
+
+    .uygulama-simge-bakir {
+        color: #E8B48E;
+        background: #3A2618;
+    }
+
+    .uygulama-simge-hardal {
+        color: #D9C068;
+        background: #332B10;
     }
 }
 

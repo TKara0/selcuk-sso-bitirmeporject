@@ -1,0 +1,17 @@
+/*
+ * ÇAP-Yandal Otomasyonu: yalnızca uygulamanın vurgu rengi (koyu hardal). Yerleşim ortak otomasyon şablonunda
+ * (_content/Selcuk.Otomasyon.Ortak/css/otomasyon.css), token'lar selcuk.css'te. Kontrast (WCAG 2.1, metin):
+ * #735A00 beyaz zeminde 6,58:1, taş (#EDF0EF) zeminde 5,74:1, açık hardal (#F5EED6) zeminde 5,67:1;
+ * koyu temada #D9C068 yüzey (#15273A) zemininde 8,45:1, koyu açık hardal (#332B10) zemininde 7,83:1.
+ */
+:root {
+    --uygulama-vurgu: #735A00;
+    --uygulama-vurgu-acik: #F5EED6;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --uygulama-vurgu: #D9C068;
+        --uygulama-vurgu-acik: #332B10;
+    }
+}

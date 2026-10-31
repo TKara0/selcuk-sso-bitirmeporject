@@ -1,0 +1,18 @@
+@page
+@model Selcuk.Otomasyon.Intibak.Pages.Komisyon.BekleyenBasvurularModel
+@{
+    ViewData["Title"] = "Bekleyen başvurular";
+    Func<IntibakBasvurusu, object> gelis = @<text>@IntibakOtomasyonu.GelisTuruAdi(item.GelisTuru)<br /><span class="ipucu">@item.OncekiUniversite</span></text>;
+    Func<IntibakBasvurusu, object> ogrenci = @<text>@item.OgrenciAdi <span class="mono ipucu">@item.OgrenciNo</span></text>;
+    Func<IntibakBasvurusu, object> islem = @<text><a href="/Komisyon/DersEslestirme?id=@item.Id">Ders eşleştir<span class="gorunmez">: @item.OgrenciAdi</span></a></text>;
+    var tablo = KayitTablosu.Olustur("Komisyon incelemesindeki başvurular", Model.Bekleyenler, b => b.Id, "intibak",
+        new KayitSutunu<IntibakBasvurusu>("Öğrenci", ogrenci),
+        new KayitSutunu<IntibakBasvurusu>("Geliş ve önceki kurum", gelis),
+        new KayitSutunu<IntibakBasvurusu>("Başvuru tarihi", b => IntibakOtomasyonu.Tarih(b.BasvuruTarihi)),
+        new KayitSutunu<IntibakBasvurusu>("Durum", b => IntibakOtomasyonu.Rozet(b.Durum)),
+        new KayitSutunu<IntibakBasvurusu>("İşlem", islem));
+}
+<h1>Bekleyen başvurular</h1>
+<p class="giris-metni">Bölümündeki, komisyon incelemesindeki veya bölüm başkanınca geri gönderilmiş intibak başvuruları.</p>
+
+<partial name="_KayitTablosu" model="tablo" />

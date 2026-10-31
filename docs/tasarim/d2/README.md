@@ -185,3 +185,55 @@ hatası yok (yalnızca kasıtlı açılan 403 ve 429 sayfalarının durum kodu i
 tipi demolarda ve Tek Kapı'da yerelden yüklendi; Token İnceleme'de açıklaması olmayan claim yok; görüntülerde şifre,
 TOTP veya kurtarma kodu, anahtar, token ya da gerçek kişisel bilgi yok (her çekimden önce o çalıştırmanın sırları
 sayfada arandı; QR, anahtar ve kurtarma kodları örnek değerli).
+
+## Bölüm otomasyonları: İntibak, Mezuniyet, ÇAP-Yandal
+
+Ortak otomasyon şablonuyla (`_OtomasyonDuzen`, `otomasyon.css`) ve şablonun yeni ortak parçalarıyla (durum rozeti,
+başvuru aşamaları, sayı kartları, kayıt tablosu). İstenen vurgu renkleri ölçüldü; hepsi 4,5:1'in üstünde olduğu için
+değiştirilmedi. Açık vurgu zeminleri ve koyu tema karşılıkları Staj'daki gibi seçildi (aynı ton ailesi; koyu temada açık
+ton ve koyu zemin).
+
+| Uygulama | `--uygulama-vurgu` açık / koyu | `--uygulama-vurgu-acik` açık / koyu | Uygulamalarım simgesi |
+|---|---|---|---|
+| İntibak (eflatun) | #6B4C8A / #C9B3E3 | #EFE9F5 / #2B2238 | İN |
+| Mezuniyet (bakır) | #8A4B1F / #E8B48E | #F6EBE2 / #3A2618 | ME |
+| ÇAP-Yandal (koyu hardal) | #735A00 / #D9C068 | #F5EED6 / #332B10 | ÇY |
+
+| Metin / öğe | Zemin | Kullanım | İntibak açık / koyu | Mezuniyet açık / koyu | ÇAP-Yandal açık / koyu | Eşik | Sonuç |
+|---|---|---|---|---|---|---|---|
+| `--uygulama-vurgu` | `--tas` | Bağlantı, sayfa zemininde | 6.05 / 9.16 | 5.89 / 9.42 | 5.74 / 9.70 | 4.5:1 | ✓ |
+| `--uygulama-vurgu` | `--yuzey` | Menü, tablo, ikincil düğme metni | 6.94 / 7.98 | 6.76 / 8.21 | 6.58 / 8.45 | 4.5:1 | ✓ |
+| `--uygulama-vurgu` | `--uygulama-vurgu-acik` | Olumlu rozet, şu anki aşamanın durumu, uygulama simgesi | 5.83 / 7.95 | 5.76 / 7.72 | 5.67 / 7.83 | 4.5:1 | ✓ |
+| `--murekkep` | `--uygulama-vurgu-acik` | Temsili işlem bandı, şu anki aşamanın adı | 12.94 / 12.86 | 13.12 / 12.14 | 13.26 / 11.95 | 4.5:1 | ✓ |
+| `--soluk` | `--uygulama-vurgu-acik` | İkincil metin vurgu zemininde | 5.82 / 7.55 | 5.91 / 7.13 | 5.97 / 7.02 | 4.5:1 | ✓ |
+| `--yuzey` | `--uygulama-vurgu` | Uygulama düğmesi metni ("Onayla", "Başvur") | 6.94 / 7.98 | 6.76 / 8.21 | 6.58 / 8.45 | 4.5:1 | ✓ |
+
+Ekran görüntüleri `node --use-system-ca scripts/ekran-goruntuleri.mjs --sadece intibak,mezuniyet,cap` ile üretildi
+(diğer gruplarınkiler değişmedi). Öğrenci ekranları 203011002, komisyon ekranları komisyon.test, koordinatör ekranları
+koordinator.test ile.
+
+| Uygulama | Ekran | Dosya önü | Mobil |
+|---|---|---|---|
+| İntibak | Ana sayfa (öğrenci kısayolları) | `intibak-ana` | ✓ |
+| İntibak | Başvurum (durum rozeti ve aşamalar) | `intibak-basvurum` | ✓ |
+| İntibak | İntibak başvurusu (transkript alanı) | `intibak-basvuru` | ✓ |
+| İntibak | Bekleyen başvurular (komisyon) | `intibak-bekleyen-basvurular` | ✓ |
+| İntibak | Ders eşleştirme (komisyon) | `intibak-ders-eslestirme` | ✓ |
+| Mezuniyet | Mezuniyet durumum (sayı kartları, eksikler) | `mezuniyet-durumum` | ✓ |
+| Mezuniyet | Mezuniyet başvurusu (aşamalar ve form) | `mezuniyet-basvuru` | ✓ |
+| Mezuniyet | İlişik kesme | `mezuniyet-ilisik-kesme` | ✓ |
+| Mezuniyet | Mezuniyet adayları (komisyon) | `mezuniyet-adaylar` | ✓ |
+| Mezuniyet | Temsili işlem mesajı | `mezuniyet-temsili-islem` | — |
+| ÇAP-Yandal | Başvurularım | `cap-basvurularim` | ✓ |
+| ÇAP-Yandal | Başvuru (şart göstergesi) | `cap-basvuru` | ✓ |
+| ÇAP-Yandal | Erişim reddedildi (öğrenci, koordinatör ekranı) | `cap-erisim-reddedildi` | ✓ |
+| ÇAP-Yandal | Gelen başvurular (koordinatör, kontenjan) | `cap-gelen-basvurular` | ✓ |
+| ÇAP-Yandal | Öğrenci takibi (koordinatör, GNO uyarısı) | `cap-ogrenci-takibi` | ✓ |
+
+Tez görselleri: `15-intibak-basvurum`, `16-intibak-ders-eslestirme`, `17-mezuniyet-durumum`, `18-mezuniyet-adaylar`,
+`19-cap-basvurularim`, `20-cap-gelen-basvurular`.
+
+Gözden geçirmede bulunup düzeltilenler: kayıt tablosunun son sütunundaki görünmez metinler (`.gorunmez`, mutlak
+konumlu) kaydırma alanından taşıp dar ekranda sayfayı yatay genişletiyordu; kaydırma alanına `position: relative`
+verildi. Ders eşleştirmede önceki dersler ve müfredat iki sütuna sığmıyor, eşleştirme tablosu kırpılıyordu; önceki ders
+ile eşdeğer ders aynı satırda kaldı, müfredat altta tam genişlikte gösterilir. Geniş tablolarda sütunlar birleştirildi (Mezuniyet adaylarında eksik ders, staj ve GNO şartı tek "Kontrol sonucu" hücresinde, durum öğrenci hücresinde; İntibak listelerinde geliş türü ve önceki kurum tek hücrede; ÇAP-Yandal gelen başvurularında anadal sütunu kaldırıldı): işlem düğmeleri 1280px'te kaydırmadan görünür. "Bekliyor" rozeti taş zeminde seçilsin diye ince çerçeve aldı; tablodaki öğrenci numaraları kırılmaz.

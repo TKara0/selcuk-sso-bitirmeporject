@@ -1,0 +1,105 @@
+@page
+@model Selcuk.Otomasyon.Intibak.Pages.Komisyon.DersEslestirmeModel
+@{
+    ViewData["Title"] = "Ders eşleştirme";
+    var secili = Model.Secili;
+    var mufredat = KayitTablosu.Olustur("Bölüm müfredatı", Model.Mufredat, null, null,
+        new KayitSutunu<MufredatDersi>("Kod", m => m.Kod),
+        new KayitSutunu<MufredatDersi>("Ders", m => m.Ad),
+        new KayitSutunu<MufredatDersi>("AKTS", m => m.Akts, Sayi: true),
+        new KayitSutunu<MufredatDersi>("Yarıyıl", m => m.Yariyil, Sayi: true));
+}
+<h1>Ders eşleştirme</h1>
+<p class="giris-metni">
+    Önceki kurumda alınan dersleri bölüm müfredatıyla eşleştir ve her ders için muafiyete karar ver. Kaydet temsilidir;
+    karar kaydedilmez.
+</p>
+<p class="sart-notu" data-sart="muafiyet">
+    Muafiyet için en düşük harf notu: <strong>@Model.Sartlar.MuafiyetIcinEnDusukNot</strong>; bir başvuruda en fazla
+    <strong>@Model.Sartlar.EnFazlaMuafAkts AKTS</strong> muaf sayılır. Şart değerleri örnektir.
+</p>
+
+@if (Model.Bulunamadi)
+{
+    <div class="bant bant-hata" role="alert">
+        @Html.Raw(Simge.Uyari)
+        <p>Bu başvuru bölümünün eşleştirme bekleyen başvuruları arasında yok.</p>
+    </div>
+}
+
+@if (Model.Bekleyenler.Count == 0)
+{
+    <p>Eşleştirme bekleyen başvuru yok.</p>
+}
+else
+{
+    <form method="get" class="kayit-secimi">
+        <label for="id">Başvuru</label>
+        <select id="id" name="id" class="metin-alani">
+            @foreach (var b in Model.Bekleyenler)
+            {
+                <option value="@b.Id" selected="@(b.Id == secili?.Id)">@b.OgrenciAdi (@b.OgrenciNo), @IntibakOtomasyonu.GelisTuruAdi(b.GelisTuru)</option>
+            }
+        </select>
+        <button type="submit" class="dugme dugme-ikincil">Göster</button>
+    </form>
+}
+
+@if (secili is not null)
+{
+    <section data-intibak="@secili.Id" aria-labelledby="onceki-dersler">
+        <h2 id="onceki-dersler">@secili.OgrenciAdi: önceki dersler</h2>
+        <p class="ipucu">@secili.OncekiUniversite, @secili.OncekiBolum. <partial name="_DurumRozeti" model="IntibakOtomasyonu.Rozet(secili.Durum)" /></p>
+        <form method="post">
+            <input type="hidden" name="id" value="@secili.Id" />
+            <div class="tablo-kabi kayit-tablosu" role="region" aria-labelledby="onceki-dersler" tabindex="0">
+                <table class="tablo eslestirme">
+                    <caption class="gorunmez">Önceki dersler ve eşleştirme</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Önceki ders</th>
+                            <th scope="col" class="sayi">AKTS</th>
+                            <th scope="col">Not</th>
+                            <th scope="col">Eşdeğer ders</th>
+                            <th scope="col">Karar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (var i = 0; i < secili.Dersler.Count; i++)
+                        {
+                            var ders = secili.Dersler[i];
+                            var kod = Model.EsdegerOnerisi(ders);
+                            var muaf = Model.MuafiyetOnerisi(ders);
+                            <tr>
+                                <th scope="row">@ders.OncekiDersAdi</th>
+                                <td class="sayi">@ders.OncekiAkts</td>
+                                <td>@ders.OncekiNot</td>
+                                <td>
+                                    <label class="gorunmez" for="esdeger-@i">Eşdeğer ders: @ders.OncekiDersAdi</label>
+                                    <select id="esdeger-@i" name="esdeger[@i]" class="metin-alani">
+                                        <option value="" selected="@(kod is null)">Karşılığı yok</option>
+                                        @foreach (var m in Model.Mufredat)
+                                        {
+                                            <option value="@m.Kod" selected="@(m.Kod == kod)">@m.Kod @m.Ad (@m.Akts AKTS)</option>
+                                        }
+                                    </select>
+                                </td>
+                                <td>
+                                    <label class="gorunmez" for="karar-@i">Karar: @ders.OncekiDersAdi</label>
+                                    <select id="karar-@i" name="karar[@i]" class="metin-alani">
+                                        <option value="muaf" selected="@muaf">Muaf</option>
+                                        <option value="muaf-degil" selected="@(!muaf)">Muaf değil</option>
+                                    </select>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="dugmeler">
+                <button type="submit" class="dugme dugme-uygulama">Kararı kaydet</button>
+            </div>
+        </form>
+    </section>
+    <partial name="_KayitTablosu" model="mufredat" />
+}

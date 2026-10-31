@@ -1,0 +1,38 @@
+@page
+@model Selcuk.Otomasyon.Intibak.Pages.Ogrenci.BasvuruModel
+@{
+    ViewData["Title"] = "İntibak başvurusu";
+}
+<h1>İntibak başvurusu</h1>
+<p class="giris-metni">
+    Başvurun intibak komisyonunun incelemesine gider. Bu ekran temsilidir; başvuru ve transkript kaydedilmez.
+</p>
+
+<form method="post" enctype="multipart/form-data" class="form basvuru-formu">
+    <div class="alan">
+        <label for="gelis">Geliş türü</label>
+        <select id="gelis" name="gelisTuru" class="metin-alani" required>
+            @foreach (var tur in Enum.GetValues<GelisTuru>())
+            {
+                <option value="@tur">@IntibakOtomasyonu.GelisTuruAdi(tur)</option>
+            }
+        </select>
+    </div>
+    <div class="alan">
+        <label for="universite">Önceki üniversite</label>
+        <input id="universite" name="oncekiUniversite" class="metin-alani" required maxlength="150" />
+    </div>
+    <div class="alan">
+        <label for="bolum">Önceki bölüm veya program</label>
+        <input id="bolum" name="oncekiBolum" class="metin-alani" required maxlength="150" />
+    </div>
+    <div class="alan">
+        <label for="transkript">Transkript (PDF)</label>
+        <input id="transkript" name="transkript" type="file" accept=".pdf,application/pdf" class="metin-alani"
+               aria-describedby="transkript-ipucu" />
+        <p class="ipucu" id="transkript-ipucu">Temsili alan: seçilen dosya sunucuya kaydedilmez.</p>
+    </div>
+    <div class="dugmeler">
+        <button type="submit" class="dugme dugme-uygulama">Başvur</button>
+    </div>
+</form>

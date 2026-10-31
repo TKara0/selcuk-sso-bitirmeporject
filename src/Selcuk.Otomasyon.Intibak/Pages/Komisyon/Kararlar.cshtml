@@ -1,0 +1,17 @@
+@page
+@model Selcuk.Otomasyon.Intibak.Pages.Komisyon.KararlarModel
+@{
+    ViewData["Title"] = "Komisyon kararları";
+    Func<IntibakBasvurusu, object> ogrenci = @<text>@item.OgrenciAdi <span class="mono ipucu">@item.OgrenciNo</span></text>;
+    var tablo = KayitTablosu.Olustur("Komisyonun karar verdiği başvurular", Model.Kararlar, b => b.Id, "intibak",
+        new KayitSutunu<IntibakBasvurusu>("Öğrenci", ogrenci),
+        new KayitSutunu<IntibakBasvurusu>("Geliş türü", b => IntibakOtomasyonu.GelisTuruAdi(b.GelisTuru)),
+        new KayitSutunu<IntibakBasvurusu>("Muaf ders", b => $"{b.Dersler.Count(d => d.Muaf == true)} / {b.Dersler.Count}", Sayi: true),
+        new KayitSutunu<IntibakBasvurusu>("Muaf AKTS", b => IntibakOtomasyonu.MuafAkts(b), Sayi: true),
+        new KayitSutunu<IntibakBasvurusu>("Karar tarihi", b => IntibakOtomasyonu.Tarih(b.KararTarihi)),
+        new KayitSutunu<IntibakBasvurusu>("Durum", b => IntibakOtomasyonu.Rozet(b.Durum)));
+}
+<h1>Komisyon kararları</h1>
+<p class="giris-metni">Bölümünde komisyonun karar verdiği intibak başvuruları ve şu anki aşamaları.</p>
+
+<partial name="_KayitTablosu" model="tablo" />

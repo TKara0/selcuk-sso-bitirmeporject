@@ -1,0 +1,24 @@
+@page
+@model Selcuk.Otomasyon.CapYandal.Pages.Baskan.BasvuruOnayiModel
+@{
+    ViewData["Title"] = "Başvuru onayı";
+    Func<CapBasvurusu, object> ogrenci = @<text>@item.OgrenciAdi <span class="mono ipucu">@item.OgrenciNo</span></text>;
+    Func<CapBasvurusu, object> islem = @<form method="post" class="satir-islemleri">
+        <input type="hidden" name="id" value="@item.Id" />
+        <button type="submit" class="dugme dugme-uygulama">Onayla<span class="gorunmez">: @item.OgrenciAdi</span></button>
+    </form>;
+    var tablo = KayitTablosu.Olustur("Koordinatörün sıraladığı başvurular", Model.Basvurular, b => b.Id, "cap",
+        new KayitSutunu<CapBasvurusu>("Öğrenci", ogrenci),
+        new KayitSutunu<CapBasvurusu>("Program", b => b.ProgramAdi),
+        new KayitSutunu<CapBasvurusu>("Anadal", b => b.OgrenciBolumu),
+        new KayitSutunu<CapBasvurusu>("GNO", b => CapYandalOtomasyonu.Gno(b.Gno), Sayi: true),
+        new KayitSutunu<CapBasvurusu>("Başarı sırası", b => $"{b.BasariSirasi} / {b.SinifMevcudu}", Sayi: true),
+        new KayitSutunu<CapBasvurusu>("İşlem", islem));
+}
+<h1>Başvuru onayı</h1>
+<p class="giris-metni">
+    ÇAP-Yandal koordinatörünün değerlendirip sıraladığı başvurular (program ve GNO sırasıyla). Onaylanan öğrenci kesin
+    kayda çağrılır. Onayla temsilidir; karar kaydedilmez.
+</p>
+
+<partial name="_KayitTablosu" model="tablo" />

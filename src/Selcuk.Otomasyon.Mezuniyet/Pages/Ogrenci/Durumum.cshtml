@@ -1,0 +1,68 @@
+@page
+@model Selcuk.Otomasyon.Mezuniyet.Pages.Ogrenci.DurumumModel
+@{
+    ViewData["Title"] = "Mezuniyet durumum";
+    var aday = Model.Aday;
+    var sartlar = Model.Sartlar;
+}
+<h1>Mezuniyet durumum</h1>
+<p class="giris-metni">Mezuniyet şartlarına göre durumun: toplam AKTS, genel not ortalaması, zorunlu dersler ve staj.</p>
+
+@if (aday is null)
+{
+    <p>Mezuniyet kaydın bulunamadı. Bölüm sekreterliğine başvur.</p>
+}
+else
+{
+    var kontrol = MezuniyetKontrolu.Yap(aday, sartlar);
+    IReadOnlyList<SayiKarti> kartlar =
+    [
+        new("Toplam AKTS / gereken", $"{aday.ToplamAkts} / {sartlar.GerekenAkts}", "akts"),
+        new("Genel not ortalaması", MezuniyetOtomasyonu.Gno(aday.Gno), "gno"),
+        new("Zorunlu dersler", $"{aday.ZorunluDersler.Count(d => d.Tamamlandi)} / {aday.ZorunluDersler.Count}", "zorunlu"),
+    ];
+    <section data-mezuniyet="@aday.Id">
+        <partial name="_SayiKartlari" model="kartlar" />
+        <p class="sart-notu" data-sart="mezuniyet">
+            Gereken toplam AKTS: <strong>@sartlar.GerekenAkts</strong>; GNO alt sınırı:
+            <strong>@MezuniyetOtomasyonu.Gno(sartlar.GnoAltSiniri)</strong>. Şart değerleri örnektir.
+        </p>
+        <dl class="tanimlar">
+            <div>
+                <dt>AKTS şartı</dt>
+                <dd data-kontrol="akts"><partial name="_DurumRozeti" model="MezuniyetOtomasyonu.SartRozeti(kontrol.AktsTamam)" /></dd>
+            </div>
+            <div>
+                <dt>GNO şartı</dt>
+                <dd data-kontrol="gno"><partial name="_DurumRozeti" model="MezuniyetOtomasyonu.SartRozeti(kontrol.GnoTamam)" /></dd>
+            </div>
+            <div>
+                <dt>Staj durumu</dt>
+                <dd><partial name="_DurumRozeti" model="MezuniyetOtomasyonu.StajRozeti(aday.Staj)" /></dd>
+            </div>
+            <div>
+                <dt>Mezuniyet dönemi</dt>
+                <dd>@aday.Donem</dd>
+            </div>
+        </dl>
+
+        <h2>Eksikler</h2>
+        @if (kontrol.Uygun)
+        {
+            <p data-eksik-yok>Eksiğin yok; mezuniyet şartlarını karşılıyorsun.</p>
+        }
+        else
+        {
+            <ul class="eksikler">
+                @foreach (var eksik in kontrol.Eksikler)
+                {
+                    <li>@eksik</li>
+                }
+            </ul>
+        }
+
+        <partial name="_KayitTablosu" model="@(KayitTablosu.Olustur("Zorunlu dersler", aday.ZorunluDersler, null, null,
+            new KayitSutunu<ZorunluDers>("Ders", d => $"{d.Kod} {d.Ad}"),
+            new KayitSutunu<ZorunluDers>("Durum", d => MezuniyetOtomasyonu.SartRozeti(d.Tamamlandi, "Tamamlandı", "Tamamlanmadı"))))" />
+    </section>
+}

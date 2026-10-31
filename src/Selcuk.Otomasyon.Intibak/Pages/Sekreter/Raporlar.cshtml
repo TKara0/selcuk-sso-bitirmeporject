@@ -1,0 +1,31 @@
+@page
+@model Selcuk.Otomasyon.Intibak.Pages.Sekreter.RaporlarModel
+@{
+    ViewData["Title"] = "İntibak raporları";
+    Func<IntibakBasvurusu, object> gelis = @<text>@IntibakOtomasyonu.GelisTuruAdi(item.GelisTuru)<br /><span class="ipucu">@item.OncekiUniversite</span></text>;
+    Func<IntibakBasvurusu, object> ogrenci = @<text>@item.OgrenciAdi <span class="mono ipucu">@item.OgrenciNo</span></text>;
+    var tablo = KayitTablosu.Olustur("Karar listesi", Model.Kararlar, b => b.Id, "intibak",
+        new KayitSutunu<IntibakBasvurusu>("Öğrenci", ogrenci),
+        new KayitSutunu<IntibakBasvurusu>("Geliş ve önceki kurum", gelis),
+        new KayitSutunu<IntibakBasvurusu>("Muaf AKTS", b => IntibakOtomasyonu.MuafAkts(b), Sayi: true),
+        new KayitSutunu<IntibakBasvurusu>("Karar tarihi", b => IntibakOtomasyonu.Tarih(b.KararTarihi)),
+        new KayitSutunu<IntibakBasvurusu>("Durum", b => IntibakOtomasyonu.Rozet(b.Durum)));
+    IReadOnlyList<SayiKarti> kartlar =
+    [
+        new("Toplam karar", Model.Kararlar.Count, "toplam"),
+        new("Sonuçlanan", Model.Kararlar.Count(b => b.Durum == IntibakDurumu.Sonuclandi), "sonuclanan"),
+        new("Yönetim kurulunda", Model.Kararlar.Count(b => b.Durum == IntibakDurumu.YonetimKurulunda), "yonetim-kurulu"),
+        new("Reddedilen", Model.Kararlar.Count(b => b.Durum == IntibakDurumu.Reddedildi), "reddedilen"),
+    ];
+}
+<h1>İntibak raporları</h1>
+<p class="giris-metni">Bölümündeki intibak kararları: yönetim kurulunda bekleyenler, sonuçlananlar ve reddedilenler.</p>
+
+<partial name="_SayiKartlari" model="kartlar" />
+
+<form method="post" class="dugmeler">
+    <button type="submit" class="dugme dugme-ikincil">Yazdır</button>
+    <p class="ipucu">Temsili: rapor yazdırılmaz, yalnızca işlem mesajı gösterilir.</p>
+</form>
+
+<partial name="_KayitTablosu" model="tablo" />

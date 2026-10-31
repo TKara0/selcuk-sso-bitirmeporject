@@ -1,0 +1,37 @@
+@page
+@model Selcuk.Otomasyon.Intibak.Pages.Ogrenci.BasvurumModel
+@{
+    ViewData["Title"] = "Başvurum";
+}
+<h1>Başvurum</h1>
+<p class="giris-metni">İntibak başvurularının durumu ve hangi aşamada olduğu.</p>
+
+@if (Model.Basvurular.Count == 0)
+{
+    <p>Henüz intibak başvurun yok. <a href="/Ogrenci/Basvuru">İntibak başvurusu</a> yapabilirsin.</p>
+}
+@foreach (var basvuru in Model.Basvurular)
+{
+    <section class="basvuru" data-intibak="@basvuru.Id" aria-labelledby="basvuru-@basvuru.Id">
+        <h2 id="basvuru-@basvuru.Id">@IntibakOtomasyonu.GelisTuruAdi(basvuru.GelisTuru), @IntibakOtomasyonu.Tarih(basvuru.BasvuruTarihi)</h2>
+        <p>Durum: <partial name="_DurumRozeti" model="IntibakOtomasyonu.Rozet(basvuru.Durum)" /></p>
+        <partial name="_BasvuruAdimlari" model="IntibakOtomasyonu.Adimlar(basvuru.Durum)" />
+        <dl class="tanimlar">
+            <div>
+                <dt>Önceki kurum</dt>
+                <dd>@basvuru.OncekiUniversite, @basvuru.OncekiBolum</dd>
+            </div>
+            <div>
+                <dt>Değerlendirilecek ders</dt>
+                <dd>@basvuru.Dersler.Count</dd>
+            </div>
+            @if (basvuru.KomisyonNotu is not null)
+            {
+                <div>
+                    <dt>Not</dt>
+                    <dd>@basvuru.KomisyonNotu</dd>
+                </div>
+            }
+        </dl>
+    </section>
+}

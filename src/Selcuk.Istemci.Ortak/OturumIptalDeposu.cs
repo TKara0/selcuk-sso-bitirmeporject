@@ -13,11 +13,14 @@ namespace Selcuk.Istemci.Ortak;
 /// <see cref="IDistributedCache"/> üzerinde, süreli olarak tutar. Varsayılan önbellek bellek içidir; aynı uygulamanın
 /// birden çok örneği çalışıyorsa Redis veya SQL Server dağıtık önbelleği kaydedilir (README).
 /// Kayıtlar en az çerez süresi kadar saklanır: iptal edilen bir oturumun çerezi bu süreden önce geçerliliğini yitirmez.
+/// İptalden sonra kayıtlı <see cref="IOturumIptalDinleyicisi"/>'ler çağrılır (ör. sunucu tarafındaki oturum biletini
+/// hemen silmek için).
 /// </summary>
 public sealed class OturumIptalDeposu(
     IDistributedCache cache,
     TimeProvider zaman,
-    IOptionsMonitor<CookieAuthenticationOptions> cerezAyarlari)
+    IOptionsMonitor<CookieAuthenticationOptions> cerezAyarlari,
+    IEnumerable<IOturumIptalDinleyicisi> dinleyiciler)
 {
     private static readonly byte[] Isaret = [1];
 
@@ -48,15 +51,25 @@ public sealed class OturumIptalDeposu(
         }
     }
 
-    public Task SidIptalEtAsync(string sid, CancellationToken cancellationToken = default) =>
-        cache.SetAsync("bcl:sid:" + sid, Isaret, SureliKayit(Saklama), cancellationToken);
+    public async Task SidIptalEtAsync(string sid, CancellationToken cancellationToken = default)
+    {
+        await cache.SetAsync("bcl:sid:" + sid, Isaret, SureliKayit(Saklama), cancellationToken);
+        foreach (var dinleyici in dinleyiciler)
+        {
+            await dinleyici.SidIptalEdildiAsync(sid, cancellationToken);
+        }
+    }
 
     /// <summary>sid'siz logout_token: kullanıcının bu ana kadar açılmış tüm oturumları geçersiz.</summary>
-    public Task SubIptalEtAsync(string sub, CancellationToken cancellationToken = default)
+    public async Task SubIptalEtAsync(string sub, CancellationToken cancellationToken = default)
     {
         var deger = new byte[sizeof(long)];
         BinaryPrimitives.WriteInt64BigEndian(deger, zaman.GetUtcNow().UtcTicks);
-        return cache.SetAsync("bcl:sub:" + sub, deger, SureliKayit(Saklama), cancellationToken);
+        await cache.SetAsync("bcl:sub:" + sub, deger, SureliKayit(Saklama), cancellationToken);
+        foreach (var dinleyici in dinleyiciler)
+        {
+            await dinleyici.SubIptalEdildiAsync(sub, cancellationToken);
+        }
     }
 
     public async Task<bool> IptalEdildiMiAsync(ClaimsPrincipal principal, DateTimeOffset? oturumBaslangici,

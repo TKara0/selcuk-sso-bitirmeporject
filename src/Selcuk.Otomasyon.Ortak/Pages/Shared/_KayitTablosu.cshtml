@@ -1,0 +1,72 @@
+@*
+    Kayıt tablosu: başlık, kayıt yoksa "Kayıt yok.", varsa tablo. Dar ekranda tablo yatay kaydırılır; kaydırma alanı
+    klavyeyle odaklanabilir (tabindex) ve başlığıyla adlandırılır. Model: KayitTablosu.
+*@
+@model KayitTablosu
+@{
+    var kimlik = Model.BaslikKimligi;
+}
+@if (Model.BaslikDuzeyi == 3)
+{
+    <h3 id="@kimlik">@Model.Baslik</h3>
+}
+else
+{
+    <h2 id="@kimlik">@Model.Baslik</h2>
+}
+@if (Model.Satirlar.Count == 0)
+{
+    <p class="bos-durum">@Model.BosMetin</p>
+}
+else
+{
+    <div class="tablo-kabi kayit-tablosu" role="region" aria-labelledby="@kimlik" tabindex="0">
+        <table class="tablo">
+            <caption class="gorunmez">@Model.Baslik</caption>
+            <thead>
+                <tr>
+                    @foreach (var sutun in Model.Sutunlar)
+                    {
+                        <th scope="col" class="@(sutun.Sayi ? "sayi" : null)">@sutun.Baslik</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var satir in Model.Satirlar)
+                {
+                    @Html.Raw(Model.VeriAdi is null || satir.Kimlik is null
+                        ? "<tr>"
+                        : $"<tr data-{Model.VeriAdi}=\"{System.Text.Encodings.Web.HtmlEncoder.Default.Encode(satir.Kimlik)}\">")
+                    @for (var i = 0; i < satir.Hucreler.Count; i++)
+                    {
+                        var hucre = satir.Hucreler[i];
+                        var sayi = Model.Sutunlar[i].Sayi ? "sayi" : null;
+                        if (i == 0)
+                        {
+                            <th scope="row" class="@sayi">@{ await Hucre(hucre); }</th>
+                        }
+                        else
+                        {
+                            <td class="@sayi">@{ await Hucre(hucre); }</td>
+                        }
+                    }
+                    @Html.Raw("</tr>")
+                }
+            </tbody>
+        </table>
+    </div>
+}
+@functions {
+    // Write: metin kodlanarak, IHtmlContent olduğu gibi yazılır.
+    private async Task Hucre(object? hucre)
+    {
+        if (hucre is DurumRozeti rozet)
+        {
+            await Html.RenderPartialAsync("_DurumRozeti", rozet);
+        }
+        else
+        {
+            Write(hucre ?? "—");
+        }
+    }
+}

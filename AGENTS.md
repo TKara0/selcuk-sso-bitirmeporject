@@ -47,7 +47,14 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
     `izinliKullaniciAdlari`, `vurgu`) OpenIddict `Properties` alanında. `staj-otomasyonu` (gizli, Development'ta
     kaydedilir, secret user-secrets): `izinliRoller` ogrenci, staj_komisyonu, bolum_sekreteri, bolum_baskani; `vurgu`
     "zeytin" (Uygulamalarım simgesi, `IndexModel.VurguRenkleri` + site.css); `staj.oku`/`staj.yaz` kapsamları
-    (`aud` `staj-api`, her ortamda açılışta oluşturulur; API henüz yok). Adres kuralı: https veya yalnızca `http://127.0.0.1`
+    (`aud` `staj-api`, her ortamda açılışta oluşturulur; API henüz yok). `intibak-otomasyonu` (5301),
+    `mezuniyet-otomasyonu` (5304), `cap-yandal-otomasyonu` (5311): aynı biçimde (`Istemciler.OtomasyonTanimi`),
+    `izinliRoller` sırasıyla ogrenci/intibak_komisyonu/bolum_baskani/bolum_sekreteri/fakulte_sekreteri,
+    ogrenci/mezuniyet_komisyonu/bolum_sekreteri/fakulte_sekreteri, ogrenci/cap_yandal_koordinatoru/bolum_baskani/
+    bolum_sekreteri; `vurgu` eflatun/bakir/hardal; kapsamlar `<ad>.oku`/`<ad>.yaz`, `aud` `<ad>-api`
+    (`Istemciler.OtomasyonKapsamlari`; `cap-yandal.*`). `simge` özelliği (iki harf; Staj "ST", İntibak "İN", Mezuniyet
+    "ME", ÇAP-Yandal "ÇY"): Uygulamalarım kartı bunu gösterir (`IndexModel.GecerliSimge`), yoksa veya geçersizse addan
+    üretir (`BasHarfler`). Adres kuralı: https veya yalnızca `http://127.0.0.1`
     (kayıtta `Istemciler.AdresleriDogrula`; authorize `redirect_uri` ve end-session `post_logout_redirect_uri` için
     OpenIddict doğrulama işleyicisi, `Program.cs`). Back-Channel Logout da yalnızca https veya `http://127.0.0.1`'e
     gönderilir.
@@ -141,7 +148,8 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
 - `src/Selcuk.Istemci.Ortak`: alt uygulamaların ortak kütüphanesi. `AddSelcukSSO(configuration)` (Cookie + OIDC,
   code + PKCE, `response_mode=query`, SaveTokens, userinfo, claim eşlemeleri, `DefaultForbidScheme` = cookie),
   `UseSelcukGuvenlikBasliklari()`, `MapSelcukBackChannelLogout()` (POST `/signout-backchannel`: logout_token
-  doğrulama, jti tekrar koruması, sid iptali; discovery/JWKS alınamazsa 503) ve `OturumIptalDeposu` (iptal edilen
+  doğrulama, jti tekrar koruması, sid iptali; discovery/JWKS alınamazsa 503) ve `OturumIptalDeposu` (iptal sonrası kayıtlı
+  `IOturumIptalDinleyicisi`'leri çağırır; iptal edilen
   oturumu çerez doğrulamasında reddeder; kayıtlar `IDistributedCache`'te, varsayılan bellek içi, en az çerez süresi
   kadar). Çerez süresi `Kimlik:OturumSuresi` (varsayılan 8 saat, kayan). `GirisDonusHatasi` `/signin-oidc`
   hatalarını `/GirisHatasi`'na yönlendirir; `UcuncuTarafGiris` initiate_login isteğindeki `iss`'i doğrular (yanlışsa
@@ -164,7 +172,15 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   (preferred_username, bolum, fakulte; `Kapsar(Kendi|Bolum|Fakulte, …)`; Api modunda süzmeyi API yapar).
   `TemsiliIslem.TemsiliIslemSonucu()` (veriyi değiştirmeden aynı sayfaya, TempData mesajı). `OturumBiletDeposu`
   (çerez `SessionStore`: bilet ve token'lar Data Protection ile şifreli `IDistributedCache`'te, çerezde yalnızca
-  anahtar; localhost'ta bütün uygulamaların çerezleri birikip Kestrel'in 32 KB başlık sınırını aşıyordu, HTTP 431). Stiller `otomasyon.css`;
+  anahtar; localhost'ta bütün uygulamaların çerezleri birikip Kestrel'in 32 KB başlık sınırını aşıyordu, HTTP 431;
+  kaydın süresi biletin bitişi, yoksa çerez ömrü; bitişi geçmiş kayıt okununca silinir; çıkışta `RemoveAsync`,
+  Back-Channel Logout'ta `IOturumIptalDinleyicisi` ile sid/sub dizinindeki kayıtlar hemen silinir). Ortak parçalar
+  (`OrtakParcalar.cs`, `Pages/Shared`): `_DurumRozeti` (`DurumRozeti`, `DurumTuru`; anlam metinde, `data-durum`),
+  `_BasvuruAdimlari` (`ol`, `aria-current="step"`, durum metni), `_SayiKartlari`, `_KayitTablosu` (başlık, "Kayıt yok.",
+  dar ekranda yatay kaydırma, `position: relative` ile görünmez metin taşmaz, `data-<veriAdi>`). `secenekler.Ayarlar<T>`
+  (`IDogrulanabilirAyar`; şartlar appsettings'te, açılışta doğrulanır). `SayfaYetkiDenetimi` (`UseSelcukOtomasyon`
+  başında): menüde olmayan ve rol istemeyen sayfa varsa açılış durur; istisnalar `Istisnalar` (`AcikSayfalar` +
+  `/Profilim`). Stiller `otomasyon.css`;
   selcuk.css değişmez. Kontrol listesi `docs/otomasyon-sablonu.md`, portlar 5301-5311 `docs/mimari.md`.
 - `src/Selcuk.Otomasyon.Staj` (https://localhost:5302): Staj Otomasyonu, temsili ekranlar ve örnek veri. Vurgu
   zeytin #4F6B34 / koyu #A9C98B. `StajOtomasyonu.Menu` (ogrenci: Stajlarım, Staj başvurusu, Staj defterim, Sonuç;
@@ -172,6 +188,15 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   bolum_baskani: Özet). `Sozlesme/StajSozlesmesi.cs` (DTO'lar, `IStajVeriKaynagi`), `Veri/` (`OrnekStajVerisi` 26
   kayıt 2024-2026, iki EEM; `MockStajVeriKaynagi`, `ApiStajVeriKaynagi`). API sözleşmesi
   `docs/api-sozlesmeleri/staj.md`.
+- `src/Selcuk.Otomasyon.Intibak` (https://localhost:5301), `src/Selcuk.Otomasyon.Mezuniyet` (5304),
+  `src/Selcuk.Otomasyon.CapYandal` (5311): Staj'la aynı yapı (`<Ad>Otomasyonu.Menu`, `Sozlesme/`, `Veri/` Mock + Api) ve
+  ortak parçalar. Vurgu eflatun #6B4C8A / #C9B3E3, bakır #8A4B1F / #E8B48E, koyu hardal #735A00 / #D9C068. Şartlar
+  appsettings'te: `IntibakSartlari` (muafiyet notu, en fazla muaf AKTS), `MezuniyetSartlari` (gereken AKTS, GNO alt
+  sınırı; `MezuniyetKontrolu` eksikleri hesaplar), `CapYandalSartlari` (Cap/Yandal: başvuru GNO'su, başarı yüzdesi,
+  devam GNO'su, kontenjan; `SartDurumu`). Örnek veri 19-22 kayıt, test öğrencileri + ORN-…, en az biri
+  Elektrik-Elektronik'ten; İntibak ve Mezuniyet'te biri Mühendislik Fakültesi'nden. ÇAP-Yandal'da bölüm rolleri
+  programı açan bölümü görür. Mezuniyet'teki staj durumu örnek veridir (Staj çağrılmaz). Sözleşmeler
+  `docs/api-sozlesmeleri/intibak.md`, `mezuniyet.md`, `cap-yandal.md`; API projesi yok.
 - `src/Selcuk.Demo.Obis` (https://localhost:5101): ortak düzen (`Selcuk.Arayuz`, simge "DO", vurgu lacivert
   #2F4F8F / koyu #9DB5E8). Rol bazlı sayfalar (Notlarım: ogrenci, Ders Yönetimi: akademisyen), Profilim, yalnızca
   Development'ta Token İnceleme (her claim bir satır: Mono ad/değer, Türkçe açıklama `TokenIncelemeModel.Aciklamalar`;
@@ -212,7 +237,13 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   (sabit discovery + imza anahtarı, başlıklardan sahte kimlik `X-Test-Kullanici/Rol/Bolum/Fakulte`, `ayarlar`, `api`
   handler, `ortam`); menü, adresle yetki reddi, kapsam (`data-staj`), temsili işlem, Mock/Api seçimi, Api modu
   hataları, güvenlik başlıkları, gerçek çerezle Back-Channel Logout, vurgu kontrastı. Kimlik sunucusu tarafı
-  `StajOtomasyonuIstemciTests`.
+  `StajOtomasyonuIstemciTests`. `tests/Selcuk.Otomasyon.Ortak.Tests` Razor SDK'lıdır: `Pages/Gizli` sahte sayfaları
+  açılış denetimi testi içindir (`AcilisVeParcaTests`; oturum bileti süreleri ve ortak parçalar da). Yeni otomasyonların
+  test projeleri (`tests/Selcuk.Otomasyon.Intibak.Tests`, `.Mezuniyet.Tests`, `.CapYandal.Tests`)
+  `tests/Selcuk.Otomasyon.TestOrtak/*.cs`'i bağlantıyla derler (ayrı proje değil): `OtomasyonFactory<TProgram>`
+  (StajFactory'nin genel hâli) ve `OtomasyonTemelTestleri<TProgram>` (menü, yetki, düzen, başlıklar, kontrast,
+  temsili işlem, Mock/Api, Api hataları, Back-Channel Logout ve çıkışta bilet silme); kapsam ve şart testleri
+  `<Ad>EkranTests`'te. Kimlik sunucusu tarafı `OtomasyonIstemcileriTests` (kayıt, access_denied, aud, kart, simge).
 - `tests/Selcuk.Demo.Obis.Tests`, `tests/Selcuk.Demo.Yemekhane.Tests`: yönlendirme, rol, önbellek (`no-store`), ortak
   düzen ve `_content` dosyaları, Notlarım özeti ve Token İnceleme (Development, sahte JWT'ler) testleri; gerçek kimlik
   sunucusu yerine sabit discovery bilgisi ve sahte kimlik doğrulama şeması kullanır (`ObisFactory`: `ortam`,
@@ -254,9 +285,11 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   Playwright'ıyla ekran görüntüleri (`docs/tasarim/d2/`, `docs/tez-gorselleri/`); portlar doluysa durur, geçici LocalDB
   veritabanı ve rastgele test şifreleri (yalnızca ortam değişkeni), `run-all.ps1 -TarayiciAcma`, Tek Kapı geçici
   `PORTAL_DATA_DIR` ile (gerçek kasa okunmaz, sistem açılmaz), QR/anahtar/kurtarma kodları örnek değerle, sonunda
-  yalnızca kendi süreçlerini durdurur ve veritabanını siler.
+  yalnızca kendi süreçlerini durdurur ve veritabanını siler. `--sadece <gruplar>` (kimlik, obis, yemekhane, staj,
+  tekkapi, intibak, mezuniyet, cap) yalnızca o grupları çeker ve yalnızca onların eski PNG'lerini siler; verilmezse
+  hepsi. Tez görselleri 01-20.
 - `scripts/run-all.ps1`: önce `dotnet build SelcukSSO.sln` (başarısızsa durur), sonra kimlik sunucusu, iki demo,
-  Demo API ve Staj Otomasyonu'nu ayrı pencerelerde `dotnet run --no-build` ile başlatır; `-TekKapi` ile Tek Kapı'yı da SSO modunda
+  Demo API ve bölüm otomasyonlarını (İntibak, Staj, Mezuniyet, ÇAP-Yandal) ayrı pencerelerde `dotnet run --no-build` ile başlatır; `-TekKapi` ile Tek Kapı'yı da SSO modunda
   başlatır; `-TarayiciAcma` ile sonda tarayıcı açılmaz.
 
 Ayrıntılar için `README.md` dosyasına bakın.

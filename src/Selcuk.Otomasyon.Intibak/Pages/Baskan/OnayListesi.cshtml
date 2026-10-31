@@ -1,0 +1,30 @@
+@page
+@model Selcuk.Otomasyon.Intibak.Pages.Baskan.OnayListesiModel
+@{
+    ViewData["Title"] = "Onay listesi";
+    Func<IntibakBasvurusu, object> gelis = @<text>@IntibakOtomasyonu.GelisTuruAdi(item.GelisTuru)<br /><span class="ipucu">@item.OncekiUniversite</span></text>;
+    Func<IntibakBasvurusu, object> ogrenci = @<text>@item.OgrenciAdi <span class="mono ipucu">@item.OgrenciNo</span></text>;
+    Func<IntibakBasvurusu, object> islemler = @<div class="satir-islemleri">
+        <form method="post" asp-page-handler="Onayla">
+            <input type="hidden" name="id" value="@item.Id" />
+            <button type="submit" class="dugme dugme-uygulama">Onayla<span class="gorunmez">: @item.OgrenciAdi</span></button>
+        </form>
+        <form method="post" asp-page-handler="GeriGonder">
+            <input type="hidden" name="id" value="@item.Id" />
+            <button type="submit" class="dugme dugme-ikincil">Geri gönder<span class="gorunmez">: @item.OgrenciAdi</span></button>
+        </form>
+    </div>;
+    var tablo = KayitTablosu.Olustur("Bölüm başkanı onayındaki kararlar", Model.Bekleyenler, b => b.Id, "intibak",
+        new KayitSutunu<IntibakBasvurusu>("Öğrenci", ogrenci),
+        new KayitSutunu<IntibakBasvurusu>("Geliş ve önceki kurum", gelis),
+        new KayitSutunu<IntibakBasvurusu>("Muaf ders", b => $"{b.Dersler.Count(d => d.Muaf == true)} / {b.Dersler.Count}", Sayi: true),
+        new KayitSutunu<IntibakBasvurusu>("Muaf AKTS", b => IntibakOtomasyonu.MuafAkts(b), Sayi: true),
+        new KayitSutunu<IntibakBasvurusu>("İşlem", islemler));
+}
+<h1>Onay listesi</h1>
+<p class="giris-metni">
+    İntibak komisyonundan gelen kararlar. Onaylanan karar yönetim kuruluna gider, geri gönderilen karar komisyona döner.
+    Onayla ve Geri gönder temsilidir; karar kaydedilmez.
+</p>
+
+<partial name="_KayitTablosu" model="tablo" />

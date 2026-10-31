@@ -1,0 +1,50 @@
+@page
+@model Selcuk.Otomasyon.Mezuniyet.Pages.Komisyon.AdaylarModel
+@{
+    ViewData["Title"] = "Mezuniyet adayları";
+    var sartlar = Model.Sartlar;
+    MezuniyetKontrolu Kontrol(MezuniyetAdayi a) => MezuniyetKontrolu.Yap(a, sartlar);
+    Func<MezuniyetAdayi, object> ogrenci = @<text>@item.OgrenciAdi <span class="mono ipucu">@item.OgrenciNo</span>
+        <br /><partial name="_DurumRozeti" model="MezuniyetOtomasyonu.Rozet(item.Durum)" /></text>;
+    Func<MezuniyetAdayi, object> kontrol = @<ul class="kontrol-listesi">
+        <li>Eksik ders: <partial name="_DurumRozeti" model="@(Kontrol(item).EksikDersler.Count == 0
+            ? new DurumRozeti("Yok", DurumTuru.Olumlu)
+            : new DurumRozeti(string.Join(", ", Kontrol(item).EksikDersler.Select(d => d.Kod)), DurumTuru.Olumsuz))" /></li>
+        <li>Staj: <partial name="_DurumRozeti" model="MezuniyetOtomasyonu.StajRozeti(item.Staj)" /></li>
+        <li>GNO şartı: <partial name="_DurumRozeti" model="MezuniyetOtomasyonu.SartRozeti(Kontrol(item).GnoTamam)" /></li>
+    </ul>;
+    Func<MezuniyetAdayi, object> islemler = @<div class="satir-islemleri">
+        <form method="post" asp-page-handler="Onayla">
+            <input type="hidden" name="id" value="@item.Id" />
+            <button type="submit" class="dugme dugme-uygulama">Onayla<span class="gorunmez">: @item.OgrenciAdi</span></button>
+        </form>
+        <form method="post" asp-page-handler="EksikBildir">
+            <input type="hidden" name="id" value="@item.Id" />
+            <button type="submit" class="dugme dugme-ikincil">Eksik bildir<span class="gorunmez">: @item.OgrenciAdi</span></button>
+        </form>
+    </div>;
+    var tablo = KayitTablosu.Olustur("Kontrol bekleyen adaylar", Model.Adaylar, a => a.Id, "mezuniyet",
+        new KayitSutunu<MezuniyetAdayi>("Öğrenci ve durum", ogrenci),
+        new KayitSutunu<MezuniyetAdayi>("AKTS", a => $"{a.ToplamAkts} / {sartlar.GerekenAkts}", Sayi: true),
+        new KayitSutunu<MezuniyetAdayi>("GNO", a => MezuniyetOtomasyonu.Gno(a.Gno), Sayi: true),
+        new KayitSutunu<MezuniyetAdayi>("Kontrol sonucu", kontrol),
+        new KayitSutunu<MezuniyetAdayi>("İşlem", islemler));
+    IReadOnlyList<SayiKarti> kartlar =
+    [
+        new("Aday", Model.Adaylar.Count, "aday"),
+        new("Şartları karşılayan", Model.Adaylar.Count(a => Kontrol(a).Uygun), "uygun"),
+        new("Eksiği olan", Model.Adaylar.Count(a => !Kontrol(a).Uygun), "eksikli"),
+    ];
+}
+<h1>Mezuniyet adayları</h1>
+<p class="giris-metni">
+    Bölümündeki mezuniyet başvurularının kontrol sonuçları. Onaylanan aday bölüm onayına gider; eksiği olana eksik
+    bildirilir. Onayla ve Eksik bildir temsilidir; karar kaydedilmez.
+</p>
+<p class="sart-notu" data-sart="mezuniyet">
+    Gereken toplam AKTS: <strong>@sartlar.GerekenAkts</strong>; GNO alt sınırı:
+    <strong>@MezuniyetOtomasyonu.Gno(sartlar.GnoAltSiniri)</strong>. Şart değerleri örnektir.
+</p>
+
+<partial name="_SayiKartlari" model="kartlar" />
+<partial name="_KayitTablosu" model="tablo" />

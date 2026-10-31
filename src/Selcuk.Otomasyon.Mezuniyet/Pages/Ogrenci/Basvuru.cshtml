@@ -1,0 +1,50 @@
+@page
+@model Selcuk.Otomasyon.Mezuniyet.Pages.Ogrenci.BasvuruModel
+@{
+    ViewData["Title"] = "Mezuniyet başvurusu";
+    var aday = Model.Aday;
+}
+<h1>Mezuniyet başvurusu</h1>
+<p class="giris-metni">
+    Başvurun mezuniyet komisyonunun kontrolüne, ardından bölüm onayına ve dekanlığa gider. Bu ekran temsilidir; başvuru
+    kaydedilmez.
+</p>
+
+@if (aday is not null)
+{
+    <section data-mezuniyet="@aday.Id" aria-labelledby="basvuru-durumu">
+        <h2 id="basvuru-durumu">Başvurunun durumu</h2>
+        <p>Durum: <partial name="_DurumRozeti" model="MezuniyetOtomasyonu.Rozet(aday.Durum)" /> (@aday.Donem)</p>
+        <partial name="_BasvuruAdimlari" model="MezuniyetOtomasyonu.Adimlar(aday.Durum)" />
+        @if (aday.KomisyonNotu is not null)
+        {
+            <p class="ipucu">@aday.KomisyonNotu</p>
+        }
+    </section>
+}
+
+<h2>Başvuru formu</h2>
+<form method="post" class="form basvuru-formu">
+    <div class="alan">
+        <label for="donem">Mezuniyet dönemi</label>
+        <select id="donem" name="donem" class="metin-alani" required>
+            <option>2026-2027 Güz</option>
+            <option>2026-2027 Bahar</option>
+            <option>2026-2027 Yaz</option>
+        </select>
+    </div>
+    <div class="alan">
+        <label for="adres">İletişim adresi</label>
+        <textarea id="adres" name="iletisimAdresi" class="metin-alani" rows="3" required maxlength="300"></textarea>
+    </div>
+    <div class="alan">
+        <label for="teslim">Diploma teslimi</label>
+        <select id="teslim" name="diplomaTeslimi" class="metin-alani" required>
+            <option value="sahsen">Şahsen</option>
+            <option value="vekaletle">Vekâletle</option>
+        </select>
+    </div>
+    <div class="dugmeler">
+        <button type="submit" class="dugme dugme-uygulama">Başvur</button>
+    </div>
+</form>

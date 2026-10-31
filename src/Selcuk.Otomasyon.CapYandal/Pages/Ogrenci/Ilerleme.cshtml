@@ -1,0 +1,46 @@
+@page
+@model Selcuk.Otomasyon.CapYandal.Pages.Ogrenci.IlerlemeModel
+@{
+    ViewData["Title"] = "Programdaki ilerlemem";
+}
+<h1>Programdaki ilerlemem</h1>
+<p class="giris-metni">Kesin kaydın yapılmış ikinci programda aldığın ve kalan dersler, dönemlik not ortalaman.</p>
+
+@if (Model.Ilerlemeler.Count == 0)
+{
+    <p>Kesin kaydı yapılmış bir ÇAP veya yandal programın yok.</p>
+}
+@foreach (var ilerleme in Model.Ilerlemeler)
+{
+    var b = ilerleme.Basvuru;
+    var sart = Model.Sartlar.Sart(b.Tur);
+    IReadOnlyList<SayiKarti> kartlar =
+    [
+        new("Alınan ders", ilerleme.AlinanDersler.Count, "alinan"),
+        new("Kalan ders", ilerleme.KalanDersler.Count, "kalan"),
+        new("Son dönem GNO", ilerleme.GuncelGno is { } g ? CapYandalOtomasyonu.Gno(g) : "—", "gno"),
+    ];
+    <section data-cap="@b.Id" aria-labelledby="program-@b.Id">
+        <h2 id="program-@b.Id">@b.ProgramAdi</h2>
+        <partial name="_SayiKartlari" model="kartlar" />
+        <p class="sart-notu">Programa devam için GNO alt sınırı: <strong>@CapYandalOtomasyonu.Gno(sart.DevamGnoAltSiniri)</strong>. Şart değerleri örnektir.</p>
+        <partial name="_KayitTablosu" model="@(new KayitTablosu
+        {
+            Baslik = "Alınan dersler", Kimlik = "alinan-" + b.Id, BaslikDuzeyi = 3,
+            Sutunlar = [new("Ders", false), new("AKTS", true), new("Not", false), new("Dönem", false)],
+            Satirlar = [.. ilerleme.AlinanDersler.Select(d => new KayitSatiri(null, [$"{d.Kod} {d.Ad}", d.Akts, d.Not, d.Donem]))],
+        })" />
+        <partial name="_KayitTablosu" model="@(new KayitTablosu
+        {
+            Baslik = "Kalan dersler", Kimlik = "kalan-" + b.Id, BaslikDuzeyi = 3,
+            Sutunlar = [new("Ders", false), new("AKTS", true)],
+            Satirlar = [.. ilerleme.KalanDersler.Select(d => new KayitSatiri(null, [$"{d.Kod} {d.Ad}", d.Akts]))],
+        })" />
+        <partial name="_KayitTablosu" model="@(new KayitTablosu
+        {
+            Baslik = "Dönemlik GNO", Kimlik = "gno-" + b.Id, BaslikDuzeyi = 3,
+            Sutunlar = [new("Dönem", false), new("GNO", true)],
+            Satirlar = [.. ilerleme.DonemlikGno.Select(d => new KayitSatiri(null, [d.Donem, CapYandalOtomasyonu.Gno(d.Gno)]))],
+        })" />
+    </section>
+}

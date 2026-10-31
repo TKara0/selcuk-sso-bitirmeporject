@@ -1,0 +1,30 @@
+@page
+@model Selcuk.Otomasyon.Mezuniyet.Pages.Fakulte.GelenListelerModel
+@{
+    ViewData["Title"] = "Gelen mezuniyet listeleri";
+    Func<MezuniyetAdayi, object> ogrenci = @<text>@item.OgrenciAdi <span class="mono ipucu">@item.OgrenciNo</span></text>;
+    var gruplar = Model.Adaylar.GroupBy(a => a.Bolum).ToList();
+    IReadOnlyList<SayiKarti> kartlar =
+    [
+        new("Dekanlık incelemesinde", Model.Adaylar.Count(a => a.Durum == MezuniyetDurumu.Dekanlikta), "dekanlikta"),
+        new("Diploma hazırlanıyor", Model.Adaylar.Count(a => a.Durum == MezuniyetDurumu.DiplomaHazirlaniyor), "hazirlaniyor"),
+        new("Diploma hazır", Model.Adaylar.Count(a => a.Durum == MezuniyetDurumu.DiplomaHazir), "hazir"),
+    ];
+}
+<h1>Gelen mezuniyet listeleri</h1>
+<p class="giris-metni">Fakültendeki bölümlerden gelen mezuniyet listeleri ve diploma hazırlık durumu, bölümlere göre.</p>
+
+<partial name="_SayiKartlari" model="kartlar" />
+
+@if (gruplar.Count == 0)
+{
+    <p class="bos-durum">@KayitTablosu.VarsayilanBosMetin</p>
+}
+@foreach (var grup in gruplar)
+{
+    <partial name="_KayitTablosu" model="@(KayitTablosu.Olustur(grup.Key, grup, a => a.Id, "mezuniyet",
+        new KayitSutunu<MezuniyetAdayi>("Öğrenci", ogrenci),
+        new KayitSutunu<MezuniyetAdayi>("Dönem", a => a.Donem),
+        new KayitSutunu<MezuniyetAdayi>("GNO", a => MezuniyetOtomasyonu.Gno(a.Gno), Sayi: true),
+        new KayitSutunu<MezuniyetAdayi>("Diploma hazırlığı", a => MezuniyetOtomasyonu.Rozet(a.Durum))))" />
+}

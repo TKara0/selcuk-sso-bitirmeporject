@@ -1,0 +1,17 @@
+@page
+@model Selcuk.Otomasyon.CapYandal.Pages.Sekreter.EvrakModel
+@{
+    ViewData["Title"] = "Evrak";
+    Func<CapBasvurusu, object> ogrenci = @<text>@item.OgrenciAdi <span class="mono ipucu">@item.OgrenciNo</span></text>;
+    var tablo = KayitTablosu.Olustur("Kesin kayıt evrakları", Model.Basvurular, b => b.Id, "cap",
+        new KayitSutunu<CapBasvurusu>("Öğrenci", ogrenci),
+        new KayitSutunu<CapBasvurusu>("Program", b => b.ProgramAdi),
+        new KayitSutunu<CapBasvurusu>("Dilekçe", b => CapYandalOtomasyonu.EvrakRozeti(b.Evrak?.Dilekce == true)),
+        new KayitSutunu<CapBasvurusu>("Transkript", b => CapYandalOtomasyonu.EvrakRozeti(b.Evrak?.Transkript == true)),
+        new KayitSutunu<CapBasvurusu>("Anadal bölüm onayı", b => CapYandalOtomasyonu.EvrakRozeti(b.Evrak?.AnadalOnayi == true)),
+        new KayitSutunu<CapBasvurusu>("Durum", b => CapYandalOtomasyonu.Rozet(b.Durum)));
+}
+<h1>Evrak</h1>
+<p class="giris-metni">Bölümünün programlarında kesin kayda çağrılan ve kesin kaydı yapılan öğrencilerin evrak durumu.</p>
+
+<partial name="_KayitTablosu" model="tablo" />

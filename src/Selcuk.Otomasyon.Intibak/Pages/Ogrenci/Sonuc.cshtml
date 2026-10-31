@@ -1,0 +1,40 @@
+@page
+@model Selcuk.Otomasyon.Intibak.Pages.Ogrenci.SonucModel
+@{
+    ViewData["Title"] = "İntibak sonucu";
+    Func<DersEslesmesi, object> esdeger = @<text>@if (item.EsdegerKod is null)
+        {
+            <span class="ipucu">Karşılığı yok</span>
+        }
+        else
+        {
+            <span class="mono">@item.EsdegerKod</span> @item.EsdegerAd
+        }</text>;
+}
+<h1>İntibak sonucu</h1>
+<p class="giris-metni">Önceki kurumda aldığın derslerin bölüm müfredatındaki eşdeğerleri ve muafiyet kararları.</p>
+
+@if (Model.Sonuclar.Count == 0)
+{
+    <p>Sonuçlanmış bir intibak başvurun henüz yok.</p>
+}
+@foreach (var basvuru in Model.Sonuclar)
+{
+    <section data-intibak="@basvuru.Id">
+        <partial name="_KayitTablosu" model="@KayitTablosu.Olustur(
+            $"{IntibakOtomasyonu.GelisTuruAdi(basvuru.GelisTuru)}, {basvuru.OncekiUniversite} ({IntibakOtomasyonu.Tarih(basvuru.KararTarihi)})",
+            basvuru.Dersler, null, null,
+            new KayitSutunu<DersEslesmesi>("Önceki ders", d => d.OncekiDersAdi),
+            new KayitSutunu<DersEslesmesi>("AKTS", d => d.OncekiAkts, Sayi: true),
+            new KayitSutunu<DersEslesmesi>("Not", d => d.OncekiNot),
+            new KayitSutunu<DersEslesmesi>("Eşdeğer ders", esdeger),
+            new KayitSutunu<DersEslesmesi>("Eşdeğer AKTS", d => d.EsdegerAkts, Sayi: true),
+            new KayitSutunu<DersEslesmesi>("Harf notu", d => d.HarfNotu),
+            new KayitSutunu<DersEslesmesi>("Karar", d => IntibakOtomasyonu.MuafiyetRozeti(d.Muaf)))" />
+        <p>Muaf sayılan: <strong data-muaf-akts="@basvuru.Id">@IntibakOtomasyonu.MuafAkts(basvuru) AKTS</strong></p>
+        @if (basvuru.KomisyonNotu is not null)
+        {
+            <p class="ipucu">@basvuru.KomisyonNotu</p>
+        }
+    </section>
+}

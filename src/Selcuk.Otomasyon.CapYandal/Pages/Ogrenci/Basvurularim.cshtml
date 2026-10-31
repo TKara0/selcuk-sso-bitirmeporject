@@ -1,0 +1,37 @@
+@page
+@model Selcuk.Otomasyon.CapYandal.Pages.Ogrenci.BasvurularimModel
+@{
+    ViewData["Title"] = "Başvurularım";
+}
+<h1>Başvurularım</h1>
+<p class="giris-metni">ÇAP ve yandal başvurularının durumu ve hangi aşamada olduğu.</p>
+
+@if (Model.Basvurular.Count == 0)
+{
+    <p>Henüz ÇAP veya yandal başvurun yok. <a href="/Ogrenci/Basvuru">Başvuru</a> yapabilirsin.</p>
+}
+@foreach (var basvuru in Model.Basvurular)
+{
+    <section class="basvuru" data-cap="@basvuru.Id" aria-labelledby="basvuru-@basvuru.Id">
+        <h2 id="basvuru-@basvuru.Id">@basvuru.ProgramAdi (@basvuru.Donem)</h2>
+        <p>Durum: <partial name="_DurumRozeti" model="CapYandalOtomasyonu.Rozet(basvuru.Durum)" /></p>
+        <partial name="_BasvuruAdimlari" model="CapYandalOtomasyonu.Adimlar(basvuru.Durum)" />
+        <dl class="tanimlar">
+            <div>
+                <dt>Başvuru tarihi</dt>
+                <dd>@CapYandalOtomasyonu.Tarih(basvuru.BasvuruTarihi)</dd>
+            </div>
+            <div>
+                <dt>Başvurudaki GNO ve sıra</dt>
+                <dd>@CapYandalOtomasyonu.Gno(basvuru.Gno), @basvuru.BasariSirasi / @basvuru.SinifMevcudu</dd>
+            </div>
+            @if (basvuru.Not is not null)
+            {
+                <div>
+                    <dt>Not</dt>
+                    <dd>@basvuru.Not</dd>
+                </div>
+            }
+        </dl>
+    </section>
+}

@@ -20,7 +20,7 @@ else
         {
             var uygulama = Model.Uygulamalar[i];
             <li>
-                <span class="uygulama-simge@(uygulama.Vurgu is null ? "" : " uygulama-simge-" + uygulama.Vurgu)" aria-hidden="true">@IndexModel.BasHarfler(uygulama.Ad)</span>
+                <span class="uygulama-simge@(uygulama.Vurgu is null ? "" : " uygulama-simge-" + uygulama.Vurgu)" aria-hidden="true">@uygulama.SimgeMetni</span>
                 <div>
                     <p class="satir-baslik"><span id="uygulama-@i">@uygulama.Ad</span>
                         @if (uygulama.MfaGerekli)

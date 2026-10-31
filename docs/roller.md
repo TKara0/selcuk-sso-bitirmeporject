@@ -59,28 +59,28 @@ eklenebilir. Kimlik sunucusu rolü bir sonraki açılışta oluşturur; Hesabım
 
 ## Plan matrisi
 
-> **Plan: otomasyonlar sonraki adımlarda eklenecek.** Aşağıdaki ekranlar henüz yoktur; Bilgisayar Mühendisliği
-> Bölümü'nün 11 otomasyonu ayrı uygulamalar olarak SSO'ya bağlandığında hangi rolün hangi temsili ekranları
-> göreceğinin önerisidir.
+> **Kısmen uygulandı.** İntibak, Staj, Mezuniyet ve ÇAP-Yandal satırları uygulamalardaki gerçek temsili ekranlardır
+> (menüdeki adlarıyla; kaynağı her otomasyonun `<Ad>Otomasyonu.Menu`'sü). Diğer satırlar, Bilgisayar Mühendisliği
+> Bölümü'nün kalan otomasyonları SSO'ya bağlandığında hangi rolün hangi temsili ekranları göreceğinin önerisidir.
 
 | Otomasyon | Rol | Temsili ekranlar |
 |---|---|---|
-| İntibak | `ogrenci` | Başvuru ve durum |
-| | `intibak_komisyonu` | Ders eşleştirme, muafiyet kararı |
+| İntibak | `ogrenci` | İntibak başvurusu, Başvurum (durum ve aşamalar), İntibak sonucu |
+| | `intibak_komisyonu` | Bekleyen başvurular, Ders eşleştirme (muafiyet kararıyla), Komisyon kararları |
 | | `bolum_baskani` | Onay listesi |
 | | `bolum_sekreteri` | İntibak raporları |
-| | `fakulte_sekreteri` | Yönetim kuruluna gidecek evrak |
-| Staj | `ogrenci` | Başvuru, staj defteri, sonuç |
-| | `staj_komisyonu` | Başvuru inceleme, yıllara göre takip |
-| | `bolum_sekreteri` | Evrak listesi |
+| | `fakulte_sekreteri` | Yönetim kurulu evrakı (fakülte, bölümlere göre) |
+| Staj | `ogrenci` | Stajlarım, Staj başvurusu, Staj defterim, Sonuç |
+| | `staj_komisyonu` | Başvuru inceleme, Defter değerlendirme, Yıllara göre takip |
+| | `bolum_sekreteri` | Evrak takibi |
 | | `bolum_baskani` | Özet |
 | Etik Kurul | `akademisyen` | Başvuru |
 | | `etik_kurul_uyesi` | Atanan dosyalar, görüş |
 | | `bolum_baskani` | Karar listesi |
-| Mezuniyet | `ogrenci` | Başvuru ve durum |
-| | `mezuniyet_komisyonu` | Onay |
-| | `bolum_sekreteri` | Dekanlığa gidecek evrak |
-| | `fakulte_sekreteri` | Gelen evrak |
+| Mezuniyet | `ogrenci` | Mezuniyet durumum, Mezuniyet başvurusu, İlişik kesme |
+| | `mezuniyet_komisyonu` | Mezuniyet adayları (Onayla, Eksik bildir) |
+| | `bolum_sekreteri` | Dekanlığa gidecek liste |
+| | `fakulte_sekreteri` | Gelen mezuniyet listeleri (diploma hazırlık durumu) |
 | Bölüm Kurul Karar | `bolum_baskani` | Gündem ve toplantı oluşturma |
 | | `bolum_kurulu_uyesi` | Gündem, oylama |
 | | `bolum_sekreteri` | Tutanak ve arşiv |
@@ -100,17 +100,17 @@ eklenebilir. Kimlik sunucusu rolü bir sonraki açılışta oluşturur; Hesabım
 | Sınav Başarısı Analizi | `akademisyen` | Kendi dersleri |
 | | `bolum_baskani` | Bölüm geneli |
 | | `mudek_komisyonu` | Çıktı bazlı analiz |
-| ÇAP-Yandal | `ogrenci` | Başvuru ve durum |
-| | `cap_yandal_koordinatoru` | Başvurular, takip |
+| ÇAP-Yandal | `ogrenci` | Başvuru (şart göstergesi), Başvurularım, Programdaki ilerlemem |
+| | `cap_yandal_koordinatoru` | Gelen başvurular, Öğrenci takibi |
 | | `bolum_sekreteri` | Evrak |
 | | `bolum_baskani` | Başvuru onayı |
 
 Danışman hoca ve proje hocası gibi kişiye bağlı ilişkiler rol değildir, uygulama verisinde tutulur (ör. danışmanın
 öğrenci listesi, projenin hocası); rol yalnızca ekranın kime açık olduğunu belirler.
 
-**Staj** temsili ekranlarıyla eklendi (`src/Selcuk.Otomasyon.Staj`, https://localhost:5302; ekranlar ve roller
-`StajOtomasyonu.Menu`'de, README > Staj Otomasyonu). Diğer otomasyonlar
-[otomasyon-sablonu.md](otomasyon-sablonu.md)'deki kontrol listesiyle eklenecek.
+**İntibak** (5301), **Staj** (5302), **Mezuniyet** (5304) ve **ÇAP-Yandal** (5311) temsili ekranlarıyla eklendi
+(`src/Selcuk.Otomasyon.<Ad>`; ekranlar ve roller `<Ad>Otomasyonu.Menu`'de, README > Bölüm otomasyonları). Diğer
+otomasyonlar [otomasyon-sablonu.md](otomasyon-sablonu.md)'deki kontrol listesiyle eklenecek.
 
 Rol sahibi kullanıcılar kullanıcı türlerinin ekranlarını da görür: örneğin `bolum_baskani` aynı zamanda
 `akademisyen`'dir ve Etik Kurul'da başvuru, Lisans Projeleri'nde konu önerisi ekranlarını da görür.
