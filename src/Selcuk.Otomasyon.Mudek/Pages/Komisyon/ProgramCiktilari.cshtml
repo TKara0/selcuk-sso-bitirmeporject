@@ -1,0 +1,31 @@
+@page
+@model Selcuk.Otomasyon.Mudek.Pages.Komisyon.ProgramCiktilariModel
+@{
+    ViewData["Title"] = "Program çıktıları";
+    var sartlar = Model.Sartlar;
+    decimal? G(ProgramCiktisi p) => MudekSartlari.Gerceklesme(p, Model.DersCiktilari);
+    Func<ProgramCiktisi, object> cikti = @<text><span class="mono">@item.Kod</span> @item.Ad</text>;
+    Func<ProgramCiktisi, object> oran = @<text>@if (G(item) is { } g)
+        {
+            <span class="olcum"><meter min="0" max="100" value="@Math.Round(g * 100)" aria-hidden="true"></meter> @MudekOtomasyonu.Yuzde(g)</span>
+        }
+        else
+        {
+            <span>—</span>
+        }</text>;
+    var tablo = KayitTablosu.Olustur("Program çıktıları", Model.ProgramCiktilari, p => p.Kod, "mudek",
+        new KayitSutunu<ProgramCiktisi>("Program çıktısı", cikti),
+        new KayitSutunu<ProgramCiktisi>("Bağlı ders çıktısı", p => Model.DersCiktilari.Count(d => d.ProgramCiktilari.Contains(p.Kod)), Sayi: true),
+        new KayitSutunu<ProgramCiktisi>("Gerçekleşme", oran),
+        new KayitSutunu<ProgramCiktisi>("Durum", p => sartlar.ProgramRozeti(G(p))));
+}
+<h1>Program çıktıları</h1>
+<p class="giris-metni">
+    Bölümünün program çıktıları, bağlı ders çıktıları ve gerçekleşme oranı (bağlı, ölçülmüş ders çıktılarının
+    ortalaması). Çıktı adları örnektir.
+</p>
+<p class="sart-notu" data-sart="program-hedefi">
+    Program çıktısı hedef oranı: <strong>@MudekOtomasyonu.Yuzde(sartlar.ProgramCiktisiHedefOrani)</strong>. Şart değerleri örnektir.
+</p>
+
+<partial name="_KayitTablosu" model="tablo" />

@@ -1,0 +1,24 @@
+@page
+@model Selcuk.Otomasyon.SinavAnalizi.Pages.Mudek.CiktiAnaliziModel
+@{
+    ViewData["Title"] = "Çıktı bazlı analiz";
+    var sartlar = Model.Sartlar;
+    Func<CiktiAnaliziModel.CiktiOzeti, object> gecme = @<partial name="_GecmeOrani" model="item.GecmeOrani" />;
+    var tablo = KayitTablosu.Olustur("Program çıktısına göre başarı", Model.Ozetler, o => o.Kod, "sinav",
+        new KayitSutunu<CiktiAnaliziModel.CiktiOzeti>("Program çıktısı", o => o.Kod),
+        new KayitSutunu<CiktiAnaliziModel.CiktiOzeti>("Ders ve dönem", o => o.DersSayisi, Sayi: true),
+        new KayitSutunu<CiktiAnaliziModel.CiktiOzeti>("Ortalama not", o => SinavAnaliziOtomasyonu.Sayi(o.Ortalama), Sayi: true),
+        new KayitSutunu<CiktiAnaliziModel.CiktiOzeti>("Geçme oranı", gecme),
+        new KayitSutunu<CiktiAnaliziModel.CiktiOzeti>("Hedefe göre", o => sartlar.Rozet(o.GecmeOrani)));
+}
+<h1>Çıktı bazlı analiz</h1>
+<p class="giris-metni">
+    Bölümündeki derslerin bağlı oldukları program çıktılarına göre ortalama başarısı (ders ve dönem sonuçlarının
+    ortalaması; öğrenci düzeyinde veri yoktur).
+</p>
+<p class="sart-notu" data-sart="gecme">
+    Geçme notu: <strong>@sartlar.GecmeNotu</strong> ve üstü; başarı hedefi: <strong>@SinavAnaliziOtomasyonu.Yuzde(sartlar.BasariHedefiOrani)</strong>.
+    Şart değerleri örnektir.
+</p>
+
+<partial name="_KayitTablosu" model="tablo" />

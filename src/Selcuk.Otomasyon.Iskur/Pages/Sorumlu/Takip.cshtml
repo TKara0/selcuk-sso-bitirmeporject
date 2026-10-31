@@ -1,0 +1,29 @@
+@page
+@model Selcuk.Otomasyon.Iskur.Pages.Sorumlu.TakipModel
+@{
+    ViewData["Title"] = "Takip";
+    var sartlar = Model.Sartlar;
+    Func<AylikDevam, object> ogrenci = @<text>@item.OgrenciAdi <span class="mono ipucu">@item.OgrenciNo</span></text>;
+    Func<AylikDevam, object> ay = @<text>@IskurOtomasyonu.AyAdi(item.Ay) <span class="ipucu">@item.DevamSaati / @item.PlanlananSaat saat</span></text>;
+    Func<AylikDevam, object> oran = @<span class="olcum"><meter min="0" max="100" value="@Math.Round(sartlar.Oran(item) * 100)" aria-hidden="true"></meter> @IskurOtomasyonu.Yuzde(sartlar.Oran(item))</span>;
+    Func<AylikDevam, object> durum = @<text><partial name="_DurumRozeti" model="sartlar.Rozet(item)" /> <partial name="_DurumRozeti" model="IskurOtomasyonu.DevamRozeti(item.Durum)" /></text>;
+    var tablo = KayitTablosu.Olustur("Aylık devam özeti", Model.Kayitlar, d => d.Id, "iskur",
+        new KayitSutunu<AylikDevam>("Öğrenci", ogrenci),
+        new KayitSutunu<AylikDevam>("Ay, devam / planlanan", ay),
+        new KayitSutunu<AylikDevam>("Devam oranı", oran),
+        new KayitSutunu<AylikDevam>("Uyarı ve durum", durum));
+    IReadOnlyList<SayiKarti> kartlar =
+    [
+        new("Öğrenci", Model.Kayitlar.Select(d => d.OgrenciNo).Distinct().Count(), "ogrenci"),
+        new("Uyarılı kayıt", Model.Kayitlar.Count(d => sartlar.Rozet(d).Tur == DurumTuru.Olumsuz), "uyari"),
+    ];
+}
+<h1>Takip</h1>
+<p class="giris-metni">Bölümündeki İŞKUR öğrencilerinin aylık devam özeti.</p>
+<p class="sart-notu" data-sart="devam">
+    Devamsızlık uyarı eşiği: devam oranı <strong>@IskurOtomasyonu.Yuzde(sartlar.DevamsizlikUyariEsigi)</strong> altında;
+    aylık en fazla <strong>@sartlar.AylikEnFazlaDevamSaati saat</strong>. Şart değerleri örnektir.
+</p>
+
+<partial name="_SayiKartlari" model="kartlar" />
+<partial name="_KayitTablosu" model="tablo" />

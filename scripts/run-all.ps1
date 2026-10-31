@@ -1,6 +1,7 @@
 # Kimlik sunucusunu (https://localhost:5001), Demo OBİS'i (https://localhost:5101), Demo Yemekhane'yi
 # (https://localhost:5102), Demo API'yi (https://localhost:5201) ve bölüm otomasyonlarını (İntibak :5301, Staj :5302,
-# Etik Kurul :5303, Mezuniyet :5304, Bölüm Kurul Karar :5305, Lisans Projeleri :5309, ÇAP-Yandal :5311) ayrı
+# Etik Kurul :5303, Mezuniyet :5304, Bölüm Kurul Karar :5305, Öğrenci Danışmanlık :5306, İŞKUR :5307, MÜDEK :5308,
+# Lisans Projeleri :5309, Sınav Başarısı Analizi :5310, ÇAP-Yandal :5311) ayrı
 # PowerShell pencerelerinde başlatır, ardından tarayıcıda kimlik sunucusunun "Uygulamalarım" sayfasını açar.
 # Kullanım (proje kökünden):  powershell -ExecutionPolicy Bypass -File scripts\run-all.ps1
 # -TekKapi verilirse Tek Kapı da (araclar/tek-kapi, http://127.0.0.1:4545) SSO modunda ayrı bir pencerede başlar:
@@ -25,7 +26,11 @@ $uygulamalar = @(
     @{ Baslik = 'Selcuk.Otomasyon.EtikKurul :5303';  Proje = 'src/Selcuk.Otomasyon.EtikKurul';  Port = 5303 },
     @{ Baslik = 'Selcuk.Otomasyon.Mezuniyet :5304';  Proje = 'src/Selcuk.Otomasyon.Mezuniyet';  Port = 5304 },
     @{ Baslik = 'Selcuk.Otomasyon.BolumKurul :5305';  Proje = 'src/Selcuk.Otomasyon.BolumKurul';  Port = 5305 },
+    @{ Baslik = 'Selcuk.Otomasyon.Danismanlik :5306';  Proje = 'src/Selcuk.Otomasyon.Danismanlik';  Port = 5306 },
+    @{ Baslik = 'Selcuk.Otomasyon.Iskur :5307';  Proje = 'src/Selcuk.Otomasyon.Iskur';  Port = 5307 },
+    @{ Baslik = 'Selcuk.Otomasyon.Mudek :5308';  Proje = 'src/Selcuk.Otomasyon.Mudek';  Port = 5308 },
     @{ Baslik = 'Selcuk.Otomasyon.LisansProjeleri :5309';  Proje = 'src/Selcuk.Otomasyon.LisansProjeleri';  Port = 5309 },
+    @{ Baslik = 'Selcuk.Otomasyon.SinavAnalizi :5310';  Proje = 'src/Selcuk.Otomasyon.SinavAnalizi';  Port = 5310 },
     @{ Baslik = 'Selcuk.Otomasyon.CapYandal :5311';  Proje = 'src/Selcuk.Otomasyon.CapYandal';  Port = 5311 }
 )
 

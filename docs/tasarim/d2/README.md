@@ -285,3 +285,65 @@ Tez görselleri: `21-etik-kurul-basvurularim`, `22-etik-kurul-atanan-dosyalar`, 
 Gözden geçirmede düzeltilen: Atanan dosyalar tablosu altı sütunla 1440px'te sığmıyordu (Durum kesik); bildirilen görüş
 ile yeterlilik rozeti ve araştırma türü ile başvuru birleştirildi (dört sütun). Oylama notundaki yüzde ekleri
 ("%50'inden") ekten bağımsız bir cümleyle değiştirildi.
+
+## Bölüm otomasyonları: Öğrenci Danışmanlık, İŞKUR, MÜDEK, Sınav Başarısı Analizi
+
+İstenen vurgu renkleri ölçüldü; hepsi 4,5:1'in üstünde olduğu için değiştirilmedi. Açık vurgu zeminleri ve koyu tema
+karşılıkları önceki otomasyonlardaki gibi seçildi.
+
+| Uygulama | `--uygulama-vurgu` açık / koyu | `--uygulama-vurgu-acik` açık / koyu | Uygulamalarım simgesi |
+|---|---|---|---|
+| Öğrenci Danışmanlık (çivit) | #4B4A9C / #B4B3E8 | #E9E8F5 / #24233F | DA |
+| İŞKUR (petrol) | #1F5F73 / #86C3D6 | #E0EDF1 / #142E37 | İŞ |
+| MÜDEK (gül kurusu) | #8A5163 / #DDA9B9 | #F4E8EC / #36222A | MÜ |
+| Sınav Başarısı Analizi (grafit) | #3E4A52 / #B3C0C8 | #E6E9EB / #232A2F | SA |
+
+| Metin / öğe | Zemin | Kullanım | Danışmanlık açık / koyu | İŞKUR açık / koyu | MÜDEK açık / koyu | Sınav Analizi açık / koyu | Eşik | Sonuç |
+|---|---|---|---|---|---|---|---|---|
+| `--uygulama-vurgu` | `--tas` | Bağlantı, sayfa zemininde | 6.64 / 8.76 | 6.22 / 8.96 | 5.33 / 8.67 | 7.94 / 9.37 | 4.5:1 | ✓ |
+| `--uygulama-vurgu` | `--yuzey` | Menü, tablo, ikincil düğme metni | 7.61 / 7.63 | 7.14 / 7.80 | 6.11 / 7.56 | 9.11 / 8.16 | 4.5:1 | ✓ |
+| `--uygulama-vurgu` | `--uygulama-vurgu-acik` | Olumlu rozet, şu anki aşama, simge | 6.28 / 7.61 | 5.97 / 7.31 | 5.12 / 7.36 | 7.47 / 7.82 | 4.5:1 | ✓ |
+| `--murekkep` | `--uygulama-vurgu-acik` | Temsili işlem bandı | 12.70 / 12.87 | 12.87 / 12.10 | 12.90 / 12.58 | 12.62 / 12.37 | 4.5:1 | ✓ |
+| `--soluk` | `--uygulama-vurgu-acik` | İkincil metin vurgu zemininde | 5.72 / 7.56 | 5.79 / 7.11 | 5.81 / 7.39 | 5.68 / 7.27 | 4.5:1 | ✓ |
+| `--yuzey` | `--uygulama-vurgu` | Uygulama düğmesi metni | 7.61 / 7.63 | 7.14 / 7.80 | 6.11 / 7.56 | 9.11 / 8.16 | 4.5:1 | ✓ |
+
+Görsel yakınlık (öneri, renkler değiştirilmedi): çivit Demo OBİS'in lacivertine (#2F4F8F) ve İntibak'ın eflatununa,
+petrol kimlik firuzesine (#0F7B7E, bağlantı #0C6B6E) ve Lisans Projeleri'nin çam yeşiline, gül kurusu Demo
+Yemekhane'nin narına ve Etik Kurul'un mürdümüne, grafit çam yeşiline yakındır. Uygulamalar simge harfleri ve adlarıyla
+da ayrılır; renk tek ayırt edici değildir.
+
+Sınav Başarısı Analizi'ndeki çubuklar `<meter>`'dır (`aria-hidden`, değer metni yanında); stiller `otomasyon.css`'teki
+`.olcum` sınıfında, satır içi stil yok. İŞKUR'un Takip ekranı da aynı göstergeyi kullanır.
+
+Ekran görüntüleri `node --use-system-ca scripts/ekran-goruntuleri.mjs --sadece danismanlik,iskur,mudek,sinav-analizi`
+ile üretildi (diğer gruplarınkiler değişmedi). Kullanıcılar: 203011001, 203011002, hoca.test, baskan.test, iskur.test,
+mudek.test. Görüntülerdeki öğrenci numaraları (203011…, ORN-…), adlar, notlar ve sayılar kurgusal test/örnek verisidir.
+
+| Uygulama | Ekran | Dosya önü | Mobil |
+|---|---|---|---|
+| Öğrenci Danışmanlık | Ana sayfa (öğrenci) | `danismanlik-ana` | ✓ |
+| Öğrenci Danışmanlık | Danışmanım | `danismanlik-danismanim` | ✓ |
+| Öğrenci Danışmanlık | Görüşme talebi | `danismanlik-gorusme-talebi` | ✓ |
+| Öğrenci Danışmanlık | Öğrenci listesi (danışman) | `danismanlik-ogrencilerim` | ✓ |
+| Öğrenci Danışmanlık | Görüşme notları (danışman) | `danismanlik-gorusme-notlari` | ✓ |
+| Öğrenci Danışmanlık | Danışman atama (bölüm başkanı) | `danismanlik-danisman-atama` | ✓ |
+| İŞKUR | Devam durumum (öğrenci) | `iskur-devam-durumum` | ✓ |
+| İŞKUR | Ana sayfa (sorumlu) | `iskur-ana` | ✓ |
+| İŞKUR | Devam girişi | `iskur-devam-girisi` | ✓ |
+| İŞKUR | Takip | `iskur-takip` | ✓ |
+| MÜDEK | Ders çıktısı veri girişi (akademisyen) | `mudek-veri-girisi` | ✓ |
+| MÜDEK | Program çıktıları (komisyon) | `mudek-program-ciktilari` | ✓ |
+| MÜDEK | Eksikler (komisyon) | `mudek-eksikler` | ✓ |
+| MÜDEK | Raporlar (komisyon) | `mudek-donem-raporu` | ✓ |
+| Sınav Başarısı Analizi | Kendi derslerim (akademisyen) | `sinav-analizi-derslerim` | ✓ |
+| Sınav Başarısı Analizi | Bölüm geneli (bölüm başkanı) | `sinav-analizi-bolum-geneli` | ✓ |
+| Sınav Başarısı Analizi | Çıktı bazlı analiz (MÜDEK komisyonu) | `sinav-analizi-cikti-analizi` | ✓ |
+
+Tez görselleri: `27-danismanlik-gorusme-talebi`, `28-danismanlik-ogrencilerim`, `29-iskur-devam-durumum`,
+`30-iskur-takip`, `31-mudek-program-ciktilari`, `32-mudek-veri-girisi`, `33-sinav-analizi-derslerim`,
+`34-sinav-analizi-bolum-geneli`.
+
+Gözden geçirmede düzeltilenler: İŞKUR Takip tablosu altı sütunla 1440px'te sığmıyordu (Durum kesik); ay ile
+devam/planlanan saat tek hücrede, uyarı ile durum rozeti tek "Uyarı ve durum" hücresinde birleştirildi. Görüşme
+talebi, Devam girişi formları ve Raporlar / Bölüm geneli'ndeki Yazdır düğmesi altındaki başlığa yapışıktı; bölüm
+(`section`) içine alındı. Çıktı bazlı analizde sütun başlıkları kısaltıldı ("Ders ve dönem", "Geçme oranı").

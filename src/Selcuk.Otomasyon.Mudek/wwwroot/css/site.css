@@ -1,0 +1,17 @@
+/*
+ * MÜDEK Otomasyonu: yalnızca uygulamanın vurgu rengi (gül kurusu). Yerleşim ortak otomasyon şablonunda
+ * (_content/Selcuk.Otomasyon.Ortak/css/otomasyon.css), token'lar selcuk.css'te. Kontrast (WCAG 2.1, metin):
+ * #8A5163 beyaz zeminde 6,11:1, taş (#EDF0EF) zeminde 5,33:1, açık gül kurusu (#F4E8EC) zeminde 5,12:1;
+ * koyu temada #DDA9B9 yüzey (#15273A) zemininde 7,56:1, koyu açık gül kurusu (#36222A) zemininde 7,36:1.
+ */
+:root {
+    --uygulama-vurgu: #8A5163;
+    --uygulama-vurgu-acik: #F4E8EC;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --uygulama-vurgu: #DDA9B9;
+        --uygulama-vurgu-acik: #36222A;
+    }
+}

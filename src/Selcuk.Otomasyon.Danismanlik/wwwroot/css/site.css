@@ -1,0 +1,17 @@
+/*
+ * Öğrenci Danışmanlık Otomasyonu: yalnızca uygulamanın vurgu rengi (indigo). Yerleşim ortak otomasyon şablonunda
+ * (_content/Selcuk.Otomasyon.Ortak/css/otomasyon.css), token'lar selcuk.css'te. Kontrast (WCAG 2.1, metin):
+ * #4B4A9C beyaz zeminde 7,61:1, taş (#EDF0EF) zeminde 6,64:1, açık indigo (#E9E8F5) zeminde 6,28:1;
+ * koyu temada #B4B3E8 yüzey (#15273A) zemininde 7,63:1, koyu açık indigo (#24233F) zemininde 7,61:1.
+ */
+:root {
+    --uygulama-vurgu: #4B4A9C;
+    --uygulama-vurgu-acik: #E9E8F5;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --uygulama-vurgu: #B4B3E8;
+        --uygulama-vurgu-acik: #24233F;
+    }
+}

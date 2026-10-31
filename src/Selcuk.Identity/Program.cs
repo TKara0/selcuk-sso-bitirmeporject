@@ -194,7 +194,9 @@ builder.Services.AddOpenIddict()
             Istemciler.IntibakOkuKapsami, Istemciler.IntibakYazKapsami, Istemciler.MezuniyetOkuKapsami,
             Istemciler.MezuniyetYazKapsami, Istemciler.CapYandalOkuKapsami, Istemciler.CapYandalYazKapsami,
             Istemciler.EtikKurulOkuKapsami, Istemciler.EtikKurulYazKapsami, Istemciler.BolumKurulOkuKapsami,
-            Istemciler.BolumKurulYazKapsami, Istemciler.LisansProjeleriOkuKapsami, Istemciler.LisansProjeleriYazKapsami);
+            Istemciler.BolumKurulYazKapsami, Istemciler.LisansProjeleriOkuKapsami, Istemciler.LisansProjeleriYazKapsami,
+            Istemciler.DanismanlikOkuKapsami, Istemciler.DanismanlikYazKapsami, Istemciler.IskurOkuKapsami, Istemciler.IskurYazKapsami,
+            Istemciler.MudekOkuKapsami, Istemciler.MudekYazKapsami, Istemciler.SinavAnaliziOkuKapsami, Istemciler.SinavAnaliziYazKapsami);
         options.RegisterClaims(Claims.Subject, Claims.Name, Claims.Email, Claims.Role,
             OidcKimlik.FakulteClaim, OidcKimlik.BolumClaim, OidcKimlik.SidClaim, Claims.AuthenticationMethodReference);
 

@@ -1,0 +1,36 @@
+@page
+@model Selcuk.Otomasyon.Danismanlik.Pages.Ogrenci.DanismanimModel
+@{
+    ViewData["Title"] = "Danışmanım";
+    var kayit = Model.Kayit;
+}
+<h1>Danışmanım</h1>
+<p class="giris-metni">Danışmanın ve onunla son görüşmen.</p>
+
+@if (kayit is null)
+{
+    <p>Danışmanlık kaydın bulunamadı.</p>
+}
+else
+{
+    <section data-danismanlik="@kayit.OgrenciNo" aria-label="Danışmanlık bilgilerin">
+        <dl class="tanimlar">
+            <div>
+                <dt>Danışman</dt>
+                <dd>@(kayit.DanismanAdi ?? "Henüz atanmadı")</dd>
+            </div>
+            <div>
+                <dt>Son görüşme</dt>
+                <dd>@DanismanlikOtomasyonu.Tarih(kayit.SonGorusme)</dd>
+            </div>
+            <div>
+                <dt>Sınıf, AKTS ve GNO</dt>
+                <dd>@kayit.Sinif. sınıf, @kayit.ToplamAkts AKTS, GNO @DanismanlikOtomasyonu.Gno(kayit.Gno)</dd>
+            </div>
+        </dl>
+        @if (kayit.DanismanAdi is not null)
+        {
+            <p><a class="dugme dugme-uygulama" href="/Ogrenci/GorusmeTalebi">Görüşme talep et</a></p>
+        }
+    </section>
+}

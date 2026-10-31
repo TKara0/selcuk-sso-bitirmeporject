@@ -28,7 +28,7 @@ flowchart LR
         direction TB
         OB["Selcuk.Demo.Obis :5101<br/>Notlarım · Ders Yönetimi"]
         YE["Selcuk.Demo.Yemekhane :5102<br/>Menü · Rezervasyonlarım"]
-        ST["Bölüm otomasyonları<br/>İntibak :5301 · Staj :5302 · Etik Kurul :5303 · Mezuniyet :5304<br/>Bölüm Kurul Karar :5305 · Lisans Projeleri :5309 · ÇAP-Yandal :5311<br/>temsili ekranlar · örnek veri"]
+        ST["Bölüm otomasyonları<br/>İntibak :5301 · Staj :5302 · Etik Kurul :5303 · Mezuniyet :5304<br/>Bölüm Kurul Karar :5305 · Öğrenci Danışmanlık :5306 · İŞKUR :5307 · MÜDEK :5308<br/>Lisans Projeleri :5309 · Sınav Başarısı Analizi :5310 · ÇAP-Yandal :5311<br/>temsili ekranlar · örnek veri"]
         OTO["Selcuk.Otomasyon.Ortak<br/>AddSelcukOtomasyon · rol tabanlı menü · veri kaynağı"]
         ORT["Selcuk.Istemci.Ortak<br/>AddSelcukSSO · /signout-backchannel · TokenYenileyici"]
         OB --- ORT
@@ -91,20 +91,20 @@ flowchart LR
 | 5303 | Etik Kurul (`Selcuk.Otomasyon.EtikKurul`) | `etik-kurul-otomasyonu` | hazır (temsili, örnek veri) |
 | 5304 | Mezuniyet (`Selcuk.Otomasyon.Mezuniyet`) | `mezuniyet-otomasyonu` | hazır (temsili, örnek veri) |
 | 5305 | Bölüm Kurul Karar (`Selcuk.Otomasyon.BolumKurul`) | `bolum-kurul-otomasyonu` | hazır (temsili, örnek veri) |
-| 5306 | Öğrenci Danışmanlık | `danismanlik-otomasyonu` | plan |
-| 5307 | İŞKUR | `iskur-otomasyonu` | plan |
-| 5308 | MÜDEK | `mudek-otomasyonu` | plan |
+| 5306 | Öğrenci Danışmanlık (`Selcuk.Otomasyon.Danismanlik`) | `danismanlik-otomasyonu` | hazır (temsili, örnek veri) |
+| 5307 | İŞKUR (`Selcuk.Otomasyon.Iskur`) | `iskur-otomasyonu` | hazır (temsili, örnek veri) |
+| 5308 | MÜDEK (`Selcuk.Otomasyon.Mudek`) | `mudek-otomasyonu` | hazır (temsili, örnek veri) |
 | 5309 | Lisans Projeleri (`Selcuk.Otomasyon.LisansProjeleri`) | `lisans-projeleri-otomasyonu` | hazır (temsili, örnek veri) |
-| 5310 | Sınav Başarısı Analizi | `sinav-analizi-otomasyonu` | plan |
+| 5310 | Sınav Başarısı Analizi (`Selcuk.Otomasyon.SinavAnalizi`) | `sinav-analizi-otomasyonu` | hazır (temsili, örnek veri) |
 | 5311 | ÇAP-Yandal (`Selcuk.Otomasyon.CapYandal`) | `cap-yandal-otomasyonu` | hazır (temsili, örnek veri) |
 
 Otomasyon numaraları bölümün otomasyon listesindeki sıradır. Her otomasyon gizli web istemcisidir (Authorization Code +
 PKCE, explicit onay); redirect `https://localhost:<port>/signin-oidc`, post-logout `/signout-callback-oidc`,
-Back-Channel Logout `/signout-backchannel`, giriş başlatma `/Giris`. Plandaki `client_id`'ler önerilir; eklenirken
-kesinleşir. Gelecekteki API'ler için kaynak (`aud`) `<ad>-api`, kapsamlar `<ad>.oku` / `<ad>.yaz` (Staj: `staj-api`,
+Back-Channel Logout `/signout-backchannel`, giriş başlatma `/Giris`. Bölümün 11 otomasyonunun hepsi hazır. Gelecekteki API'ler için kaynak (`aud`) `<ad>-api`, kapsamlar `<ad>.oku` / `<ad>.yaz` (Staj: `staj-api`,
 `staj.oku`, `staj.yaz`; İntibak: `intibak-api`; Mezuniyet: `mezuniyet-api`; ÇAP-Yandal: `cap-yandal-api`,
 `cap-yandal.oku`, `cap-yandal.yaz`; Etik Kurul: `etik-kurul-api`; Bölüm Kurul Karar: `bolum-kurul-api`; Lisans Projeleri:
-`lisans-projeleri-api`). "Hazır": uygulama, istemci kaydı ve testleri var; API'si henüz yok (sözleşmeler
+`lisans-projeleri-api`; Öğrenci Danışmanlık: `danismanlik-api`; İŞKUR: `iskur-api`; MÜDEK: `mudek-api`; Sınav Başarısı
+Analizi: `sinav-analizi-api`, `sinav-analizi.oku`, `sinav-analizi.yaz`). "Hazır": uygulama, istemci kaydı ve testleri var; API'si henüz yok (sözleşmeler
 [api-sozlesmeleri/](api-sozlesmeleri/)).
 
 ## 1. Giriş (Demo OBİS, soğuk)

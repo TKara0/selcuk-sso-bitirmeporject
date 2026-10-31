@@ -1,0 +1,45 @@
+@page
+@model Selcuk.Otomasyon.Danismanlik.Pages.Baskan.DanismanAtamaModel
+@{
+    ViewData["Title"] = "Danışman atama";
+    var enFazla = Model.Sartlar.DanismanBasinaEnFazlaOgrenci;
+    var atanan = Model.Ogrenciler.Where(o => o.DanismanKullaniciAdi is not null).ToList();
+    var bekleyen = Model.Ogrenciler.Where(o => o.DanismanKullaniciAdi is null).ToList();
+    var danismanlar = atanan.GroupBy(o => (o.DanismanKullaniciAdi!, o.DanismanAdi!))
+        .Select(g => (Kimlik: g.Key.Item1, Ad: g.Key.Item2, Sayi: g.Count()))
+        .OrderBy(d => d.Ad, StringComparer.Create(DanismanlikOtomasyonu.Tr, false)).ToList();
+    Func<DanismanlikOgrencisi, object> ogrenci = @<text>@item.OgrenciAdi <span class="mono ipucu">@item.OgrenciNo</span></text>;
+    var kontenjan = KayitTablosu.Olustur("Danışman başına öğrenci", danismanlar, d => d.Kimlik, null,
+        new KayitSutunu<(string Kimlik, string Ad, int Sayi)>("Danışman", d => d.Ad),
+        new KayitSutunu<(string Kimlik, string Ad, int Sayi)>("Öğrenci / en fazla", d => $"{d.Sayi} / {enFazla}", Sayi: true),
+        new KayitSutunu<(string Kimlik, string Ad, int Sayi)>("Kontenjan", d => d.Sayi > enFazla ? new DurumRozeti("Aşıldı", DurumTuru.Olumsuz)
+            : d.Sayi == enFazla ? new DurumRozeti("Dolu", DurumTuru.Bekliyor) : new DurumRozeti("Yer var", DurumTuru.Olumlu)));
+    Func<DanismanlikOgrencisi, object> ata = @<form method="post" class="satir-islemleri">
+        <input type="hidden" name="ogrenciNo" value="@item.OgrenciNo" />
+        <label class="gorunmez" for="danisman-@item.OgrenciNo">Danışman: @item.OgrenciAdi</label>
+        <select id="danisman-@item.OgrenciNo" name="danisman" class="metin-alani">
+            @foreach (var d in danismanlar)
+            {
+                <option value="@d.Kimlik">@d.Ad (@d.Sayi)</option>
+            }
+        </select>
+        <button type="submit" class="dugme dugme-uygulama">Ata<span class="gorunmez">: @item.OgrenciAdi</span></button>
+    </form>;
+    var bekleyenler = KayitTablosu.Olustur("Danışmanı olmayan öğrenciler", bekleyen, o => o.OgrenciNo, "danismanlik",
+        new KayitSutunu<DanismanlikOgrencisi>("Öğrenci", ogrenci),
+        new KayitSutunu<DanismanlikOgrencisi>("Sınıf", o => o.Sinif, Sayi: true),
+        new KayitSutunu<DanismanlikOgrencisi>("Danışman ata", ata));
+    var eslesmeler = KayitTablosu.Olustur("Öğrenci-danışman eşleşmeleri", atanan, o => o.OgrenciNo, "danismanlik",
+        new KayitSutunu<DanismanlikOgrencisi>("Öğrenci", ogrenci),
+        new KayitSutunu<DanismanlikOgrencisi>("Sınıf", o => o.Sinif, Sayi: true),
+        new KayitSutunu<DanismanlikOgrencisi>("Danışman", o => o.DanismanAdi));
+}
+<h1>Danışman atama</h1>
+<p class="giris-metni">Bölümündeki öğrencilerin danışmanları. Ata temsilidir; kaydedilmez.</p>
+<p class="sart-notu" data-sart="danisman-kontenjani">
+    Danışman başına en fazla öğrenci: <strong>@enFazla</strong>. Şart değerleri örnektir.
+</p>
+
+<partial name="_KayitTablosu" model="kontenjan" />
+<partial name="_KayitTablosu" model="bekleyenler" />
+<partial name="_KayitTablosu" model="eslesmeler" />

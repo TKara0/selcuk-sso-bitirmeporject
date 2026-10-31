@@ -1,0 +1,17 @@
+/*
+ * Sınav Başarısı Analizi Otomasyonu: yalnızca uygulamanın vurgu rengi (grafit). Yerleşim ortak otomasyon şablonunda
+ * (_content/Selcuk.Otomasyon.Ortak/css/otomasyon.css), token'lar selcuk.css'te. Kontrast (WCAG 2.1, metin):
+ * #3E4A52 beyaz zeminde 9,11:1, taş (#EDF0EF) zeminde 7,94:1, açık grafit (#E6E9EB) zeminde 7,47:1;
+ * koyu temada #B3C0C8 yüzey (#15273A) zemininde 8,16:1, koyu açık grafit (#232A2F) zemininde 7,82:1.
+ */
+:root {
+    --uygulama-vurgu: #3E4A52;
+    --uygulama-vurgu-acik: #E6E9EB;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --uygulama-vurgu: #B3C0C8;
+        --uygulama-vurgu-acik: #232A2F;
+    }
+}

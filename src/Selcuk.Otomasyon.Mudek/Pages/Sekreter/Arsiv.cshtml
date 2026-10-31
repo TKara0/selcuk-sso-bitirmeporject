@@ -1,0 +1,14 @@
+@page
+@model Selcuk.Otomasyon.Mudek.Pages.Sekreter.ArsivModel
+@{
+    ViewData["Title"] = "Rapor ve evrak arşivi";
+    var tablo = KayitTablosu.Olustur("Raporlar ve belgeler", Model.Belgeler, b => b.Id, "mudek",
+        new KayitSutunu<MudekBelgesi>("Belge", b => b.Ad),
+        new KayitSutunu<MudekBelgesi>("Tür", b => MudekOtomasyonu.TurAdi(b.Tur)),
+        new KayitSutunu<MudekBelgesi>("Dönem", b => b.Donem),
+        new KayitSutunu<MudekBelgesi>("Durum", b => MudekOtomasyonu.BelgeRozeti(b.Durum)));
+}
+<h1>Rapor ve evrak arşivi</h1>
+<p class="giris-metni">Bölümünün MÜDEK raporları ve belgeleri.</p>
+
+<partial name="_KayitTablosu" model="tablo" />

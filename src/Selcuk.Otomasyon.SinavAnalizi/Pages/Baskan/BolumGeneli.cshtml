@@ -1,0 +1,39 @@
+@page
+@model Selcuk.Otomasyon.SinavAnalizi.Pages.Baskan.BolumGeneliModel
+@{
+    ViewData["Title"] = "Bölüm geneli";
+    var sartlar = Model.Sartlar;
+    Func<DersSonucu, object> ders = @<text><span class="mono">@item.DersKodu</span> @item.DersAdi<br /><span class="ipucu">@item.Donem, @item.HocaAdi</span></text>;
+    Func<DersSonucu, object> gecme = @<partial name="_GecmeOrani" model="sartlar.GecmeOrani(item)" />;
+    KayitTablosu Tablo(string baslik, IEnumerable<DersSonucu> dersler) => KayitTablosu.Olustur(baslik, dersler, d => d.Id, "sinav",
+        new KayitSutunu<DersSonucu>("Ders ve dönem", ders),
+        new KayitSutunu<DersSonucu>("Öğrenci", d => d.OgrenciSayisi, Sayi: true),
+        new KayitSutunu<DersSonucu>("Ortalama", d => SinavAnaliziOtomasyonu.Sayi(SinavAnaliziOtomasyonu.Ortalama(d)), Sayi: true),
+        new KayitSutunu<DersSonucu>("Geçme oranı", gecme),
+        new KayitSutunu<DersSonucu>("Hedefe göre", d => sartlar.Rozet(sartlar.GecmeOrani(d))));
+    var altinda = Tablo("Hedef altında kalan dersler", Model.Dersler.Where(sartlar.HedefAltinda));
+    var hepsi = Tablo("Bölümdeki derslerin karşılaştırması", Model.Dersler);
+    IReadOnlyList<SayiKarti> kartlar =
+    [
+        new("Ders ve dönem", Model.Dersler.Count, "ders"),
+        new("Hedef altında", Model.Dersler.Count(sartlar.HedefAltinda), "hedef-altinda"),
+    ];
+}
+<h1>Bölüm geneli</h1>
+<p class="giris-metni">Bölümündeki derslerin toplu sınav sonuçları (öğrenci düzeyinde veri yoktur).</p>
+<p class="sart-notu" data-sart="gecme">
+    Geçme notu: <strong>@sartlar.GecmeNotu</strong> ve üstü; başarı hedefi: geçme oranı en az
+    <strong>@SinavAnaliziOtomasyonu.Yuzde(sartlar.BasariHedefiOrani)</strong>. Şart değerleri örnektir.
+</p>
+
+<partial name="_SayiKartlari" model="kartlar" />
+
+<section>
+    <form method="post" class="dugmeler">
+        <button type="submit" class="dugme dugme-ikincil">Yazdır</button>
+        <p class="ipucu">Temsili: rapor yazdırılmaz, yalnızca işlem mesajı gösterilir.</p>
+    </form>
+</section>
+
+<partial name="_KayitTablosu" model="altinda" />
+<partial name="_KayitTablosu" model="hepsi" />

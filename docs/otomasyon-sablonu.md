@@ -2,8 +2,9 @@
 
 Bilgisayar Mühendisliği Bölümü'nün 11 otomasyonu ayrı web uygulamalarıdır ve aynı şablonla kurulur:
 `src/Selcuk.Otomasyon.Ortak` (Razor Class Library). İlk örnek Staj Otomasyonu'dur (`src/Selcuk.Otomasyon.Staj`,
-https://localhost:5302); İntibak (5301), Etik Kurul (5303), Mezuniyet (5304), Bölüm Kurul Karar (5305), Lisans Projeleri
-(5309) ve ÇAP-Yandal (5311) aşağıdaki ortak parçaları da kullanır. Portlar ve `client_id`'ler: [mimari.md > Port ve istemci düzeni](mimari.md#port-ve-istemci-düzeni).
+https://localhost:5302); İntibak (5301), Etik Kurul (5303), Mezuniyet (5304), Bölüm Kurul Karar (5305), Öğrenci
+Danışmanlık (5306), İŞKUR (5307), MÜDEK (5308), Lisans Projeleri (5309), Sınav Başarısı Analizi (5310) ve ÇAP-Yandal
+(5311) aşağıdaki ortak parçaları da kullanır; 11 otomasyonun hepsi bu şablonla eklendi. Portlar ve `client_id`'ler: [mimari.md > Port ve istemci düzeni](mimari.md#port-ve-istemci-düzeni).
 Roller ve plan matrisi: [roller.md](roller.md).
 
 ## Şablon ne verir

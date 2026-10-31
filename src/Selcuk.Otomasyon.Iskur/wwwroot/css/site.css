@@ -1,0 +1,17 @@
+/*
+ * İŞKUR Otomasyonu: yalnızca uygulamanın vurgu rengi (petrol). Yerleşim ortak otomasyon şablonunda
+ * (_content/Selcuk.Otomasyon.Ortak/css/otomasyon.css), token'lar selcuk.css'te. Kontrast (WCAG 2.1, metin):
+ * #1F5F73 beyaz zeminde 7,14:1, taş (#EDF0EF) zeminde 6,22:1, açık petrol (#E0EDF1) zeminde 5,97:1;
+ * koyu temada #86C3D6 yüzey (#15273A) zemininde 7,80:1, koyu açık petrol (#142E37) zemininde 7,31:1.
+ */
+:root {
+    --uygulama-vurgu: #1F5F73;
+    --uygulama-vurgu-acik: #E0EDF1;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --uygulama-vurgu: #86C3D6;
+        --uygulama-vurgu-acik: #142E37;
+    }
+}

@@ -11,7 +11,8 @@ src/Selcuk.Roller              rol kataloğu (Roller.Katalog, RolDogrulayici) �
 src/Selcuk.Arayuz              RCL: tasarım sistemi (selcuk.css/js, fontlar, kapı SVG, _SelcukDuzen)
 src/Selcuk.Istemci.Ortak       AddSelcukSSO, Back-Channel alıcısı, OturumIptalDeposu, TokenYenileyici
 src/Selcuk.Otomasyon.Ortak     AddSelcukOtomasyon/UseSelcukOtomasyon, menü→yetki, VeriKaynagi, OturumBiletDeposu
-src/Selcuk.Otomasyon.*         Intibak/Staj/EtikKurul/Mezuniyet/BolumKurul/LisansProjeleri/CapYandal: Sozlesme/ (DTO + arayüz), Veri/ (Mock + Api)
+src/Selcuk.Otomasyon.*         Intibak/Staj/EtikKurul/Mezuniyet/BolumKurul/Danismanlik/Iskur/Mudek/LisansProjeleri/
+                               SinavAnalizi/CapYandal (5301-5311): Sozlesme/ (DTO + arayüz), Veri/ (Mock + Api)
 src/Selcuk.Demo.Obis|Yemekhane|Api
 araclar/tek-kapi               Node.js portal (ayrı AGENTS.md)
 tools/Selcuk.Olcum             otomatik ölçüm (yalnızca localhost+https)

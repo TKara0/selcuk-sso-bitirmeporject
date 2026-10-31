@@ -8,8 +8,8 @@ namespace Selcuk.Identity.Data;
 /// Uygulama açılışında rol kataloğundaki (Selcuk.Roller) bütün rolleri oluşturur. Yalnızca Development ortamında,
 /// şifreleri user-secrets'tan okunan test kullanıcılarını (rolleri <see cref="RolDogrulayici"/>'dan geçer; var olan
 /// kullanıcıya yalnızca eksik rolleri eklenir), ölçüm kullanıcılarını (<see cref="OlcumKullanicilari"/>), demo
-/// istemcileri (demo-obis, demo-yemekhane), bölüm otomasyonlarını (intibak-, staj-, etik-kurul-, mezuniyet-,
-/// bolum-kurul-, lisans-projeleri- ve cap-yandal-otomasyonu) ve Tek Kapı'yı (public istemci,
+/// istemcileri (demo-obis, demo-yemekhane), on bir bölüm otomasyonunu (intibak-, staj-, etik-kurul-, mezuniyet-,
+/// bolum-kurul-, danismanlik-, iskur-, mudek-, lisans-projeleri-, sinav-analizi- ve cap-yandal-otomasyonu) ve Tek Kapı'yı (public istemci,
 /// izinli kullanıcılar Istemciler:TekKapi:IzinliKullaniciAdlari ayarından) ekler veya günceller.
 /// </summary>
 public sealed class BaslangicVerisi(
@@ -121,6 +121,10 @@ public sealed class BaslangicVerisi(
             await IstemciKaydetAsync(applicationManager, "Istemciler:EtikKurulOtomasyonu:ClientSecret", Istemciler.EtikKurulOtomasyonu);
             await IstemciKaydetAsync(applicationManager, "Istemciler:BolumKurulOtomasyonu:ClientSecret", Istemciler.BolumKurulOtomasyonu);
             await IstemciKaydetAsync(applicationManager, "Istemciler:LisansProjeleriOtomasyonu:ClientSecret", Istemciler.LisansProjeleriOtomasyonu);
+            await IstemciKaydetAsync(applicationManager, "Istemciler:DanismanlikOtomasyonu:ClientSecret", Istemciler.DanismanlikOtomasyonu);
+            await IstemciKaydetAsync(applicationManager, "Istemciler:IskurOtomasyonu:ClientSecret", Istemciler.IskurOtomasyonu);
+            await IstemciKaydetAsync(applicationManager, "Istemciler:MudekOtomasyonu:ClientSecret", Istemciler.MudekOtomasyonu);
+            await IstemciKaydetAsync(applicationManager, "Istemciler:SinavAnaliziOtomasyonu:ClientSecret", Istemciler.SinavAnaliziOtomasyonu);
 
             // Public istemci: secret yok. Liste yoksa veya boşsa varsayılan izinli kullanıcı (herkese açılmaz).
             var izinliler = configuration.GetSection(Istemciler.TekKapiAyarlari + ":IzinliKullaniciAdlari").Get<string[]>() ?? [];

@@ -82,6 +82,12 @@ public abstract partial class OtomasyonTemelTestleri<TProgram> : IDisposable whe
     /// </summary>
     protected virtual string AnaRol => Roller.Ogrenci;
 
+    /// <summary>
+    /// Uygulamaya hiç giremeyen bir kullanıcının rolleri (varsayılan İŞKUR sorumlusu; İŞKUR otomasyonu başka bir rol
+    /// verir).
+    /// </summary>
+    protected virtual string[] IzinsizRoller => [Roller.Personel, Roller.IskurSorumlusu];
+
     protected HttpClient Istemci(string rol, OtomasyonFactory<TProgram>? fabrika = null)
     {
         var k = Kullanicilar[rol];
@@ -161,7 +167,7 @@ public abstract partial class OtomasyonTemelTestleri<TProgram> : IDisposable whe
     [Fact]
     public async Task Her_menu_sayfasi_yalnizca_kendi_rollerine_acik_girissize_giris_istiyor()
     {
-        var izinsiz = Fabrika.Istemci("iskur.test", bolum: null, roller: [Roller.Personel, Roller.IskurSorumlusu]);
+        var izinsiz = Fabrika.Istemci("izinsiz.test", bolum: null, roller: IzinsizRoller);
         foreach (var oge in Menu)
         {
             var yanit = await izinsiz.GetAsync(oge.Sayfa);

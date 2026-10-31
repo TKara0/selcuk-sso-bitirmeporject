@@ -59,10 +59,8 @@ eklenebilir. Kimlik sunucusu rolü bir sonraki açılışta oluşturur; Hesabım
 
 ## Plan matrisi
 
-> **Kısmen uygulandı.** İntibak, Staj, Etik Kurul, Mezuniyet, Bölüm Kurul Karar, Lisans Projeleri ve ÇAP-Yandal satırları
-> uygulamalardaki gerçek temsili ekranlardır
-> (menüdeki adlarıyla; kaynağı her otomasyonun `<Ad>Otomasyonu.Menu`'sü). Diğer satırlar, Bilgisayar Mühendisliği
-> Bölümü'nün kalan otomasyonları SSO'ya bağlandığında hangi rolün hangi temsili ekranları göreceğinin önerisidir.
+> **Uygulandı.** Bütün satırlar (11 otomasyon) uygulamalardaki gerçek temsili ekranlardır (menüdeki adlarıyla; kaynağı
+> her otomasyonun `<Ad>Otomasyonu.Menu`'sü).
 
 | Otomasyon | Rol | Temsili ekranlar |
 |---|---|---|
@@ -86,19 +84,19 @@ eklenebilir. Kimlik sunucusu rolü bir sonraki açılışta oluşturur; Hesabım
 | | `bolum_kurulu_uyesi` | Gündem, Oylama |
 | | `bolum_sekreteri` | Tutanak ve arşiv |
 | | `fakulte_sekreteri` | Gelen kararlar |
-| Öğrenci Danışmanlık | `danisman` | Öğrenci listesi, görüşme notları |
-| | `ogrenci` | Danışmanım, görüşme talebi |
+| Öğrenci Danışmanlık | `danisman` | Öğrenci listesi (görüşme uyarısıyla), Görüşme notları |
+| | `ogrenci` | Danışmanım, Görüşme talebi |
 | | `bolum_baskani` | Danışman atama |
-| İŞKUR | `iskur_sorumlusu` | Devam girişi, takip |
-| | `ogrenci` | Kendi devam durumu |
-| MÜDEK | `mudek_komisyonu` | Program çıktıları, eksikler, raporlar |
+| İŞKUR | `iskur_sorumlusu` | Devam girişi, Takip (bölüm) |
+| | `ogrenci` | Devam durumum |
+| MÜDEK | `mudek_komisyonu` | Raporlar, Program çıktıları, Eksikler |
 | | `akademisyen` | Ders çıktısı veri girişi |
 | | `bolum_baskani` | Raporlar |
 | | `bolum_sekreteri` | Rapor ve evrak arşivi |
 | Lisans Projeleri | `ogrenci` | Konu seçimi, Proje aşamalarım |
 | | `akademisyen` | Konu önerisi, Değerlendirme |
 | | `bolum_baskani` | Eşleştirme |
-| Sınav Başarısı Analizi | `akademisyen` | Kendi dersleri |
+| Sınav Başarısı Analizi | `akademisyen` | Kendi derslerim |
 | | `bolum_baskani` | Bölüm geneli |
 | | `mudek_komisyonu` | Çıktı bazlı analiz |
 | ÇAP-Yandal | `ogrenci` | Başvuru (şart göstergesi), Başvurularım, Programdaki ilerlemem |
@@ -109,10 +107,11 @@ eklenebilir. Kimlik sunucusu rolü bir sonraki açılışta oluşturur; Hesabım
 Danışman hoca ve proje hocası gibi kişiye bağlı ilişkiler rol değildir, uygulama verisinde tutulur (ör. danışmanın
 öğrenci listesi, projenin hocası); rol yalnızca ekranın kime açık olduğunu belirler.
 
-**İntibak** (5301), **Staj** (5302), **Etik Kurul** (5303), **Mezuniyet** (5304), **Bölüm Kurul Karar** (5305), **Lisans
-Projeleri** (5309) ve **ÇAP-Yandal** (5311) temsili ekranlarıyla eklendi
-(`src/Selcuk.Otomasyon.<Ad>`; ekranlar ve roller `<Ad>Otomasyonu.Menu`'de, README > Bölüm otomasyonları). Diğer
-otomasyonlar [otomasyon-sablonu.md](otomasyon-sablonu.md)'deki kontrol listesiyle eklenecek.
+Bölümün 11 otomasyonunun hepsi temsili ekranlarıyla eklendi: **İntibak** (5301), **Staj** (5302), **Etik Kurul** (5303),
+**Mezuniyet** (5304), **Bölüm Kurul Karar** (5305), **Öğrenci Danışmanlık** (5306), **İŞKUR** (5307), **MÜDEK** (5308),
+**Lisans Projeleri** (5309), **Sınav Başarısı Analizi** (5310) ve **ÇAP-Yandal** (5311) (`src/Selcuk.Otomasyon.<Ad>`;
+ekranlar ve roller `<Ad>Otomasyonu.Menu`'de, README > Bölüm otomasyonları). Yeni bir otomasyon
+[otomasyon-sablonu.md](otomasyon-sablonu.md)'deki kontrol listesiyle eklenir.
 
 Rol sahibi kullanıcılar kullanıcı türlerinin ekranlarını da görür: örneğin `bolum_baskani` aynı zamanda
 `akademisyen`'dir ve Etik Kurul'da başvuru, Lisans Projeleri'nde konu önerisi ekranlarını da görür.

@@ -1,0 +1,27 @@
+@page
+@model Selcuk.Otomasyon.Mudek.Pages.Komisyon.EksiklerModel
+@{
+    ViewData["Title"] = "Eksikler";
+    var sartlar = Model.Sartlar;
+    Func<DersCiktisi, object> ders = @<text><span class="mono">@item.DersKodu</span> @item.DersAdi, @item.CiktiKodu<br /><span class="ipucu">@item.HocaAdi</span></text>;
+    var dersler = KayitTablosu.Olustur("Eşik altında veya verisi girilmemiş ders çıktıları",
+        Model.DersCiktilari.Where(sartlar.DersCiktisiEksik), d => d.Id, "mudek",
+        new KayitSutunu<DersCiktisi>("Ders çıktısı", ders),
+        new KayitSutunu<DersCiktisi>("Ölçülen oran", d => MudekOtomasyonu.Yuzde(d.OlculenOran), Sayi: true),
+        new KayitSutunu<DersCiktisi>("Durum", d => sartlar.DersRozeti(d)));
+    var programlar = KayitTablosu.Olustur("Hedef altında veya verisi olmayan program çıktıları",
+        Model.ProgramCiktilari.Where(p => MudekSartlari.Gerceklesme(p, Model.DersCiktilari) is not { } g || g < sartlar.ProgramCiktisiHedefOrani),
+        p => p.Kod, "mudek",
+        new KayitSutunu<ProgramCiktisi>("Program çıktısı", p => $"{p.Kod} {p.Ad}"),
+        new KayitSutunu<ProgramCiktisi>("Gerçekleşme", p => MudekOtomasyonu.Yuzde(MudekSartlari.Gerceklesme(p, Model.DersCiktilari)), Sayi: true),
+        new KayitSutunu<ProgramCiktisi>("Durum", p => sartlar.ProgramRozeti(MudekSartlari.Gerceklesme(p, Model.DersCiktilari))));
+}
+<h1>Eksikler</h1>
+<p class="giris-metni">Bölümünde başarı eşiğinin altında kalan veya henüz ölçüm girilmemiş çıktılar.</p>
+<p class="sart-notu" data-sart="esikler">
+    Ders çıktısı başarı eşiği: <strong>@MudekOtomasyonu.Yuzde(sartlar.DersCiktisiBasariEsigi)</strong>; program çıktısı
+    hedef oranı: <strong>@MudekOtomasyonu.Yuzde(sartlar.ProgramCiktisiHedefOrani)</strong>. Şart değerleri örnektir.
+</p>
+
+<partial name="_KayitTablosu" model="dersler" />
+<partial name="_KayitTablosu" model="programlar" />

@@ -125,6 +125,46 @@ public static class Istemciler
     /// <summary>Lisans Projeleri Otomasyonu'na girebilen roller (en az biri).</summary>
     public static readonly string[] LisansProjeleriOtomasyonuIzinliRolleri = [Roller.Ogrenci, Roller.Akademisyen, Roller.BolumBaskani];
 
+    public const string DanismanlikApiKaynagi = "danismanlik-api";
+    public const string DanismanlikOkuKapsami = "danismanlik.oku";
+    public const string DanismanlikYazKapsami = "danismanlik.yaz";
+    public const string DanismanlikOtomasyonuClientId = "danismanlik-otomasyonu";
+    private const string DanismanlikOtomasyonuAdres = "https://localhost:5306";
+    public const string DanismanlikOtomasyonuRedirectUri = DanismanlikOtomasyonuAdres + "/signin-oidc";
+
+    /// <summary>Öğrenci Danışmanlık Otomasyonu'na girebilen roller (en az biri).</summary>
+    public static readonly string[] DanismanlikOtomasyonuIzinliRolleri = [Roller.Danisman, Roller.Ogrenci, Roller.BolumBaskani];
+
+    public const string IskurApiKaynagi = "iskur-api";
+    public const string IskurOkuKapsami = "iskur.oku";
+    public const string IskurYazKapsami = "iskur.yaz";
+    public const string IskurOtomasyonuClientId = "iskur-otomasyonu";
+    private const string IskurOtomasyonuAdres = "https://localhost:5307";
+    public const string IskurOtomasyonuRedirectUri = IskurOtomasyonuAdres + "/signin-oidc";
+
+    /// <summary>İŞKUR Otomasyonu'na girebilen roller (en az biri).</summary>
+    public static readonly string[] IskurOtomasyonuIzinliRolleri = [Roller.IskurSorumlusu, Roller.Ogrenci];
+
+    public const string MudekApiKaynagi = "mudek-api";
+    public const string MudekOkuKapsami = "mudek.oku";
+    public const string MudekYazKapsami = "mudek.yaz";
+    public const string MudekOtomasyonuClientId = "mudek-otomasyonu";
+    private const string MudekOtomasyonuAdres = "https://localhost:5308";
+    public const string MudekOtomasyonuRedirectUri = MudekOtomasyonuAdres + "/signin-oidc";
+
+    /// <summary>MÜDEK Otomasyonu'na girebilen roller (en az biri).</summary>
+    public static readonly string[] MudekOtomasyonuIzinliRolleri = [Roller.MudekKomisyonu, Roller.Akademisyen, Roller.BolumBaskani, Roller.BolumSekreteri];
+
+    public const string SinavAnaliziApiKaynagi = "sinav-analizi-api";
+    public const string SinavAnaliziOkuKapsami = "sinav-analizi.oku";
+    public const string SinavAnaliziYazKapsami = "sinav-analizi.yaz";
+    public const string SinavAnaliziOtomasyonuClientId = "sinav-analizi-otomasyonu";
+    private const string SinavAnaliziOtomasyonuAdres = "https://localhost:5310";
+    public const string SinavAnaliziOtomasyonuRedirectUri = SinavAnaliziOtomasyonuAdres + "/signin-oidc";
+
+    /// <summary>Sınav Başarısı Analizi Otomasyonu'na girebilen roller (en az biri).</summary>
+    public static readonly string[] SinavAnaliziOtomasyonuIzinliRolleri = [Roller.Akademisyen, Roller.BolumBaskani, Roller.MudekKomisyonu];
+
     public const string TekKapiClientId = "tek-kapi";
     private const string TekKapiAdres = "http://127.0.0.1:4545";
     public const string TekKapiRedirectUri = TekKapiAdres + "/auth/callback";
@@ -213,7 +253,31 @@ public static class Istemciler
         "Bitirme projelerinde konu önerisi ve seçimi, öğrenci-hoca eşleştirmesi, aşamalar ve değerlendirme (temsili, örnek veri).",
         clientSecret, LisansProjeleriOkuKapsami, LisansProjeleriYazKapsami, LisansProjeleriOtomasyonuIzinliRolleri, "cam", "LP");
 
-    /// <summary>İntibak, Mezuniyet, ÇAP-Yandal, Etik Kurul, Bölüm Kurul Karar ve Lisans Projeleri API'lerinin kapsamları (tüm ortamlarda açılışta oluşturulur).</summary>
+    /// <summary>Öğrenci Danışmanlık Otomasyonu (temsili ekranlar, örnek veri): gizli web istemcisi, danismanlik.oku/danismanlik.yaz.</summary>
+    public static OpenIddictApplicationDescriptor DanismanlikOtomasyonu(string clientSecret) => OtomasyonTanimi(
+        DanismanlikOtomasyonuClientId, "Öğrenci Danışmanlık Otomasyonu", DanismanlikOtomasyonuAdres,
+        "Danışman-öğrenci eşleşmeleri, görüşme talepleri ve görüşme notları (temsili, örnek veri).",
+        clientSecret, DanismanlikOkuKapsami, DanismanlikYazKapsami, DanismanlikOtomasyonuIzinliRolleri, "indigo", "DA");
+
+    /// <summary>İŞKUR Otomasyonu (temsili ekranlar, örnek veri): gizli web istemcisi, iskur.oku/iskur.yaz.</summary>
+    public static OpenIddictApplicationDescriptor IskurOtomasyonu(string clientSecret) => OtomasyonTanimi(
+        IskurOtomasyonuClientId, "İŞKUR Otomasyonu", IskurOtomasyonuAdres,
+        "İŞKUR gençlik programında devam girişi ve aylık takip (temsili, örnek veri).",
+        clientSecret, IskurOkuKapsami, IskurYazKapsami, IskurOtomasyonuIzinliRolleri, "petrol", "İŞ");
+
+    /// <summary>MÜDEK Otomasyonu (temsili ekranlar, örnek veri): gizli web istemcisi, mudek.oku/mudek.yaz.</summary>
+    public static OpenIddictApplicationDescriptor MudekOtomasyonu(string clientSecret) => OtomasyonTanimi(
+        MudekOtomasyonuClientId, "MÜDEK Otomasyonu", MudekOtomasyonuAdres,
+        "Program ve ders çıktılarının izlenmesi, eksikler ve dönem raporları (temsili, örnek veri).",
+        clientSecret, MudekOkuKapsami, MudekYazKapsami, MudekOtomasyonuIzinliRolleri, "gulkurusu", "MÜ");
+
+    /// <summary>Sınav Başarısı Analizi Otomasyonu (temsili ekranlar, örnek veri): gizli web istemcisi, sinav-analizi.oku/sinav-analizi.yaz.</summary>
+    public static OpenIddictApplicationDescriptor SinavAnaliziOtomasyonu(string clientSecret) => OtomasyonTanimi(
+        SinavAnaliziOtomasyonuClientId, "Sınav Başarısı Analizi Otomasyonu", SinavAnaliziOtomasyonuAdres,
+        "Derslerin sınav başarısının toplu analizi: not dağılımı, geçme oranı ve hedefler (temsili, örnek veri).",
+        clientSecret, SinavAnaliziOkuKapsami, SinavAnaliziYazKapsami, SinavAnaliziOtomasyonuIzinliRolleri, "grafit", "SA");
+
+    /// <summary>Bölüm otomasyonlarının (Staj hariç) API kapsamları (tüm ortamlarda açılışta oluşturulur).</summary>
     public static IReadOnlyList<OpenIddictScopeDescriptor> OtomasyonKapsamlari() =>
     [
         new() { Name = IntibakOkuKapsami, DisplayName = "İntibak bilgilerini okuma", Resources = { IntibakApiKaynagi } },
@@ -228,6 +292,14 @@ public static class Istemciler
         new() { Name = BolumKurulYazKapsami, DisplayName = "Toplantı, gündem ve oy yazma", Resources = { BolumKurulApiKaynagi } },
         new() { Name = LisansProjeleriOkuKapsami, DisplayName = "Lisans projesi bilgilerini okuma", Resources = { LisansProjeleriApiKaynagi } },
         new() { Name = LisansProjeleriYazKapsami, DisplayName = "Konu, tercih ve değerlendirme yazma", Resources = { LisansProjeleriApiKaynagi } },
+        new() { Name = DanismanlikOkuKapsami, DisplayName = "Danışmanlık bilgilerini okuma", Resources = { DanismanlikApiKaynagi } },
+        new() { Name = DanismanlikYazKapsami, DisplayName = "Görüşme talebi ve notu yazma", Resources = { DanismanlikApiKaynagi } },
+        new() { Name = IskurOkuKapsami, DisplayName = "İŞKUR devam bilgilerini okuma", Resources = { IskurApiKaynagi } },
+        new() { Name = IskurYazKapsami, DisplayName = "Devam girişi yazma", Resources = { IskurApiKaynagi } },
+        new() { Name = MudekOkuKapsami, DisplayName = "MÜDEK bilgilerini okuma", Resources = { MudekApiKaynagi } },
+        new() { Name = MudekYazKapsami, DisplayName = "Ders çıktısı ölçümü yazma", Resources = { MudekApiKaynagi } },
+        new() { Name = SinavAnaliziOkuKapsami, DisplayName = "Sınav sonuçlarını okuma", Resources = { SinavAnaliziApiKaynagi } },
+        new() { Name = SinavAnaliziYazKapsami, DisplayName = "Sınav analizi yazma", Resources = { SinavAnaliziApiKaynagi } },
     ];
 
     /// <summary>Bölüm otomasyonu: gizli web istemcisi, oku/yaz kapsamları, izinli roller, vurgu rengi ve simge.</summary>

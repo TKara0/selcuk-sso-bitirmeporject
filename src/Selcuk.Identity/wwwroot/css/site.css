@@ -81,6 +81,26 @@
     background: #E1EFEA;
 }
 
+.uygulama-simge-indigo {
+    color: #4B4A9C;
+    background: #E9E8F5;
+}
+
+.uygulama-simge-petrol {
+    color: #1F5F73;
+    background: #E0EDF1;
+}
+
+.uygulama-simge-gulkurusu {
+    color: #8A5163;
+    background: #F4E8EC;
+}
+
+.uygulama-simge-grafit {
+    color: #3E4A52;
+    background: #E6E9EB;
+}
+
 @media (prefers-color-scheme: dark) {
     .uygulama-simge-zeytin {
         color: #A9C98B;
@@ -115,6 +135,26 @@
     .uygulama-simge-cam {
         color: #8FCDB8;
         background: #163028;
+    }
+
+    .uygulama-simge-indigo {
+        color: #B4B3E8;
+        background: #24233F;
+    }
+
+    .uygulama-simge-petrol {
+        color: #86C3D6;
+        background: #142E37;
+    }
+
+    .uygulama-simge-gulkurusu {
+        color: #DDA9B9;
+        background: #36222A;
+    }
+
+    .uygulama-simge-grafit {
+        color: #B3C0C8;
+        background: #232A2F;
     }
 }
 

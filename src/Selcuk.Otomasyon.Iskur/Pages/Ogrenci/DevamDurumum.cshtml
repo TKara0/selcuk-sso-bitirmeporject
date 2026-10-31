@@ -1,0 +1,21 @@
+@page
+@model Selcuk.Otomasyon.Iskur.Pages.Ogrenci.DevamDurumumModel
+@{
+    ViewData["Title"] = "Devam durumum";
+    var sartlar = Model.Sartlar;
+    var tablo = KayitTablosu.Olustur("Aylık devam kayıtların", Model.Kayitlar, d => d.Id, "iskur",
+        new KayitSutunu<AylikDevam>("Ay", d => IskurOtomasyonu.AyAdi(d.Ay)),
+        new KayitSutunu<AylikDevam>("Devam / planlanan saat", d => $"{d.DevamSaati} / {d.PlanlananSaat}", Sayi: true),
+        new KayitSutunu<AylikDevam>("Oran", d => IskurOtomasyonu.Yuzde(sartlar.Oran(d)), Sayi: true),
+        new KayitSutunu<AylikDevam>("Durum", d => IskurOtomasyonu.DevamRozeti(d.Durum)));
+    IReadOnlyList<SayiKarti> kartlar =
+    [
+        new("Toplam devam saati", Model.Kayitlar.Sum(d => d.DevamSaati), "toplam"),
+        new("Kayıtlı ay", Model.Kayitlar.Count, "ay"),
+    ];
+}
+<h1>Devam durumum</h1>
+<p class="giris-metni">İŞKUR programındaki aylık devam kayıtların.</p>
+
+<partial name="_SayiKartlari" model="kartlar" />
+<partial name="_KayitTablosu" model="tablo" />

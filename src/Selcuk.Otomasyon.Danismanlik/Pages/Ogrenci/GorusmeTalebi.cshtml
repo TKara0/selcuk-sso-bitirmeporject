@@ -1,0 +1,61 @@
+@page
+@model Selcuk.Otomasyon.Danismanlik.Pages.Ogrenci.GorusmeTalebiModel
+@{
+    ViewData["Title"] = "Görüşme talebi";
+}
+<h1>Görüşme talebi</h1>
+<p class="giris-metni">Danışmanından görüşme iste. Form temsilidir; talep kaydedilmez.</p>
+
+<section>
+    <form method="post" class="form basvuru-formu">
+        <div class="alan">
+            <label for="konu">Konu</label>
+            <select id="konu" name="konu" class="metin-alani" required>
+                @foreach (var konu in Enum.GetValues<GorusmeKonusu>())
+                {
+                    <option value="@konu">@DanismanlikOtomasyonu.KonuAdi(konu)</option>
+                }
+            </select>
+        </div>
+        <div class="alan">
+            <label for="aciklama">Kısa açıklama</label>
+            <textarea id="aciklama" name="aciklama" class="metin-alani" rows="3" maxlength="500"></textarea>
+        </div>
+        <div class="dugmeler">
+            <button type="submit" class="dugme dugme-uygulama">Talep gönder</button>
+        </div>
+    </form>
+</section>
+
+<section aria-labelledby="taleplerim">
+    <h2 id="taleplerim">Taleplerim</h2>
+    @if (Model.Talepler.Count == 0)
+    {
+        <p class="bos-durum">@KayitTablosu.VarsayilanBosMetin</p>
+    }
+    @foreach (var talep in Model.Talepler)
+    {
+        <section class="basvuru" data-danismanlik="@talep.Id" aria-labelledby="talep-@talep.Id">
+            <h3 id="talep-@talep.Id">@DanismanlikOtomasyonu.KonuAdi(talep.Konu), @DanismanlikOtomasyonu.Tarih(talep.TalepTarihi)</h3>
+            <p>Durum: <partial name="_DurumRozeti" model="DanismanlikOtomasyonu.Rozet(talep.Durum)" /></p>
+            <partial name="_BasvuruAdimlari" model="DanismanlikOtomasyonu.Adimlar(talep.Durum)" />
+            <dl class="tanimlar">
+                <div>
+                    <dt>Danışman</dt>
+                    <dd>@talep.DanismanAdi</dd>
+                </div>
+                <div>
+                    <dt>Görüşme tarihi</dt>
+                    <dd>@DanismanlikOtomasyonu.Tarih(talep.GorusmeTarihi)</dd>
+                </div>
+                @if (talep.Aciklama is not null)
+                {
+                    <div>
+                        <dt>Danışmanın notu</dt>
+                        <dd>@talep.Aciklama</dd>
+                    </div>
+                }
+            </dl>
+        </section>
+    }
+</section>

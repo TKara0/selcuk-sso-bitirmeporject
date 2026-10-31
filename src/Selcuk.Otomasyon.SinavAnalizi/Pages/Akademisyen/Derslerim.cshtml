@@ -1,0 +1,34 @@
+@page
+@model Selcuk.Otomasyon.SinavAnalizi.Pages.Akademisyen.DerslerimModel
+@{
+    ViewData["Title"] = "Kendi derslerim";
+    var sartlar = Model.Sartlar;
+    Func<DersSonucu, object> gecme = @<partial name="_GecmeOrani" model="sartlar.GecmeOrani(item)" />;
+    var ozet = KayitTablosu.Olustur("Derslerin ve dönemler", Model.Dersler, d => d.Id, "sinav",
+        new KayitSutunu<DersSonucu>("Ders", d => $"{d.DersKodu} {d.DersAdi}"),
+        new KayitSutunu<DersSonucu>("Dönem", d => d.Donem),
+        new KayitSutunu<DersSonucu>("Öğrenci", d => d.OgrenciSayisi, Sayi: true),
+        new KayitSutunu<DersSonucu>("Ortalama", d => SinavAnaliziOtomasyonu.Sayi(SinavAnaliziOtomasyonu.Ortalama(d)), Sayi: true),
+        new KayitSutunu<DersSonucu>("Geçme oranı", gecme),
+        new KayitSutunu<DersSonucu>("Hedefe göre", d => sartlar.Rozet(sartlar.GecmeOrani(d))));
+    var sonDonemler = Model.Dersler.GroupBy(d => d.DersKodu).Select(g => g.OrderByDescending(d => d.Donem, StringComparer.Ordinal).First()).ToList();
+}
+<h1>Kendi derslerim</h1>
+<p class="giris-metni">
+    Hocası olduğun derslerin toplu sonuçları. Yalnızca harf notu dağılımı gösterilir; öğrenci düzeyinde veri yoktur.
+</p>
+<p class="sart-notu" data-sart="gecme">
+    Geçme notu: <strong>@sartlar.GecmeNotu</strong> ve üstü; başarı hedefi: geçme oranı en az
+    <strong>@SinavAnaliziOtomasyonu.Yuzde(sartlar.BasariHedefiOrani)</strong>. Şart değerleri örnektir.
+</p>
+
+<partial name="_KayitTablosu" model="ozet" />
+
+@foreach (var ders in sonDonemler)
+{
+    var enCok = Math.Max(1, ders.NotDagilimi.Max(h => h.Sayi));
+    Func<HarfSayisi, object> cubuk = @<span class="olcum"><meter min="0" max="@enCok" value="@item.Sayi" aria-hidden="true"></meter> @item.Sayi</span>;
+    <partial name="_KayitTablosu" model="@(KayitTablosu.Olustur($"{ders.DersKodu} not dağılımı, {ders.Donem}", ders.NotDagilimi, null, null,
+        new KayitSutunu<HarfSayisi>("Harf notu", h => h.Harf),
+        new KayitSutunu<HarfSayisi>("Öğrenci sayısı", cubuk)) with { BaslikDuzeyi = 3, Kimlik = "dagilim-" + ders.Id })" />
+}

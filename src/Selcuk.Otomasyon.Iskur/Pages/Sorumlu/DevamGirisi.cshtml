@@ -1,0 +1,43 @@
+@page
+@model Selcuk.Otomasyon.Iskur.Pages.Sorumlu.DevamGirisiModel
+@{
+    ViewData["Title"] = "Devam girişi";
+    var ogrenciler = Model.Kayitlar.DistinctBy(d => d.OgrenciNo).OrderBy(d => d.OgrenciAdi, StringComparer.Create(IskurOtomasyonu.Tr, false)).ToList();
+    Func<AylikDevam, object> ogrenci = @<text>@item.OgrenciAdi <span class="mono ipucu">@item.OgrenciNo</span></text>;
+    var tablo = KayitTablosu.Olustur("Girişi süren aylar", Model.Kayitlar.Where(d => d.Durum == DevamDurumu.Giriliyor), d => d.Id, "iskur",
+        new KayitSutunu<AylikDevam>("Öğrenci", ogrenci),
+        new KayitSutunu<AylikDevam>("Ay", d => IskurOtomasyonu.AyAdi(d.Ay)),
+        new KayitSutunu<AylikDevam>("Girilen / planlanan saat", d => $"{d.DevamSaati} / {d.PlanlananSaat}", Sayi: true));
+}
+<h1>Devam girişi</h1>
+<p class="giris-metni">Bölümündeki İŞKUR öğrencileri için günlük devam saati gir. Form temsilidir; kaydedilmez.</p>
+<p class="sart-notu" data-sart="aylik-sinir">
+    Aylık en fazla devam saati: <strong>@Model.Sartlar.AylikEnFazlaDevamSaati</strong>. Şart değerleri örnektir.
+</p>
+
+<section>
+    <form method="post" class="form basvuru-formu">
+        <div class="alan">
+            <label for="ogrenci">Öğrenci</label>
+            <select id="ogrenci" name="ogrenciNo" class="metin-alani" required>
+                @foreach (var o in ogrenciler)
+                {
+                    <option value="@o.OgrenciNo">@o.OgrenciAdi</option>
+                }
+            </select>
+        </div>
+        <div class="alan">
+            <label for="tarih">Gün</label>
+            <input id="tarih" name="tarih" type="date" class="metin-alani" required />
+        </div>
+        <div class="alan">
+            <label for="saat">Devam saati</label>
+            <input id="saat" name="saat" type="number" min="0" max="8" class="metin-alani" required />
+        </div>
+        <div class="dugmeler">
+            <button type="submit" class="dugme dugme-uygulama">Devamı kaydet</button>
+        </div>
+    </form>
+</section>
+
+<partial name="_KayitTablosu" model="tablo" />

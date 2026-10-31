@@ -1,0 +1,23 @@
+@page
+@model Selcuk.Otomasyon.Danismanlik.Pages.Danisman.OgrencilerimModel
+@{
+    ViewData["Title"] = "Öğrenci listesi";
+    Func<DanismanlikOgrencisi, object> ogrenci = @<text>@item.OgrenciAdi <span class="mono ipucu">@item.OgrenciNo</span></text>;
+    var tablo = KayitTablosu.Olustur("Danışmanı olduğun öğrenciler", Model.Ogrenciler, o => o.OgrenciNo, "danismanlik",
+        new KayitSutunu<DanismanlikOgrencisi>("Öğrenci", ogrenci),
+        new KayitSutunu<DanismanlikOgrencisi>("Sınıf", o => o.Sinif, Sayi: true),
+        new KayitSutunu<DanismanlikOgrencisi>("AKTS", o => o.ToplamAkts, Sayi: true),
+        new KayitSutunu<DanismanlikOgrencisi>("GNO", o => DanismanlikOtomasyonu.Gno(o.Gno), Sayi: true),
+        new KayitSutunu<DanismanlikOgrencisi>("Son görüşme", o => DanismanlikOtomasyonu.Tarih(o.SonGorusme)),
+        new KayitSutunu<DanismanlikOgrencisi>("Uyarı", o => DanismanlikOtomasyonu.GorusmeRozeti(Model.Sartlar.GorusmeGecikti(o, Model.Bugun))));
+}
+<h1>Öğrenci listesi</h1>
+<p class="giris-metni">
+    Danışmanı olduğun öğrenciler. Danışmanlık kişiye bağlıdır: yalnızca sana atanmış öğrencileri görürsün.
+</p>
+<p class="sart-notu" data-sart="gorusme">
+    Görüşme aralığı hedefi: <strong>@Model.Sartlar.GorusmeAraligiHedefiGun gün</strong>; son görüşmesinin üzerinden daha
+    uzun süre geçen öğrenci uyarı alır. Şart değerleri örnektir.
+</p>
+
+<partial name="_KayitTablosu" model="tablo" />

@@ -1,0 +1,47 @@
+@page
+@model Selcuk.Otomasyon.Danismanlik.Pages.Danisman.GorusmeNotlariModel
+@{
+    ViewData["Title"] = "Görüşme notları";
+    Func<GorusmeNotu, object> ogrenci = @<text>@item.OgrenciAdi <span class="mono ipucu">@item.OgrenciNo</span></text>;
+    var tablo = KayitTablosu.Olustur("Görüşme kayıtların", Model.Notlar, n => n.Id, "danismanlik",
+        new KayitSutunu<GorusmeNotu>("Tarih", n => DanismanlikOtomasyonu.Tarih(n.Tarih)),
+        new KayitSutunu<GorusmeNotu>("Öğrenci", ogrenci),
+        new KayitSutunu<GorusmeNotu>("Konu", n => DanismanlikOtomasyonu.KonuAdi(n.Konu)),
+        new KayitSutunu<GorusmeNotu>("Not", n => n.Not));
+}
+<h1>Görüşme notları</h1>
+<p class="giris-metni">Danışmanı olduğun öğrencilerle görüşme kayıtların. Yeni not formu temsilidir; kaydedilmez.</p>
+
+<section aria-labelledby="yeni-not">
+    <h2 id="yeni-not">Yeni görüşme notu</h2>
+    <form method="post" class="form basvuru-formu">
+        <div class="alan">
+            <label for="ogrenci">Öğrenci</label>
+            <select id="ogrenci" name="ogrenciNo" class="metin-alani" required>
+                @foreach (var o in Model.Ogrenciler)
+                {
+                    <option value="@o.OgrenciNo">@o.OgrenciAdi</option>
+                }
+            </select>
+        </div>
+        <div class="alan">
+            <label for="konu">Konu</label>
+            <select id="konu" name="konu" class="metin-alani" required>
+                @foreach (var konu in Enum.GetValues<GorusmeKonusu>())
+                {
+                    <option value="@konu">@DanismanlikOtomasyonu.KonuAdi(konu)</option>
+                }
+            </select>
+        </div>
+        <div class="alan">
+            <label for="not">Not</label>
+            <textarea id="not" name="not" class="metin-alani" rows="3" required maxlength="1000" aria-describedby="not-ipucu"></textarea>
+            <p class="ipucu" id="not-ipucu">Yalnızca akademik konular; kişisel bilgi yazma.</p>
+        </div>
+        <div class="dugmeler">
+            <button type="submit" class="dugme dugme-uygulama">Notu kaydet</button>
+        </div>
+    </form>
+</section>
+
+<partial name="_KayitTablosu" model="tablo" />

@@ -308,3 +308,41 @@
 .tablo select.metin-alani {
     min-width: 12em;
 }
+
+/* Yatay çubuk (<meter>): değeri her zaman yanında metinle yazılır, çubuk yalnızca görsel destektir (aria-hidden).
+   Satır içi stil yok; renkler token'lardan. */
+.olcum {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--a2);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.olcum meter {
+    appearance: none;
+    width: 6em;
+    height: 0.75em;
+    background: var(--tas);
+    border: 1px solid var(--kontrol-cizgi);
+    border-radius: var(--kose-kontrol);
+}
+
+.olcum meter::-webkit-meter-bar {
+    height: 100%;
+    background: var(--tas);
+    border: 0;
+    border-radius: var(--kose-kontrol);
+}
+
+.olcum meter::-webkit-meter-optimum-value,
+.olcum meter::-webkit-meter-suboptimum-value,
+.olcum meter::-webkit-meter-even-less-good-value {
+    background: var(--uygulama-vurgu);
+    border-radius: var(--kose-kontrol);
+}
+
+.olcum meter::-moz-meter-bar {
+    background: var(--uygulama-vurgu);
+    border-radius: var(--kose-kontrol);
+}

@@ -1,0 +1,35 @@
+@page
+@model Selcuk.Otomasyon.Mudek.Pages.Rapor.DonemModel
+@{
+    ViewData["Title"] = "Raporlar";
+    var sartlar = Model.Sartlar;
+    var gerceklesmeler = Model.ProgramCiktilari.Select(p => (Cikti: p, Oran: MudekSartlari.Gerceklesme(p, Model.DersCiktilari))).ToList();
+    IReadOnlyList<SayiKarti> kartlar =
+    [
+        new("Hedefteki program çıktısı", $"{gerceklesmeler.Count(g => g.Oran >= sartlar.ProgramCiktisiHedefOrani)} / {gerceklesmeler.Count}", "hedefte"),
+        new("Hedef altında", gerceklesmeler.Count(g => g.Oran < sartlar.ProgramCiktisiHedefOrani), "hedef-altinda"),
+        new("Verisi olmayan", gerceklesmeler.Count(g => g.Oran is null), "veri-yok"),
+        new("Eksik ders çıktısı", Model.DersCiktilari.Count(sartlar.DersCiktisiEksik), "eksik-ders"),
+    ];
+    var tablo = KayitTablosu.Olustur("Program çıktılarının özeti", gerceklesmeler, g => g.Cikti.Kod, "mudek",
+        new KayitSutunu<(ProgramCiktisi Cikti, decimal? Oran)>("Program çıktısı", g => $"{g.Cikti.Kod} {g.Cikti.Ad}"),
+        new KayitSutunu<(ProgramCiktisi Cikti, decimal? Oran)>("Gerçekleşme", g => MudekOtomasyonu.Yuzde(g.Oran), Sayi: true),
+        new KayitSutunu<(ProgramCiktisi Cikti, decimal? Oran)>("Durum", g => sartlar.ProgramRozeti(g.Oran)));
+}
+<h1>Raporlar</h1>
+<p class="giris-metni">Bölümünün @Selcuk.Otomasyon.Mudek.Veri.OrnekMudekVerisi.Donem dönemi MÜDEK raporu özeti.</p>
+<p class="sart-notu" data-sart="rapor">
+    Program çıktısı hedef oranı: <strong>@MudekOtomasyonu.Yuzde(sartlar.ProgramCiktisiHedefOrani)</strong>; ders çıktısı başarı
+    eşiği: <strong>@MudekOtomasyonu.Yuzde(sartlar.DersCiktisiBasariEsigi)</strong>. Şart değerleri örnektir.
+</p>
+
+<partial name="_SayiKartlari" model="kartlar" />
+
+<section>
+    <form method="post" class="dugmeler">
+        <button type="submit" class="dugme dugme-ikincil">Yazdır</button>
+        <p class="ipucu">Temsili: rapor yazdırılmaz, yalnızca işlem mesajı gösterilir.</p>
+    </form>
+</section>
+
+<partial name="_KayitTablosu" model="tablo" />

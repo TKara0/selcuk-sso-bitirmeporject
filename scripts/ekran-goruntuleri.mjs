@@ -1,5 +1,6 @@
 // Ekran görüntüleri: kimlik sunucusu, Demo OBİS, Demo Yemekhane, bölüm otomasyonları (Staj, İntibak, Mezuniyet,
-// ÇAP-Yandal, Etik Kurul, Bölüm Kurul Karar, Lisans Projeleri) ve Tek Kapı ekranlarını Playwright ile çeker.
+// ÇAP-Yandal, Etik Kurul, Bölüm Kurul Karar, Lisans Projeleri, Öğrenci Danışmanlık, İŞKUR, MÜDEK, Sınav Başarısı
+// Analizi) ve Tek Kapı ekranlarını Playwright ile çeker.
 //
 //   docs/tasarim/d2/    gözden geçirme için her ekranın açık, koyu (1280 × 800) ve 390px (mobil) hâli, tam sayfa
 //   docs/tez-gorselleri/ tez için seçilmiş ekranlar, açık tema, 1440px genişlik, tam sayfa
@@ -10,14 +11,15 @@
 //
 // --sadece: yalnızca verilen grupların ekranları çekilir ve yalnızca onların eski PNG'leri silinir (diğer PNG'lere
 // dokunulmaz). Gruplar: kimlik, obis, yemekhane, staj, tekkapi, intibak, mezuniyet, cap, etik-kurul, bolum-kurul,
-// lisans-projeleri. Verilmezse hepsi (ve bütün eski PNG'ler silinir).
+// lisans-projeleri, danismanlik, iskur, mudek, sinav-analizi. Verilmezse hepsi (ve bütün eski PNG'ler silinir).
 //
 // Ne yapar:
-//   - 4545, 5001, 5101, 5102, 5201, 5301-5305, 5309, 5311 portlarından biri doluysa durur (kullanıcının uygulamalarına dokunmaz).
+//   - 4545, 5001, 5101, 5102, 5201, 5301-5311 portlarından biri doluysa durur (kullanıcının uygulamalarına dokunmaz).
 //   - Kimlik sunucusu için geçici bir LocalDB veritabanı (SelcukSSO_Ekran_<rastgele>) kurar; test kullanıcılarının
 //     şifreleri ve demo istemci sırrı bu çalıştırma için rastgele üretilir, yalnızca bellekte ve başlatılan süreçlerin
 //     ortam değişkenlerinde durur (yazdırılmaz, dosyaya yazılmaz). Yalnızca test kullanıcıları (203011001,
-//     203011002, hoca.test, personel.test, komisyon.test, baskan.test, koordinator.test, etik.test) kullanılır.
+//     203011002, hoca.test, personel.test, komisyon.test, baskan.test, koordinator.test, etik.test, iskur.test,
+//     mudek.test) kullanılır.
 //   - Uygulamaları scripts/run-all.ps1 -TarayiciAcma ile başlatır; Tek Kapı'yı GEÇİCİ bir veri klasörüyle
 //     (PORTAL_DATA_DIR) SSO modunda kendisi başlatır. Gerçek kasaya (araclar/tek-kapi/data) dokunmaz, okumaz.
 //     Tek Kapı'da yalnızca portal ekranları çekilir: hiçbir sistem "Aç"ılmaz, yönetilen tarayıcı başlatılmaz; kasaya
@@ -56,12 +58,16 @@ const CAP = 'https://localhost:5311';
 const ETIK_KURUL = 'https://localhost:5303';
 const BOLUM_KURUL = 'https://localhost:5305';
 const LISANS_PROJELERI = 'https://localhost:5309';
+const DANISMANLIK = 'https://localhost:5306';
+const ISKUR = 'https://localhost:5307';
+const MUDEK = 'https://localhost:5308';
+const SINAV_ANALIZI = 'https://localhost:5310';
 const TEK_KAPI_ADRES = 'http://127.0.0.1:4545';
-const PORTLAR = [4545, 5001, 5101, 5102, 5201, 5301, 5302, 5303, 5304, 5305, 5309, 5311];
+const PORTLAR = [4545, 5001, 5101, 5102, 5201, 5301, 5302, 5303, 5304, 5305, 5306, 5307, 5308, 5309, 5310, 5311];
 
 // Ekran grupları (--sadece). Ekran adının öneki grubunu belirler; önekli olmayanlar kimlik sunucusunundur.
 const GRUPLAR = ['kimlik', 'obis', 'yemekhane', 'staj', 'tekkapi', 'intibak', 'mezuniyet', 'cap', 'etik-kurul', 'bolum-kurul',
-  'lisans-projeleri'];
+  'lisans-projeleri', 'danismanlik', 'iskur', 'mudek', 'sinav-analizi'];
 const ESKI_GRUPLAR = ['kimlik', 'obis', 'yemekhane', 'staj', 'tekkapi'];
 const grubu = (ad) => GRUPLAR.find((g) => g !== 'kimlik' && ad.startsWith(g + '-')) ?? 'kimlik';
 const sadeceArg = process.argv.indexOf('--sadece');
@@ -78,7 +84,7 @@ const rastgele = (n) => crypto.randomBytes(n).toString('base64url');
 const sifreUret = () => `Ek${rastgele(12)}7a`;
 const SIFRELER = {
   ogrenci: sifreUret(), ogrenci2: sifreUret(), akademisyen: sifreUret(), personel: sifreUret(), komisyon: sifreUret(),
-  baskan: sifreUret(), koordinator: sifreUret(), etik: sifreUret(),
+  baskan: sifreUret(), koordinator: sifreUret(), etik: sifreUret(), iskur: sifreUret(), mudek: sifreUret(),
 };
 const ISTEMCI_SIRRI = rastgele(32);
 const ANA_SIFRE = `Kasa-${rastgele(12)}`;
@@ -96,6 +102,8 @@ const ORTAM = {
   TestKullanicilari__Ogrenci2__Sifre: SIFRELER.ogrenci2,
   TestKullanicilari__Koordinator__Sifre: SIFRELER.koordinator,
   TestKullanicilari__Etik__Sifre: SIFRELER.etik,
+  TestKullanicilari__Iskur__Sifre: SIFRELER.iskur,
+  TestKullanicilari__Mudek__Sifre: SIFRELER.mudek,
   // Gizli istemciler aynı sırrı kullanır (hepsi Kimlik:ClientSecret okur; ortam değişkeni ortak).
   Istemciler__DemoObis__ClientSecret: ISTEMCI_SIRRI,
   Istemciler__DemoYemekhane__ClientSecret: ISTEMCI_SIRRI,
@@ -106,6 +114,10 @@ const ORTAM = {
   Istemciler__EtikKurulOtomasyonu__ClientSecret: ISTEMCI_SIRRI,
   Istemciler__BolumKurulOtomasyonu__ClientSecret: ISTEMCI_SIRRI,
   Istemciler__LisansProjeleriOtomasyonu__ClientSecret: ISTEMCI_SIRRI,
+  Istemciler__DanismanlikOtomasyonu__ClientSecret: ISTEMCI_SIRRI,
+  Istemciler__IskurOtomasyonu__ClientSecret: ISTEMCI_SIRRI,
+  Istemciler__MudekOtomasyonu__ClientSecret: ISTEMCI_SIRRI,
+  Istemciler__SinavAnaliziOtomasyonu__ClientSecret: ISTEMCI_SIRRI,
   Kimlik__ClientSecret: ISTEMCI_SIRRI,
 };
 delete ORTAM.Olcum__HizSiniriGevset;
@@ -185,7 +197,9 @@ const TEZ_SIRASI = ['giris', 'onay', 'uygulamalarim', 'obis-notlarim', 'obis-tok
   'staj-stajlarim', 'staj-basvuru-inceleme', 'staj-ozet', 'staj-erisim-reddedildi',
   'intibak-basvurum', 'intibak-ders-eslestirme', 'mezuniyet-durumum', 'mezuniyet-adaylar', 'cap-basvurularim',
   'cap-gelen-basvurular', 'etik-kurul-basvurularim', 'etik-kurul-atanan-dosyalar', 'bolum-kurul-toplantilar',
-  'bolum-kurul-oylama', 'lisans-projeleri-asamalarim', 'lisans-projeleri-eslestirme'];
+  'bolum-kurul-oylama', 'lisans-projeleri-asamalarim', 'lisans-projeleri-eslestirme',
+  'danismanlik-gorusme-talebi', 'danismanlik-ogrencilerim', 'iskur-devam-durumum', 'iskur-takip',
+  'mudek-program-ciktilari', 'mudek-veri-girisi', 'sinav-analizi-derslerim', 'sinav-analizi-bolum-geneli'];
 
 async function cek(sayfa, ad, { mobil = true } = {}) {
   if (!seciliMi(ad)) return;
@@ -440,12 +454,106 @@ async function kurulVeProjeCekimleri(tarayici) {
   }
 }
 
+// Öğrenci Danışmanlık, İŞKUR, MÜDEK ve Sınav Başarısı Analizi (temsili, örnek veri): öğrenciler (203011001,
+// 203011002), akademisyen ve danışman (hoca.test), bölüm başkanı (baskan.test), İŞKUR sorumlusu (iskur.test) ve
+// MÜDEK komisyonu üyesi (mudek.test). Sınav Analizi yalnızca toplu sonuç gösterir.
+async function kalanOtomasyonCekimleri(tarayici) {
+  const gruplar = ['danismanlik', 'iskur', 'mudek', 'sinav-analizi'].filter((g) => SECILI.includes(g));
+  if (gruplar.length === 0) return;
+  console.log('Öğrenci Danışmanlık, İŞKUR, MÜDEK ve Sınav Başarısı Analizi otomasyonları (temsili, örnek veri)');
+
+  if (gruplar.includes('danismanlik')) {
+    const ogrenci = await yeniBaglam(tarayici);
+    await uygulamayaGir(ogrenci.sayfa, DANISMANLIK, '203011002', SIFRELER.ogrenci2);
+    await cek(ogrenci.sayfa, 'danismanlik-ana');
+    await git(ogrenci.sayfa, DANISMANLIK + '/Ogrenci/Danismanim');
+    await cek(ogrenci.sayfa, 'danismanlik-danismanim');
+    await git(ogrenci.sayfa, DANISMANLIK + '/Ogrenci/GorusmeTalebi');
+    await cek(ogrenci.sayfa, 'danismanlik-gorusme-talebi');
+    await ogrenci.baglam.close();
+  }
+
+  if (gruplar.includes('danismanlik') || gruplar.includes('mudek') || gruplar.includes('sinav-analizi')) {
+    const hoca = await yeniBaglam(tarayici);
+    if (gruplar.includes('danismanlik')) {
+      await uygulamayaGir(hoca.sayfa, DANISMANLIK, 'hoca.test', SIFRELER.akademisyen);
+      await git(hoca.sayfa, DANISMANLIK + '/Danisman/Ogrencilerim');
+      await cek(hoca.sayfa, 'danismanlik-ogrencilerim');
+      await git(hoca.sayfa, DANISMANLIK + '/Danisman/GorusmeNotlari');
+      await cek(hoca.sayfa, 'danismanlik-gorusme-notlari');
+    }
+    if (gruplar.includes('mudek')) {
+      await uygulamayaGir(hoca.sayfa, MUDEK, 'hoca.test', SIFRELER.akademisyen);
+      await git(hoca.sayfa, MUDEK + '/Akademisyen/VeriGirisi');
+      await cek(hoca.sayfa, 'mudek-veri-girisi');
+    }
+    if (gruplar.includes('sinav-analizi')) {
+      await uygulamayaGir(hoca.sayfa, SINAV_ANALIZI, 'hoca.test', SIFRELER.akademisyen);
+      await git(hoca.sayfa, SINAV_ANALIZI + '/Akademisyen/Derslerim');
+      await cek(hoca.sayfa, 'sinav-analizi-derslerim');
+    }
+    await hoca.baglam.close();
+  }
+
+  if (gruplar.includes('danismanlik') || gruplar.includes('sinav-analizi')) {
+    const baskan = await yeniBaglam(tarayici);
+    if (gruplar.includes('danismanlik')) {
+      await uygulamayaGir(baskan.sayfa, DANISMANLIK, 'baskan.test', SIFRELER.baskan);
+      await git(baskan.sayfa, DANISMANLIK + '/Baskan/DanismanAtama');
+      await cek(baskan.sayfa, 'danismanlik-danisman-atama');
+    }
+    if (gruplar.includes('sinav-analizi')) {
+      await uygulamayaGir(baskan.sayfa, SINAV_ANALIZI, 'baskan.test', SIFRELER.baskan);
+      await git(baskan.sayfa, SINAV_ANALIZI + '/Baskan/BolumGeneli');
+      await cek(baskan.sayfa, 'sinav-analizi-bolum-geneli');
+    }
+    await baskan.baglam.close();
+  }
+
+  if (gruplar.includes('iskur')) {
+    const ogrenci = await yeniBaglam(tarayici);
+    await uygulamayaGir(ogrenci.sayfa, ISKUR, '203011001', SIFRELER.ogrenci);
+    await git(ogrenci.sayfa, ISKUR + '/Ogrenci/DevamDurumum');
+    await cek(ogrenci.sayfa, 'iskur-devam-durumum');
+    await ogrenci.baglam.close();
+
+    const sorumlu = await yeniBaglam(tarayici);
+    await uygulamayaGir(sorumlu.sayfa, ISKUR, 'iskur.test', SIFRELER.iskur);
+    await cek(sorumlu.sayfa, 'iskur-ana');
+    await git(sorumlu.sayfa, ISKUR + '/Sorumlu/DevamGirisi');
+    await cek(sorumlu.sayfa, 'iskur-devam-girisi');
+    await git(sorumlu.sayfa, ISKUR + '/Sorumlu/Takip');
+    await cek(sorumlu.sayfa, 'iskur-takip');
+    await sorumlu.baglam.close();
+  }
+
+  if (gruplar.includes('mudek') || gruplar.includes('sinav-analizi')) {
+    const komisyon = await yeniBaglam(tarayici);
+    if (gruplar.includes('mudek')) {
+      await uygulamayaGir(komisyon.sayfa, MUDEK, 'mudek.test', SIFRELER.mudek);
+      await git(komisyon.sayfa, MUDEK + '/Komisyon/ProgramCiktilari');
+      await cek(komisyon.sayfa, 'mudek-program-ciktilari');
+      await git(komisyon.sayfa, MUDEK + '/Komisyon/Eksikler');
+      await cek(komisyon.sayfa, 'mudek-eksikler');
+      await git(komisyon.sayfa, MUDEK + '/Rapor/Donem');
+      await cek(komisyon.sayfa, 'mudek-donem-raporu');
+    }
+    if (gruplar.includes('sinav-analizi')) {
+      await uygulamayaGir(komisyon.sayfa, SINAV_ANALIZI, 'mudek.test', SIFRELER.mudek);
+      await git(komisyon.sayfa, SINAV_ANALIZI + '/Mudek/CiktiAnalizi');
+      await cek(komisyon.sayfa, 'sinav-analizi-cikti-analizi');
+    }
+    await komisyon.baglam.close();
+  }
+}
+
 async function cekimler(tarayici) {
   // Mevcut ekranlar tek akıştır (kimlik sunucusu oturumu, 2FA kurulumu ve Tek Kapı birbirine bağlı); bu gruplardan
   // biri seçilmişse akış baştan sona yürür, seçilmeyen grupların ekranları çekilmez (cek).
   if (ESKI_GRUPLAR.some((g) => SECILI.includes(g))) await mevcutCekimler(tarayici);
   await otomasyonCekimleri(tarayici);
   await kurulVeProjeCekimleri(tarayici);
+  await kalanOtomasyonCekimleri(tarayici);
 }
 
 async function mevcutCekimler(tarayici) {

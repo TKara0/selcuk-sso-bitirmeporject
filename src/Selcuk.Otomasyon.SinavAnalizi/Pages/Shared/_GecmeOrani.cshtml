@@ -1,0 +1,3 @@
+@* Geçme oranı: yatay çubuk (<meter>, satır içi stil yok) ve yanında değer metni; çubuk yalnızca görsel destektir. Model: oran (0-1). *@
+@model decimal
+<span class="olcum"><meter min="0" max="100" value="@SinavAnaliziOtomasyonu.YuzdeSayisi(Model)" aria-hidden="true"></meter> @SinavAnaliziOtomasyonu.Yuzde(Model)</span>

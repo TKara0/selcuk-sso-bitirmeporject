@@ -1,0 +1,53 @@
+@page
+@model Selcuk.Otomasyon.Mudek.Pages.Akademisyen.VeriGirisiModel
+@{
+    ViewData["Title"] = "Ders çıktısı veri girişi";
+}
+<h1>Ders çıktısı veri girişi</h1>
+<p class="giris-metni">
+    Hocası olduğun derslerin ders çıktıları için ölçülen başarı oranını (yüzde) gir. Kaydet temsilidir; kaydedilmez.
+</p>
+<p class="sart-notu" data-sart="ders-esigi">
+    Ders çıktısı başarı eşiği: <strong>@MudekOtomasyonu.Yuzde(Model.Sartlar.DersCiktisiBasariEsigi)</strong>. Şart değerleri örnektir.
+</p>
+
+@if (Model.DersCiktilari.Count == 0)
+{
+    <p class="bos-durum">@KayitTablosu.VarsayilanBosMetin</p>
+}
+else
+{
+    <form method="post">
+        <div class="tablo-kabi kayit-tablosu" role="region" aria-label="Ders çıktıların" tabindex="0">
+            <table class="tablo">
+                <caption class="gorunmez">Ders çıktıların</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Ders çıktısı</th>
+                        <th scope="col">Program çıktıları</th>
+                        <th scope="col">Ölçülen oran (%)</th>
+                        <th scope="col">Durum</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var d in Model.DersCiktilari)
+                    {
+                        <tr data-mudek="@d.Id">
+                            <th scope="row"><span class="mono">@d.DersKodu</span> @d.DersAdi, @d.CiktiKodu<br /><span class="ipucu">@d.Aciklama</span></th>
+                            <td>@string.Join(", ", d.ProgramCiktilari)</td>
+                            <td>
+                                <label class="gorunmez" for="oran-@d.Id">Ölçülen oran: @d.DersKodu @d.CiktiKodu</label>
+                                <input id="oran-@d.Id" name="oran[@d.Id]" type="number" min="0" max="100" class="metin-alani puan"
+                                       value="@(d.OlculenOran is { } o ? Math.Round(o * 100).ToString("0") : null)" />
+                            </td>
+                            <td><partial name="_DurumRozeti" model="Model.Sartlar.DersRozeti(d)" /></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="dugmeler">
+            <button type="submit" class="dugme dugme-uygulama">Kaydet</button>
+        </div>
+    </form>
+}
