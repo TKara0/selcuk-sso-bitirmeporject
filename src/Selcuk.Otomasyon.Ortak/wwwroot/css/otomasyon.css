@@ -2,7 +2,128 @@
  * Bölüm otomasyonlarının ortak yerleşimi (_OtomasyonDuzen). Renk, yazı, aralık ve köşe değerleri ortak tasarım
  * sisteminin token'larıdır (_content/Selcuk.Arayuz/css/selcuk.css; o dosya değiştirilmez). Uygulamanın vurgu rengi
  * (--uygulama-vurgu, --uygulama-vurgu-acik) uygulamanın kendi /css/site.css'indedir. Firuze yalnızca kimlik öğelerinde.
+ * Fakülte sitesinin sayfa yerleşiminden esinlenen öğeler (üst çubuk, başlık çizgisi, gezinti yolu, ikonlu menü, kartlar)
+ * yalnızca bu dosyadadır; renkler mevcut token'lardır, gölge yok (ayrım ince kenarlıkla). Kontrast: docs/otomasyon-sablonu.md.
  */
+
+/* ---------- Koyu lacivert üst çubuk ----------
+   Açık temada kapı panelinin zemini (--kapi-zemin, #12263A); koyu temada bu zemin (#0A1520) sayfa zeminine (#0E1B27)
+   çok yakın olduğu için bir ton açık lacivert (#1F3F5F; sayfa zeminine karşı 1,61:1, yüzeye karşı 1,40:1). Metin, soluk
+   metin ve açık firuze kapı paneli token'larıdır (#E6EEF0, #B9C9CF, #5CC3C0): açık temada 13,09 / 9,03 / 7,35:1, koyu
+   temada 9,23 / 6,37 / 5,18:1. Kimlik sunucusunun site.css'inde aynı değerler vardır. */
+:root {
+    --ust-zemin: var(--kapi-zemin);
+    --ust-metin: var(--kapi-metin);
+    --ust-soluk: var(--kapi-soluk);
+    --ust-vurgu: var(--kapi-cizgi);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --ust-zemin: #1F3F5F;
+    }
+}
+
+.ust-cubuk {
+    color: var(--ust-metin);
+    background: var(--ust-zemin);
+    border-bottom-color: var(--ust-zemin);
+}
+
+.ust-cubuk .marka,
+.ust-cubuk .uygulamalarim-baglantisi {
+    color: var(--ust-metin);
+}
+
+.ust-cubuk .marka .kapi-kucuk,
+.ust-cubuk .hesap-dugmesi .kapi-kucuk {
+    color: var(--ust-vurgu);
+}
+
+.ust-cubuk :focus-visible {
+    outline-color: var(--ust-vurgu);
+}
+
+.ust-cubuk .hesap-listesi :focus-visible {
+    outline-color: var(--firuze);
+}
+
+.ust-cubuk .hesap-dugmesi {
+    color: var(--ust-metin);
+    background: transparent;
+    border-color: var(--ust-soluk);
+}
+
+.ust-cubuk .hesap-dugmesi:hover,
+.ust-cubuk .hesap-dugmesi[aria-expanded="true"] {
+    background: transparent;
+    border-color: var(--ust-vurgu);
+}
+
+.ust-cubuk .hesap-dugmesi .ok {
+    color: var(--ust-soluk);
+}
+
+.ust-cubuk .etiket-notr {
+    color: var(--ust-soluk);
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--ust-soluk);
+}
+
+/* Uygulamanın vurgu rengi: simge rozeti ve çubuğun altında ince çizgi (üstteki şerit kalktı). */
+.uygulama-cubugu {
+    border-top: 0;
+    border-bottom: 3px solid var(--uygulama-vurgu);
+}
+
+.ust-cubuk .uygulama-simgesi {
+    box-shadow: inset 0 0 0 1px var(--uygulama-vurgu);
+}
+
+/* ---------- Başlık altı çizgi ----------
+   Sayfa başlığının altında kısa, kalın, dekoratif çizgi (CSS ile çizilir, ekran okuyucuya bir şey okunmaz). */
+main h1::after {
+    content: "";
+    display: block;
+    width: 3.5rem;
+    height: 4px;
+    margin-top: var(--a3);
+    background: var(--uygulama-vurgu);
+    border-radius: 2px;
+}
+
+/* ---------- Gezinti yolu (başlığın altında) ----------
+   Son öğe geçerli sayfadır. Dar ekranda satır sarılır ve uzun adlar kırılır, sayfa yatay kaymaz. */
+.gezinti-yolu {
+    margin: 0 0 var(--a6);
+    font-size: var(--boyut-kucuk);
+}
+
+.gezinti-yolu ol {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--a1) var(--a2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.gezinti-yolu li {
+    display: flex;
+    gap: var(--a2);
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.gezinti-yolu li + li::before {
+    content: "/";
+    content: "/" / "";
+    color: var(--soluk);
+}
+
+.gezinti-yolu [aria-current="page"] {
+    color: var(--soluk);
+}
 
 /* Sabit "Temsili ekran" bandı: nötr (taş zemin, soluk kenar); uyarı veya hata gibi görünmez. */
 .temsili-bant {
@@ -40,11 +161,22 @@
 .otomasyon {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
+    align-items: start;
     gap: var(--a6);
 }
 
 .otomasyon-icerik {
     min-width: 0;
+    padding: var(--a4);
+    background: var(--yuzey);
+    border: 1px solid var(--cizgi);
+    border-radius: var(--kose-yuzey);
+}
+
+@media (min-width: 480px) {
+    .otomasyon-icerik {
+        padding: var(--a6);
+    }
 }
 
 .otomasyon-icerik-dar {
@@ -69,8 +201,9 @@
     margin-top: var(--a2);
 }
 
+/* Menü kartı: beyaz, yuvarlatılmış, öğeler arasında ince ayraç; her öğenin başında dekoratif simge. */
 .menu-listesi {
-    padding: var(--a2) 0;
+    overflow: hidden;
     background: var(--yuzey);
     border: 1px solid var(--cizgi);
     border-radius: var(--kose-yuzey);
@@ -82,31 +215,88 @@
     list-style: none;
 }
 
+.menu-listesi li {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--a3);
+    padding-left: var(--a4);
+    border-top: 1px solid var(--cizgi);
+}
+
+.menu-listesi > ul:first-child > li:first-child,
+.menu-grubu + ul > li:first-child {
+    border-top: 0;
+}
+
 .menu-grubu {
-    margin: var(--a3) 0 var(--a1);
-    padding: 0 var(--a4);
+    margin: 0;
+    padding: var(--a3) var(--a4) var(--a1);
     color: var(--soluk);
     font-size: var(--boyut-kucuk);
     font-weight: 700;
+    border-top: 1px solid var(--cizgi);
 }
 
-.menu-listesi a {
+/* Simge bağlantının dışındadır (bağlantının metni ve işaretlemesi değişmez); bağlantının ::after'ı satırın tamamını
+   kaplar, böylece simge de tıklanabilir. Geçerli sayfa ve üzerine gelme biçimi satıra (li) verilir. */
+.menu-listesi li > a {
     display: flex;
+    flex: 1;
     align-items: center;
     min-height: var(--dokunma);
-    padding: var(--a2) var(--a4);
+    padding: var(--a2) var(--a4) var(--a2) 0;
     color: var(--murekkep);
     text-decoration: none;
 }
 
-.menu-listesi a:hover {
+.menu-listesi li > a::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+}
+
+.menu-listesi li > a:focus-visible {
+    outline: 0;
+}
+
+.menu-listesi li > a:focus-visible::after {
+    outline: 2px solid var(--uygulama-vurgu);
+    outline-offset: -2px;
+}
+
+.menu-listesi li:hover {
     background: var(--uygulama-vurgu-acik);
 }
 
-.menu-listesi a[aria-current="page"] {
+.menu-listesi li:has(> a[aria-current="page"]) {
     padding-left: calc(var(--a4) - 4px);
-    font-weight: 700;
+    background: var(--uygulama-vurgu-acik);
     border-left: 4px solid var(--uygulama-vurgu);
+}
+
+.menu-listesi a[aria-current="page"] {
+    font-weight: 700;
+}
+
+.menu-simgesi {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    color: var(--uygulama-vurgu);
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* Simgelerin gizli SVG sprite'ı (_MenuSimgeleri): yer kaplamaz, ekran okuyucuya görünmez. */
+.simge-sprite {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
 }
 
 @media (min-width: 840px) {

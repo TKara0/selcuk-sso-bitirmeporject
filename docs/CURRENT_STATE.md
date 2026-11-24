@@ -1,7 +1,7 @@
 # CURRENT_STATE
 
-Son güncelleme: 2026-11-25 (Demo OBİS yeni arayüz ve start.py).
-Son commit: bu belgeyi içeren "Demo OBİS yeni arayüz ve start.py" (öncesi `f4ff7eb`);
+Son güncelleme: 2026-11-25 (R11, fakülte sitesinden esinlenen yerleşim).
+Son commit: bu belgeyi içeren "Fakülte sitesinden esinlenen yerleşim: üst çubuk, başlık çizgisi, gezinti yolu, ikonlu menü" (öncesi `b8508ef`);
 hash için `git log -1`. Dal `main`.
 
 ## Çalışanlar (kodda var ve testle kapsanıyor)
@@ -30,11 +30,31 @@ hash için `git log -1`. Dal `main`.
 
 ## Doğrulama durumu
 
-- Bu adımda çalıştırıldı ve geçti: `dotnet build` (0 uyarı), `dotnet test SelcukSSO.sln` (varsayılan paralel; 18 .NET test projesi, **818** test), Tek Kapı
+- Bu adımda çalıştırıldı ve geçti: `dotnet build` (0 uyarı), `dotnet test SelcukSSO.sln` (varsayılan paralel; 18 .NET test projesi, **928** test), Tek Kapı
   `npm test` (**49** kontrol: 35 + 14). Sayılar `docs/test-kapsami.md`'de.
-- Kod kapsamı 2026-11-24'te 18 proje için yeniden ölçüldü: satır %91,7, dal %77,4 (`docs/test-kapsami.md`).
+- Kod kapsamı 2026-11-24'te 18 proje için ölçüldü: satır %91,7, dal %77,4 (`docs/test-kapsami.md`); bu adımda yeniden ölçülmedi.
 
-## Bu adımın değişiklikleri (R10, Demo OBİS arayüzü ve start.py)
+## Bu adımın değişiklikleri (R11, fakülte sitesinden esinlenen yerleşim)
+
+- Kimlik sunucusu sayfalarına ve bölüm otomasyonlarının ortak düzenine fakülte sitesinin sayfa yerleşiminden dört öğe
+  eklendi (yeniden tasarım değil; renkler `selcuk.css` token'ları, yazı tipi aynı; gerekçe ve neden kopyalanmadığı
+  [DECISIONS.md](DECISIONS.md)): koyu lacivert üst çubuk, h1 altında kısa kalın çizgi, gezinti yolu, ikonlu sol menü
+  (otomasyonlarda ayrıca beyaz yuvarlatılmış gölgesiz kartlar). Değişen yerler: `Selcuk.Otomasyon.Ortak` (`otomasyon.css`,
+  `_OtomasyonDuzen`, `_OtomasyonMenuListesi`, yeni `GeziniYolu`, `MenuSimgeleri`, `_GeziniYolu`, `_MenuSimgeleri`,
+  `MenuOgesi.Simge`), 11 otomasyonun menü tanımları (yalnızca `Simge`), kimlik sunucusu (`site.css`, `_GeziniYolu`, Hesabım,
+  Şifre değiştir, Güvenlik geçmişi ve İki aşamalı doğrulama ayarları sayfaları). `_SelcukDuzen`, `selcuk.css`,
+  `Selcuk.Arayuz/wwwroot`, Demo OBİS, Demo Yemekhane, Demo API ve Tek Kapı değişmedi.
+- Gezinti yolu: otomasyonlarda "Uygulamalarım / Otomasyon adı / Ekran adı" (ilk bağlantı Authority kökü); kimlik sunucusunda
+  yalnızca Hesabım ve alt sayfaları; giriş, girişin ikinci adımı (`Account/IkiAdim`), onay, çıkış ve hata sayfalarında yok.
+- `start.py` tutarlılık testi (`StartPyTutarlilikTests`): start.py'deki test kullanıcıları, roller ve kullanıcı-uygulama
+  eşlemesi koddakiyle karşılaştırıldı; **uyuşmazlık çıkmadı**, start.py değişmedi.
+- `scripts/ekran-goruntuleri.mjs`: `--cikti <klasör>` (docs dışına yazar, docs PNG'lerine dokunmaz) ve `--ekranlar <ad,...>`
+  eklendi; yeni `hesabim` ekranı. docs/ altındaki PNG'ler bu adımda yenilenmedi (toplu yenileme sonraki adımda); önizleme
+  `TestResults/onizleme/` (`.gitignore`'da).
+- Testler: 818 → 928 (+110: Identity +7, Otomasyon.Ortak +17, Staj +6, 10 otomasyonun ortak tabanında +8 × 10); hiçbiri
+  silinmedi, hiçbiri zayıflatılmadı ve değiştirilmedi.
+
+## Önceki adım (R10, Demo OBİS arayüzü ve start.py)
 
 - Demo OBİS arayüzü yeniden tasarlandı (yalnızca `src/Selcuk.Demo.Obis` ve testleri): mavi üst şerit ("Demo OBİS · Öğrenci
   Bilgi Sistemi", "Test" rozeti, hesap menüsünde yuvarlak baş harf görseli), gri sekme çubuğu (kare amblem alanında projenin

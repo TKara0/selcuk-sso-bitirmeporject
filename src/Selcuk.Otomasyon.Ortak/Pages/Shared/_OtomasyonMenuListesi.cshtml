@@ -1,12 +1,15 @@
-@* Menünün bağlantıları: ana sayfa ve rol başlıkları altında ekranlar. Model: gruplar; ViewData["MenuOnek"]: başlık kimliklerinin öneki. *@
+@* Menünün bağlantıları: ana sayfa ve rol başlıkları altında ekranlar, her birinin başında simge (aria-hidden, bağlantının dışında: bağlantı metni ve işaretlemesi değişmez; tıklanabilir alan CSS ile satıra genişler). Model: gruplar; ViewData["MenuOnek"]: başlık kimliklerinin öneki. *@
 @model IReadOnlyList<MenuGrubu>
 @{
     var onek = ViewData["MenuOnek"] as string ?? "menu";
     var gecerli = ViewContext.RouteData.Values["page"] as string;
     string? Gecerli(string sayfa) => string.Equals(gecerli, sayfa, StringComparison.OrdinalIgnoreCase) ? "page" : null;
+    // Dekoratif simge (aria-hidden); kimlik sprite'tan (_MenuSimgeleri), ad bilinmiyorsa varsayılan nokta.
+    Microsoft.AspNetCore.Html.IHtmlContent Simgesi(string? ad) => new Microsoft.AspNetCore.Html.HtmlString(
+        $"<svg class=\"menu-simgesi\" aria-hidden=\"true\" focusable=\"false\" width=\"20\" height=\"20\"><use href=\"#{MenuSimgeleri.SembolKimligi(ad)}\"></use></svg>");
 }
 <ul>
-    <li><a href="/" aria-current="@Gecerli("/Index")">Ana sayfa</a></li>
+    <li>@Simgesi("ana-sayfa")<a href="/" aria-current="@Gecerli("/Index")">Ana sayfa</a></li>
 </ul>
 @for (var i = 0; i < Model.Count; i++)
 {
@@ -14,7 +17,7 @@
     <ul aria-labelledby="@onek-grubu-@i">
         @foreach (var oge in Model[i].Ogeler)
         {
-            <li><a href="@oge.Sayfa" aria-current="@Gecerli(oge.Sayfa)">@oge.Baslik</a></li>
+            <li>@Simgesi(oge.Simge)<a href="@oge.Sayfa" aria-current="@Gecerli(oge.Sayfa)">@oge.Baslik</a></li>
         }
     </ul>
 }

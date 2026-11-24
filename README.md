@@ -1026,6 +1026,13 @@ olmayan (ör. Tek Kapı) veya tanımsız bir gruba yazılmış istemci sonda **D
 `Istemciler.KartSirasi`'dır. Yeni bir otomasyonun grubu `Istemciler.OtomasyonTanimi`'na verilir
 ([docs/otomasyon-sablonu.md](docs/otomasyon-sablonu.md)). Dar ekranda satırlar mevcut düzenle akar.
 
+**Yerleşim (fakülte sitesinden esinlenen öğeler):** koyu lacivert üst çubuk (uygulamanın vurgu rengi simge rozetinde ve
+çubuğun altında ince çizgi), her başlığın altında kısa kalın çizgi, başlığın altında **gezinti yolu** ("Uygulamalarım /
+Otomasyon adı / Ekran adı") ve her menü öğesinin başında **simge** (`MenuOgesi.Simge`; yerel SVG sprite). Yalnızca yerleşim
+karakteri alınmıştır: renkler, yazı tipi ve görseller projenin kendi token'larıdır, gerçek kurum amblemi veya menü metni
+yoktur; kimlik sunucusunda gezinti yolu yalnızca Hesabım sayfalarındadır. Ayrıntı:
+[docs/otomasyon-sablonu.md](docs/otomasyon-sablonu.md), gerekçe: [docs/DECISIONS.md](docs/DECISIONS.md).
+
 **Ekranlar temsilidir:** veriler örnektir (mock), formlar antiforgery korumalı gerçek bir POST yapar ama hiçbir şey
 kaydedilmez ("Bu ekran temsilidir; işlem kaydedilmedi."). Her sayfanın üstünde "Temsili ekran" bandı, alt bilgide veri
 kaynağı rozeti ("Veri: örnek veri" / "Veri: API") vardır. Veri kaynağı ayarla seçilir; API yazıldığında yalnızca ayar
@@ -1637,6 +1644,10 @@ node --use-system-ca scripts/ekran-goruntuleri.mjs --sadece intibak,mezuniyet,ca
   `obis`, `yemekhane`, `staj`, `tekkapi`, `intibak`, `mezuniyet`, `cap`, `etik-kurul`, `bolum-kurul`,
   `lisans-projeleri`, `danismanlik`, `iskur`, `mudek`, `sinav-analizi`). Verilmezse davranış eskisi gibidir: hepsi
   çekilir, bütün eski PNG'ler silinir.
+- `--ekranlar <ad,ad,...>` yalnızca adı verilen ekranları çeker (ör. `giris,hesabim,staj-ana`); `--cikti <klasör>`
+  görüntüleri `docs/` yerine verilen klasöre yazar (ör. `TestResults\onizleme`, `.gitignore`'da) ve `docs/tasarim/d2` ile
+  `docs/tez-gorselleri`'ne dokunmaz; `docs/` altındaki klasör reddedilir. Tasarım değişikliklerini commit'e girmeden
+  önizlemek içindir; docs PNG'leri toplu yenilemeyle güncellenir.
 - 4545, 5001, 5101, 5102, 5201, 5301-5311 portlarından biri doluysa durur; çalışan uygulamalara dokunmaz.
 - Kimlik sunucusu için geçici bir LocalDB veritabanı (`SelcukSSO_Ekran_<rastgele>`) kurar (`dotnet ef database update`,
   bağlantı ortam değişkeniyle); test kullanıcılarının şifreleri ve demo istemci sırrı o çalıştırma için rastgele

@@ -15,6 +15,12 @@
 // dokunulmaz). Gruplar: kimlik, obis, yemekhane, staj, tekkapi, intibak, mezuniyet, cap, etik-kurul, bolum-kurul,
 // lisans-projeleri, danismanlik, iskur, mudek, sinav-analizi. Verilmezse hepsi (ve bütün eski PNG'ler silinir).
 //
+// --cikti <klasör>: görüntüler docs/ yerine verilen klasöre yazılır (<ad>-acik|koyu|mobil.png); docs/tasarim/d2 ve
+//   docs/tez-gorselleri'ne hiçbir şey yazılmaz ve oradaki PNG'ler silinmez (önizleme için; ör. TestResults/onizleme,
+//   .gitignore'da). docs/ altındaki klasör reddedilir.
+// --ekranlar <ad,ad,...>: yalnızca adı verilen ekranlar çekilir (gruplar adlarından türetilir; akış yine baştan sona
+//   yürür). Ör. --ekranlar giris,hesabim,staj-ana --cikti TestResults\onizleme
+//
 // Ne yapar:
 //   - 4545, 5001, 5101, 5102, 5201, 5301-5311 portlarından biri doluysa durur (kullanıcının uygulamalarına dokunmaz).
 //   - Kimlik sunucusu için geçici bir LocalDB veritabanı (SelcukSSO_Ekran_<rastgele>) kurar; test kullanıcılarının
@@ -48,8 +54,17 @@ const tekKapiden = createRequire(path.join(TEK_KAPI, 'package.json'));
 const { chromium } = tekKapiden('playwright');
 const { USER: SAHTE } = tekKapiden('./test/mock-sites.js');
 
-const D2 = path.join(KOK, 'docs', 'tasarim', 'd2');
-const TEZ = path.join(KOK, 'docs', 'tez-gorselleri');
+const argDegeri = (ad) => {
+  const i = process.argv.indexOf(ad);
+  return i >= 0 ? (process.argv[i + 1] ?? '') : null;
+};
+const CIKTI = argDegeri('--cikti') === null ? null : path.resolve(argDegeri('--cikti') || '');
+if (CIKTI !== null && (!argDegeri('--cikti') || !path.relative(path.join(KOK, 'docs'), CIKTI).startsWith('..'))) {
+  console.error('--cikti: docs/ dışında bir klasör verilmeli (docs altındaki görüntüler toplu yenilemede güncellenir).');
+  process.exit(1);
+}
+const D2 = CIKTI ?? path.join(KOK, 'docs', 'tasarim', 'd2');
+const TEZ = CIKTI ? null : path.join(KOK, 'docs', 'tez-gorselleri');
 const KIMLIK = 'https://localhost:5001';
 const OBIS = 'https://localhost:5101';
 const YEMEKHANE = 'https://localhost:5102';
@@ -73,13 +88,20 @@ const GRUPLAR = ['kimlik', 'obis', 'yemekhane', 'staj', 'tekkapi', 'intibak', 'm
 const ESKI_GRUPLAR = ['kimlik', 'obis', 'yemekhane', 'staj', 'tekkapi'];
 const grubu = (ad) => GRUPLAR.find((g) => g !== 'kimlik' && ad.startsWith(g + '-')) ?? 'kimlik';
 const sadeceArg = process.argv.indexOf('--sadece');
-const SECILI = sadeceArg >= 0 ? (process.argv[sadeceArg + 1] ?? '').split(',').map((g) => g.trim()).filter(Boolean) : GRUPLAR;
+const EKRANLAR = argDegeri('--ekranlar') === null ? null
+  : new Set(argDegeri('--ekranlar').split(',').map((a) => a.trim()).filter(Boolean));
+if (EKRANLAR !== null && EKRANLAR.size === 0) {
+  console.error('--ekranlar: en az bir ekran adı verilmeli.');
+  process.exit(1);
+}
+const SECILI = sadeceArg >= 0 ? (process.argv[sadeceArg + 1] ?? '').split(',').map((g) => g.trim()).filter(Boolean)
+  : EKRANLAR ? [...new Set([...EKRANLAR].map(grubu))] : GRUPLAR;
 const bilinmeyen = SECILI.filter((g) => !GRUPLAR.includes(g));
 if (sadeceArg >= 0 && (SECILI.length === 0 || bilinmeyen.length)) {
   console.error(`--sadece: geçersiz grup (${bilinmeyen.join(', ') || 'boş'}). Gruplar: ${GRUPLAR.join(', ')}`);
   process.exit(1);
 }
-const seciliMi = (ad) => SECILI.includes(grubu(ad));
+const seciliMi = (ad) => SECILI.includes(grubu(ad)) && (!EKRANLAR || EKRANLAR.has(ad));
 
 // Bu çalıştırmanın sırları: yalnızca bellekte.
 const rastgele = (n) => crypto.randomBytes(n).toString('base64url');
@@ -215,7 +237,7 @@ async function darEkranCek(sayfa, ad) {
   await tasmaKontrolu(sayfa, ad, 'dar ekran');
   await sayfa.screenshot({ path: path.join(D2, `${ad}-mobil.png`), fullPage: true });
   const sira = TEZ_SIRASI.indexOf(ad);
-  if (sira >= 0) await sayfa.screenshot({ path: path.join(TEZ, `${String(sira + 1).padStart(2, '0')}-${ad}.png`), fullPage: true });
+  if (TEZ && sira >= 0) await sayfa.screenshot({ path: path.join(TEZ, `${String(sira + 1).padStart(2, '0')}-${ad}.png`), fullPage: true });
   await sayfa.setViewportSize({ width: 1280, height: 800 });
   cekilenler.push(ad);
   console.log(`  ✓ ${ad}`);
@@ -250,7 +272,7 @@ async function cek(sayfa, ad, { mobil = true, oge = null } = {}) {
   }
 
   const sira = TEZ_SIRASI.indexOf(ad);
-  if (sira >= 0) {
+  if (TEZ && sira >= 0) {
     await sayfa.setViewportSize({ width: 1440, height: 900 });
     await hazirla(sayfa);
     await goruntule(sayfa, path.join(TEZ, `${String(sira + 1).padStart(2, '0')}-${ad}.png`), oge);
@@ -635,6 +657,8 @@ async function mevcutCekimler(tarayici) {
   await sayfa.click('[data-menu-dugme]');
   await cek(sayfa, 'hesap-menusu', { mobil: false });
   await sayfa.keyboard.press('Escape');
+  await git(sayfa, KIMLIK + '/Account/Hesabim');
+  await cek(sayfa, 'hesabim');
 
   // 2FA kurulumu: anahtar sayfadan okunur (TOTP için), sonra örnek değerle değiştirilir.
   await git(sayfa, KIMLIK + '/Account/IkiAdimDogrulama');
@@ -839,13 +863,15 @@ async function main() {
   }
 
   fs.mkdirSync(D2, { recursive: true });
-  fs.mkdirSync(TEZ, { recursive: true });
+  if (TEZ) fs.mkdirSync(TEZ, { recursive: true });
   // Yalnızca seçili grupların eski PNG'leri silinir (d2: <ad>-acik.png; tez: NN-<ad>.png).
   for (const f of fs.readdirSync(D2).filter((x) => x.endsWith('.png'))) {
     if (seciliMi(f.replace(/-(acik|koyu|mobil)\.png$/, ''))) fs.rmSync(path.join(D2, f));
   }
-  for (const f of fs.readdirSync(TEZ).filter((x) => x.endsWith('.png'))) {
-    if (seciliMi(f.replace(/^\d+-/, '').replace(/\.png$/, ''))) fs.rmSync(path.join(TEZ, f));
+  if (TEZ) {
+    for (const f of fs.readdirSync(TEZ).filter((x) => x.endsWith('.png'))) {
+      if (seciliMi(f.replace(/^\d+-/, '').replace(/\.png$/, ''))) fs.rmSync(path.join(TEZ, f));
+    }
   }
 
   const baslangic = new Date();
@@ -909,7 +935,9 @@ async function main() {
     fs.rmSync(tekKapiVeri, { recursive: true, force: true });
   }
 
-  console.log(`\n${cekilenler.length} ekran çekildi: docs/tasarim/d2/, ${cekilenler.filter((a) => TEZ_SIRASI.includes(a)).length} tez görseli: docs/tez-gorselleri/`);
+  console.log(CIKTI
+    ? `\n${cekilenler.length} ekran çekildi: ${CIKTI} (docs/ değişmedi)`
+    : `\n${cekilenler.length} ekran çekildi: docs/tasarim/d2/, ${cekilenler.filter((a) => TEZ_SIRASI.includes(a)).length} tez görseli: docs/tez-gorselleri/`);
   if (sorunlar.length) {
     console.log('\nDikkat:');
     for (const s of [...new Set(sorunlar)]) console.log('  - ' + s);

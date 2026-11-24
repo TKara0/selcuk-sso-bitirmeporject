@@ -4,6 +4,7 @@
     ViewData["Title"] = Model.YeniKodlar is not null ? "Kurtarma kodları" : "İki aşamalı doğrulama";
 }
 <h1>@ViewData["Title"]</h1>
+<partial name="_GeziniYolu" model="@(new (string, string?)[] { ("Uygulamalarım", Url.Content("~/")), ("Hesabım", Url.Page("/Account/Hesabim")), ((string)ViewData["Title"]!, null) })" />
 
 <partial name="_FormHatalari" />
 

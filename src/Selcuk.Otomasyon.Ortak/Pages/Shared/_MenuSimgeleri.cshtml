@@ -1,0 +1,7 @@
+@* Menü simgelerinin SVG sprite'ı (gizli, dekoratif); menü öğeleri <use href="#ms-ad"> ile kullanır. Yollar MenuSimgeleri'nden. *@
+<svg class="simge-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" width="0" height="0">
+    @foreach (var (ad, yol) in MenuSimgeleri.Semboller)
+    {
+        <symbol id="ms-@ad" viewBox="0 0 24 24">@Html.Raw(yol)</symbol>
+    }
+</svg>

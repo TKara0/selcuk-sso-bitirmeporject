@@ -31,11 +31,11 @@ public static class LisansProjeleriOtomasyonu
 
     public static readonly IReadOnlyList<MenuOgesi> Menu =
     [
-        new("Konu seçimi", "/Ogrenci/KonuSecimi", "Açık proje konuları ve tercih sıran.", Roller.Ogrenci),
-        new("Proje aşamalarım", "/Ogrenci/Asamalarim", "Projenin hangi aşamada olduğu.", Roller.Ogrenci),
-        new("Konu önerisi", "/Akademisyen/KonuOnerisi", "Yeni proje konusu ve önerdiğin konular.", Roller.Akademisyen),
-        new("Değerlendirme", "/Akademisyen/Degerlendirme", "Hocası olduğun projeler, rubrik ve not.", Roller.Akademisyen),
-        new("Eşleştirme", "/Baskan/Eslestirme", "Öğrenci-hoca eşleştirmesi ve hoca başına kontenjan.", Roller.BolumBaskani),
+        new("Konu seçimi", "/Ogrenci/KonuSecimi", "Açık proje konuları ve tercih sıran.", Roller.Ogrenci) { Simge = "liste" },
+        new("Proje aşamalarım", "/Ogrenci/Asamalarim", "Projenin hangi aşamada olduğu.", Roller.Ogrenci) { Simge = "kontrol" },
+        new("Konu önerisi", "/Akademisyen/KonuOnerisi", "Yeni proje konusu ve önerdiğin konular.", Roller.Akademisyen) { Simge = "form" },
+        new("Değerlendirme", "/Akademisyen/Degerlendirme", "Hocası olduğun projeler, rubrik ve not.", Roller.Akademisyen) { Simge = "onay" },
+        new("Eşleştirme", "/Baskan/Eslestirme", "Öğrenci-hoca eşleştirmesi ve hoca başına kontenjan.", Roller.BolumBaskani) { Simge = "eslestirme" },
     ];
 
     public static readonly IReadOnlyList<string> Asamalar = ["Konu seçimi", "Önerge", "Ara rapor", "Teslim", "Sunum ve değerlendirme"];

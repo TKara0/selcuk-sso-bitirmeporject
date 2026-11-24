@@ -64,6 +64,18 @@ sınıfının ad alanı `Selcuk.Istemci.Ortak`'tır. Alt uygulamaların
 (`Istemciler.Gruplar`, `KartSirasi`; grupsuz → "Diğer").
 Yeni otomasyon kontrol listesi: [otomasyon-sablonu.md](otomasyon-sablonu.md).
 
+## Yerleşim (R11: fakülte sitesinden esinlenen öğeler)
+
+Kimlik sunucusu (`wwwroot/css/site.css`, `Pages/Shared/_GeziniYolu.cshtml`) ve otomasyonların ortak düzeni
+(`Selcuk.Otomasyon.Ortak`: `otomasyon.css`, `_OtomasyonDuzen`, `GeziniYolu`, `MenuSimgeleri`, `Pages/Shared/_GeziniYolu`,
+`_MenuSimgeleri`) şunları ekler: koyu lacivert üst çubuk (`--ust-zemin`, kapı paneli token'ları), h1 altında kısa kalın
+CSS çizgisi, gezinti yolu (otomasyonda `GeziniYolu.Olustur` + `GeziniYolu.BasligaEkle`: ekran sayfaları değişmeden düzen,
+sayfa gövdesindeki ilk `</h1>`'in altına ekler; kimlik sunucusunda Hesabım sayfaları partial'ı doğrudan çağırır), ikonlu
+sol menü (`MenuOgesi.Simge`, tek gizli SVG sprite, simge `<li>` içinde ve `aria-hidden`) ve yuvarlatılmış gölgesiz kartlar.
+`selcuk.css`, `Selcuk.Arayuz/wwwroot` (Tek Kapı kopyası SHA-256 ile denetlenir) ve `_SelcukDuzen` değişmedi; Demo OBİS
+(kendi düzeni), Yemekhane, Demo API ve Tek Kapı etkilenmez. Gerekçe: [DECISIONS.md](DECISIONS.md). Ayrıntı:
+[otomasyon-sablonu.md](otomasyon-sablonu.md).
+
 ## Veri kaynakları
 
 - Kimlik: SQL Server. Demo/otomasyon verileri: bellek içi/örnek (`SahteVeri`, `OrnekStajVerisi` vb.).
@@ -87,4 +99,7 @@ sırrı kimlik sunucusunda ve uygulamada aynı değerdir (32 bayt, base64); var 
 ## Test mimarisi
 
 `WebApplicationFactory` + SQLite in-memory (test başına izole), ortam `Testing`; sahte HTTP handler/e-posta;
-istemci testlerinde sahte discovery + yerel RSA JWKS. Sayılar: [test-kapsami.md](test-kapsami.md).
+istemci testlerinde sahte discovery + yerel RSA JWKS. Yerleşim denetimleri (gezinti yolu yapısı, menü simgeleri, üst çubuk
+kontrastı) `tests/Selcuk.Otomasyon.TestOrtak/YerlesimDenetimi*.cs` içinde saf işlevlerdir (ad alanı `Selcuk.TestYardimcilari`);
+10 otomasyon, Staj (kendi fabrikasıyla) ve Identity test projeleri bağlantıyla derler. `StartPyTutarlilikTests`, `start.py`'deki
+elle kopyayı koda karşı doğrular. Sayılar: [test-kapsami.md](test-kapsami.md).

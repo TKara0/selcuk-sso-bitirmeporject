@@ -7,7 +7,14 @@ namespace Selcuk.Otomasyon.Ortak;
 /// <param name="Sayfa">Razor Page yolu (ör. "/Ogrenci/Stajlarim").</param>
 /// <param name="Aciklama">Ana sayfadaki kısayol kartının kısa açıklaması.</param>
 /// <param name="Roller">Ekranı görebilecek roller (Selcuk.Roller sabitleri); en az biri olan kullanıcı görür.</param>
-public sealed record MenuOgesi(string Baslik, string Sayfa, string Aciklama, params string[] Roller);
+public sealed record MenuOgesi(string Baslik, string Sayfa, string Aciklama, params string[] Roller)
+{
+    /// <summary>
+    /// Menüdeki simgenin adı (<see cref="MenuSimgeleri.Adlar"/>); yoksa veya bilinmiyorsa varsayılan nokta. Simge
+    /// dekoratiftir (aria-hidden), menü metnini değiştirmez.
+    /// </summary>
+    public string? Simge { get; init; }
+}
 
 /// <summary>Menünün bir rol başlığı altındaki öğeleri (ör. "Öğrenci", "Staj komisyonu üyesi").</summary>
 public sealed record MenuGrubu(string Baslik, IReadOnlyList<MenuOgesi> Ogeler);

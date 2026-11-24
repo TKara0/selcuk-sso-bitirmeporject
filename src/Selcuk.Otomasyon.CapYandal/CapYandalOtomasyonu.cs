@@ -61,13 +61,13 @@ public static class CapYandalOtomasyonu
 
     public static readonly IReadOnlyList<MenuOgesi> Menu =
     [
-        new("Başvuru", "/Ogrenci/Basvuru", "Program türü ve programla başvuru; şartları karşılıyor musun.", Roller.Ogrenci),
-        new("Başvurularım", "/Ogrenci/Basvurularim", "Başvurularının durumu ve aşamaları.", Roller.Ogrenci),
-        new("Programdaki ilerlemem", "/Ogrenci/Ilerleme", "İkinci programda alınan ve kalan dersler, dönemlik GNO.", Roller.Ogrenci),
-        new("Gelen başvurular", "/Koordinator/GelenBasvurular", "GNO'ya göre sıralı başvurular ve kontenjan.", Roller.CapYandalKoordinatoru),
-        new("Öğrenci takibi", "/Koordinator/OgrenciTakibi", "Programdaki öğrenciler; GNO'su şartın altına düşenler.", Roller.CapYandalKoordinatoru),
-        new("Başvuru onayı", "/Baskan/BasvuruOnayi", "Koordinatörün sıraladığı başvuruları onayla.", Roller.BolumBaskani),
-        new("Evrak", "/Sekreter/Evrak", "Kesin kayıt evraklarının durumu.", Roller.BolumSekreteri),
+        new("Başvuru", "/Ogrenci/Basvuru", "Program türü ve programla başvuru; şartları karşılıyor musun.", Roller.Ogrenci) { Simge = "form" },
+        new("Başvurularım", "/Ogrenci/Basvurularim", "Başvurularının durumu ve aşamaları.", Roller.Ogrenci) { Simge = "liste" },
+        new("Programdaki ilerlemem", "/Ogrenci/Ilerleme", "İkinci programda alınan ve kalan dersler, dönemlik GNO.", Roller.Ogrenci) { Simge = "grafik" },
+        new("Gelen başvurular", "/Koordinator/GelenBasvurular", "GNO'ya göre sıralı başvurular ve kontenjan.", Roller.CapYandalKoordinatoru) { Simge = "liste" },
+        new("Öğrenci takibi", "/Koordinator/OgrenciTakibi", "Programdaki öğrenciler; GNO'su şartın altına düşenler.", Roller.CapYandalKoordinatoru) { Simge = "kullanicilar" },
+        new("Başvuru onayı", "/Baskan/BasvuruOnayi", "Koordinatörün sıraladığı başvuruları onayla.", Roller.BolumBaskani) { Simge = "onay" },
+        new("Evrak", "/Sekreter/Evrak", "Kesin kayıt evraklarının durumu.", Roller.BolumSekreteri) { Simge = "belge" },
     ];
 
     public static readonly IReadOnlyList<string> Asamalar =

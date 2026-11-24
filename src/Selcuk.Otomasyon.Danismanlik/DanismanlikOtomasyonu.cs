@@ -35,11 +35,11 @@ public static class DanismanlikOtomasyonu
 
     public static readonly IReadOnlyList<MenuOgesi> Menu =
     [
-        new("Danışmanım", "/Ogrenci/Danismanim", "Danışmanın ve son görüşme.", Roller.Ogrenci),
-        new("Görüşme talebi", "/Ogrenci/GorusmeTalebi", "Yeni görüşme talebi ve taleplerinin durumu.", Roller.Ogrenci),
-        new("Öğrenci listesi", "/Danisman/Ogrencilerim", "Danışmanı olduğun öğrenciler, AKTS, GNO ve görüşme uyarısı.", Roller.Danisman),
-        new("Görüşme notları", "/Danisman/GorusmeNotlari", "Kendi görüşme kayıtların ve yeni not.", Roller.Danisman),
-        new("Danışman atama", "/Baskan/DanismanAtama", "Öğrenci-danışman eşleşmeleri ve danışman başına öğrenci.", Roller.BolumBaskani),
+        new("Danışmanım", "/Ogrenci/Danismanim", "Danışmanın ve son görüşme.", Roller.Ogrenci) { Simge = "kullanicilar" },
+        new("Görüşme talebi", "/Ogrenci/GorusmeTalebi", "Yeni görüşme talebi ve taleplerinin durumu.", Roller.Ogrenci) { Simge = "takvim" },
+        new("Öğrenci listesi", "/Danisman/Ogrencilerim", "Danışmanı olduğun öğrenciler, AKTS, GNO ve görüşme uyarısı.", Roller.Danisman) { Simge = "liste" },
+        new("Görüşme notları", "/Danisman/GorusmeNotlari", "Kendi görüşme kayıtların ve yeni not.", Roller.Danisman) { Simge = "defter" },
+        new("Danışman atama", "/Baskan/DanismanAtama", "Öğrenci-danışman eşleşmeleri ve danışman başına öğrenci.", Roller.BolumBaskani) { Simge = "eslestirme" },
     ];
 
     public static readonly IReadOnlyList<string> Asamalar = ["Talep", "Danışman onayı", "Görüşme yapıldı"];

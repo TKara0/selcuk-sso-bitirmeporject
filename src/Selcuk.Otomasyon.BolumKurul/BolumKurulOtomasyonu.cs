@@ -38,11 +38,11 @@ public static class BolumKurulOtomasyonu
 
     public static readonly IReadOnlyList<MenuOgesi> Menu =
     [
-        new("Toplantı ve gündem", "/Baskan/Toplantilar", "Toplantı listesi, yeni toplantı ve gündem maddesi.", Roller.BolumBaskani),
-        new("Gündem", "/Uye/Gundem", "Planlanan toplantıların gündem maddeleri.", Roller.BolumKuruluUyesi),
-        new("Oylama", "/Uye/Oylama", "Oylamaya açık maddeler, oy sayıları ve yeter sayı.", Roller.BolumKuruluUyesi),
-        new("Tutanak ve arşiv", "/Sekreter/Arsiv", "Kararlar ve toplantı tutanakları.", Roller.BolumSekreteri),
-        new("Gelen kararlar", "/Fakulte/GelenKararlar", "Fakültedeki bölümlerin kurul kararları, bölümlere göre.", Roller.FakulteSekreteri),
+        new("Toplantı ve gündem", "/Baskan/Toplantilar", "Toplantı listesi, yeni toplantı ve gündem maddesi.", Roller.BolumBaskani) { Simge = "takvim" },
+        new("Gündem", "/Uye/Gundem", "Planlanan toplantıların gündem maddeleri.", Roller.BolumKuruluUyesi) { Simge = "liste" },
+        new("Oylama", "/Uye/Oylama", "Oylamaya açık maddeler, oy sayıları ve yeter sayı.", Roller.BolumKuruluUyesi) { Simge = "onay" },
+        new("Tutanak ve arşiv", "/Sekreter/Arsiv", "Kararlar ve toplantı tutanakları.", Roller.BolumSekreteri) { Simge = "arsiv" },
+        new("Gelen kararlar", "/Fakulte/GelenKararlar", "Fakültedeki bölümlerin kurul kararları, bölümlere göre.", Roller.FakulteSekreteri) { Simge = "kurul" },
     ];
 
     public static void Ayarla(OtomasyonSecenekleri secenekler)

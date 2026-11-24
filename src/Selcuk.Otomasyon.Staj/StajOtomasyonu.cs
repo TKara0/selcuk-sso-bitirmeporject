@@ -11,15 +11,15 @@ public static class StajOtomasyonu
 
     public static readonly IReadOnlyList<MenuOgesi> Menu =
     [
-        new("Stajlarım", "/Ogrenci/Stajlarim", "Staj I, Staj II ve İME kayıtların ve durumları.", Roller.Ogrenci),
-        new("Staj başvurusu", "/Ogrenci/Basvuru", "Firma ve tarih bilgileriyle yeni staj başvurusu.", Roller.Ogrenci),
-        new("Staj defterim", "/Ogrenci/Defter", "Günlük defter girişlerin ve yeni giriş.", Roller.Ogrenci),
-        new("Sonuç", "/Ogrenci/Sonuc", "Komisyonun değerlendirmesi ve kabul edilen gün sayısı.", Roller.Ogrenci),
-        new("Başvuru inceleme", "/Komisyon/BasvuruInceleme", "Bekleyen başvuruları onayla veya reddet.", Roller.StajKomisyonu),
-        new("Defter değerlendirme", "/Komisyon/DefterDegerlendirme", "Teslim edilen defterler ve kabul gün sayısı.", Roller.StajKomisyonu),
-        new("Yıllara göre takip", "/Komisyon/YillaraGoreTakip", "Yıl ve staj türüne göre başvuru, onay ve tamamlanma.", Roller.StajKomisyonu),
-        new("Evrak takibi", "/Sekreter/EvrakTakibi", "Kabul belgesi, SGK girişi ve defter teslim durumu.", Roller.BolumSekreteri),
-        new("Özet", "/Baskan/Ozet", "Bölümdeki aktif staj, bekleyen başvuru ve tamamlanan staj sayıları.", Roller.BolumBaskani),
+        new("Stajlarım", "/Ogrenci/Stajlarim", "Staj I, Staj II ve İME kayıtların ve durumları.", Roller.Ogrenci) { Simge = "liste" },
+        new("Staj başvurusu", "/Ogrenci/Basvuru", "Firma ve tarih bilgileriyle yeni staj başvurusu.", Roller.Ogrenci) { Simge = "form" },
+        new("Staj defterim", "/Ogrenci/Defter", "Günlük defter girişlerin ve yeni giriş.", Roller.Ogrenci) { Simge = "defter" },
+        new("Sonuç", "/Ogrenci/Sonuc", "Komisyonun değerlendirmesi ve kabul edilen gün sayısı.", Roller.Ogrenci) { Simge = "onay" },
+        new("Başvuru inceleme", "/Komisyon/BasvuruInceleme", "Bekleyen başvuruları onayla veya reddet.", Roller.StajKomisyonu) { Simge = "arama" },
+        new("Defter değerlendirme", "/Komisyon/DefterDegerlendirme", "Teslim edilen defterler ve kabul gün sayısı.", Roller.StajKomisyonu) { Simge = "kontrol" },
+        new("Yıllara göre takip", "/Komisyon/YillaraGoreTakip", "Yıl ve staj türüne göre başvuru, onay ve tamamlanma.", Roller.StajKomisyonu) { Simge = "grafik" },
+        new("Evrak takibi", "/Sekreter/EvrakTakibi", "Kabul belgesi, SGK girişi ve defter teslim durumu.", Roller.BolumSekreteri) { Simge = "belge" },
+        new("Özet", "/Baskan/Ozet", "Bölümdeki aktif staj, bekleyen başvuru ve tamamlanan staj sayıları.", Roller.BolumBaskani) { Simge = "rapor" },
     ];
 
     public static void Ayarla(OtomasyonSecenekleri secenekler)

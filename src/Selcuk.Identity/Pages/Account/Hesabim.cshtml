@@ -5,6 +5,7 @@
     ViewData[Duzen.Ayar.Genislik] = "dar";
 }
 <h1>Hesabım</h1>
+<partial name="_GeziniYolu" model="@(new (string, string?)[] { ("Uygulamalarım", Url.Content("~/")), ("Hesabım", null) })" />
 
 @if (Model.SifreDegisti)
 {

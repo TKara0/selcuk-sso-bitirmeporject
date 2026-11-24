@@ -5,6 +5,7 @@
     ViewData[Duzen.Ayar.Genislik] = "genis";
 }
 <h1>Güvenlik geçmişi</h1>
+<partial name="_GeziniYolu" model="@(new (string, string?)[] { ("Uygulamalarım", Url.Content("~/")), ("Hesabım", Url.Page("/Account/Hesabim")), ("Güvenlik geçmişi", null) })" />
 <p class="giris-metni">
     Hesabınla ilgili son @GuvenlikGecmisiModel.KayitSayisi güvenlik olayı. Tanımadığın bir giriş veya değişiklik
     görürsen şifreni değiştir ve sistem yöneticisine başvur.

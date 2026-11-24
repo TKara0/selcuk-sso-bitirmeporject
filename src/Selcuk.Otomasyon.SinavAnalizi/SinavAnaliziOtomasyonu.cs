@@ -43,9 +43,9 @@ public static class SinavAnaliziOtomasyonu
 
     public static readonly IReadOnlyList<MenuOgesi> Menu =
     [
-        new("Kendi derslerim", "/Akademisyen/Derslerim", "Derslerinin not dağılımı, ortalaması ve geçme oranı.", Roller.Akademisyen),
-        new("Bölüm geneli", "/Baskan/BolumGeneli", "Bölümdeki derslerin karşılaştırması ve hedef altında kalanlar.", Roller.BolumBaskani),
-        new("Çıktı bazlı analiz", "/Mudek/CiktiAnalizi", "Program çıktısına bağlı derslerin ortalama başarısı.", Roller.MudekKomisyonu),
+        new("Kendi derslerim", "/Akademisyen/Derslerim", "Derslerinin not dağılımı, ortalaması ve geçme oranı.", Roller.Akademisyen) { Simge = "liste" },
+        new("Bölüm geneli", "/Baskan/BolumGeneli", "Bölümdeki derslerin karşılaştırması ve hedef altında kalanlar.", Roller.BolumBaskani) { Simge = "rapor" },
+        new("Çıktı bazlı analiz", "/Mudek/CiktiAnalizi", "Program çıktısına bağlı derslerin ortalama başarısı.", Roller.MudekKomisyonu) { Simge = "arama" },
     ];
 
     public static void Ayarla(OtomasyonSecenekleri secenekler)

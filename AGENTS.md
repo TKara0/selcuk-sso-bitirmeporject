@@ -89,6 +89,12 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
     türü), Şifre değiştir, İki aşamalı doğrulama, Ek doğrulama (step-up), Güvenlik geçmişi, Onay ("Hesabı değiştir" = aynı istek `prompt=login`), Çıkış, Erişim reddedildi. Giriş
     ve şifremi unuttum sonuç metinleri hesap var/yok ayırt etmemek için değiştirilmez. Tüm yanıtlarda güvenlik
     başlıkları (`GuvenlikBasliklari.cs`: nosniff, no-referrer, X-Frame-Options DENY, CSP).
+    **R11 yerleşimi**: `site.css`'te koyu lacivert üst çubuk (otomasyonlarla aynı değerler), h1 ve Uygulamalarım grup
+    başlıkları (h2) altında kısa kalın mürekkep çizgisi ve gezinti yolu (`Pages/Shared/_GeziniYolu.cshtml`; yalnızca
+    Hesabım ve alt sayfaları Şifre değiştir, Güvenlik geçmişi, İki aşamalı doğrulama ayarları: "Uygulamalarım / Hesabım
+    / <Sayfa>"; Uygulamalarım, giriş, girişin ikinci adımı (`Account/IkiAdim`), ek doğrulama, onay, çıkış ve hata
+    sayfalarında yok). Giriş ekranında üst çubuk yoktur (kapı paneli zaten koyu lacivert), yalnızca başlık çizgisi uygulanır;
+    gerçek kurum amblemi, logosu veya resmî site menü metni kullanılmaz.
   - **Şifre sıfırlama ve değiştirme** (`Hesap/`): Identity'nin yerleşik `DataProtectorTokenProvider`'ı ayrı adla
     (`SifreSifirlamaTokenSaglayici`, 30 dk, güvenlik damgasına bağlı, tek kullanımlık). Bağlantı `OpenIddict:Issuer`
     adresinden üretilir. Başarıda `SifreDegisikligi`: kilit/sayaç sıfırlama (yalnızca sıfırlamada), kullanıcının
@@ -177,7 +183,17 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   loglanmaz). `UseSelcukOtomasyon()`: güvenlik başlıkları, her ortamda `UseExceptionHandler("/Hata")` (stack trace
   yok; 503/403 Türkçe), durum kodu sayfaları (`/signout-backchannel` hariç), HTTPS, statik, kimlik, yetki, Razor
   Pages, Back-Channel Logout. Ortak sayfalar: `/` (rol başlıklı kısayollar), Giris, Cikis, GirisHatasi,
-  ErisimReddedildi (403, "Bu ekrana erişim yetkin yok"), Hata, Profilim. `_OtomasyonDuzen` (`_SelcukDuzen` üstünde;
+  ErisimReddedildi (403, "Bu ekrana erişim yetkin yok"), Hata, Profilim. **Fakülte sitesinden esinlenen yerleşim (R11)**:
+  koyu lacivert üst çubuk (`--ust-zemin`: açık temada kapı paneli zemini #12263A, koyu temada #1F3F5F; metin, soluk metin,
+  açık firuze kapı paneli token'ları; uygulamanın vurgu rengi simge rozetinde ve çubuğun altında 3 px çizgi), h1'in
+  altında kısa kalın dekoratif çizgi (`main h1::after`, CSS), **gezinti yolu** (`GeziniYolu`: "Uygulamalarım / <Otomasyon
+  adı> / <Ekran adı>"; ilk öğenin adresi `OtomasyonBilgisi.KimlikSunucusuAdresi`, ekran adı menü tanımından, ana sayfada
+  iki öğe, son öğe `aria-current="page"` ve bağlantı değil; `_OtomasyonDuzen` sayfa gövdesindeki ilk h1'in altına ekler,
+  ekran sayfaları değişmez; giriş, çıkış, hata, erişim reddedildi ve girişsiz sayfalarda yok), **ikonlu sol menü**
+  (`MenuOgesi.Simge` isteğe bağlı; `MenuSimgeleri` 16 genel çizgi simgesi + varsayılan nokta, sayfaya `_MenuSimgeleri`
+  ile tek gizli SVG sprite olarak yazılır, öğeler `<use href="#ms-ad">`; simge `aria-hidden` ve bağlantının dışındadır,
+  bağlantı metni ve işaretlemesi değişmez, tıklanabilir alan CSS ile satıra genişler) ve beyaz, yuvarlatılmış, ince
+  kenarlıklı (gölgesiz) menü ve içerik kartları. `_OtomasyonDuzen` (`_SelcukDuzen` üstünde;
   üst çubukta giriş yapmış kullanıcıya "Uygulamalarım" bağlantısı (`OtomasyonBilgisi.KimlikSunucusuAdresi`,
   `Kimlik:Authority` kökü; yalnızca https veya `http://127.0.0.1`); sabit "Temsili ekran" bandı, solda rol başlıklı menü, dar ekranda selcuk.js `data-menu`, betiksizse
   `otomasyon-betiksiz.css`; TempData mesajı; alt bilgide `AltBilgiEk` bölümüyle veri rozeti). `KullaniciKapsami`
@@ -230,14 +246,24 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   değer metni, `otomasyon.css`'te `.olcum` (İŞKUR Takip de kullanır; kütüphane ve satır içi stil yok). Program çıktısı
   adları örnektir. Örnek veri 16-17 kayıt, ikisi Elektrik-Elektronik'ten. Sözleşmeler
   `docs/api-sozlesmeleri/danismanlik.md`, `iskur.md`, `mudek.md`, `sinav-analizi.md`.
-- `src/Selcuk.Demo.Obis` (https://localhost:5101): ortak düzen (`Selcuk.Arayuz`, simge "DO", vurgu lacivert
-  #2F4F8F / koyu #9DB5E8). Üst çubukta "Uygulamalarım" bağlantısı (`KimlikSunucusuBilgisi`) ve sunucu tarafı oturum
-  (`SunucuTarafliOturum`; çerezde yalnızca anahtar). Rol bazlı sayfalar (Notlarım: ogrenci, Ders Yönetimi: akademisyen), Profilim, yalnızca
-  Development'ta Token İnceleme (her claim bir satır: Mono ad/değer, Türkçe açıklama `TokenIncelemeModel.Aciklamalar`;
-  ham JSON açılır bölümde; refresh token yalnızca var/son kullanma), RP-initiated logout. Notlarım notları Demo
+- `src/Selcuk.Demo.Obis` (https://localhost:5101): gerçek bir öğrenci bilgi sisteminin sayfa düzenine benzeyen, ama
+  temsili olduğu açıkça belli bir arayüz (R10; kendi `Pages/Shared/_Layout.cshtml`'i, `Selcuk.Arayuz`'un token'larını ve
+  selcuk.css'ini kullanır; simge "DO", vurgu lacivert #2F4F8F / koyu #9DB5E8, mavi tonlar `--obis-*`, kontrast
+  `wwwroot/css/site.css` başlığında). Üstte tam genişlikte mavi şerit ("Demo OBİS · Öğrenci Bilgi Sistemi", "Test"
+  rozeti, "Uygulamalarım" bağlantısı (`KimlikSunucusuBilgisi`), baş harfli profil görseli ve hesap menüsü: Profilim,
+  Development'ta Token İnceleme, Çıkış), altında gri sekme çubuğu (`Data/ObisMenusu.cs`; solda projenin kapı işareti,
+  sekmeler üstte yerel SVG simge `Data/ObisSimgeleri.cs`, altta metin; etkin sekme `aria-current="page"`), sabit "Demo
+  ekran" bandı ve açık mavi sayfa başlığı şeridi. Gerçek kurum amblemi, duyuru metni, adres veya giriş formu yoktur;
+  duyurular uydurmadır; alt bilgide "resmî sistem değildir". Sayfalar: Anasayfa, Onay Takip, Son Yıl Notları, Not
+  Durumu (`/Notlarim`), Transkript, Harç Durumu, Sınav Tarihleri, Uzaktan Eğitim, Uzaktan Sınav, YKK Kararı (hepsi
+  yalnızca ogrenci), Ders Yönetimi (akademisyen), Profilim, yalnızca Development'ta Token İnceleme (her claim bir
+  satır: Mono ad/değer, Türkçe açıklama `TokenIncelemeModel.Aciklamalar`; ham JSON açılır bölümde; refresh token
+  yalnızca var/son kullanma). Temsili düğmeler `/TemsiliIslem`'e POST eder (antiforgery zorunlu, veri değişmez).
+  Sunucu tarafı oturum (`SunucuTarafliOturum`; çerezde yalnızca anahtar), RP-initiated logout. Not Durumu notları Demo
   API'den (`NotlarApiIstemcisi`, `DemoApi:Adres`, oturumdaki access token) çeker; toplam kredi ve ağırlıklı ortalama
   `NotOzeti` ile (krediler OBİS'in kataloğunda, `SahteVeri.Krediler`; API yalnızca not verir); API'ye ulaşılamazsa
-  Türkçe hata bandı. Veriler uydurmadır.
+  Türkçe hata bandı. Veriler uydurmadır (`Data/OrnekOgrenciVerisi.cs`; kayıt `preferred_username`'e göre). R11'in
+  yerleşim öğeleri (gezinti yolu, ikonlu menü) OBİS'e uygulanmaz; kendi düzeni vardır.
 - `src/Selcuk.Demo.Api` (https://localhost:5201): yalnızca kaynak sunucusu, minimal API. JWT Bearer (Authority
   kimlik sunucusu, JWKS; `aud` = `demo-api`, `typ` = `at+jwt`, `IncludeErrorDetails = false`). `GET /api/notlar`:
   `scope` ⊇ `notlar.oku` ve rol `ogrenci` (yoksa 401/403); yalnızca token'daki `sub`'ın notları (`INotDeposu`).
@@ -252,7 +278,10 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   tutarlılığı, denetim kaydı (HMAC özeti, eksik anahtarla açılmama), güvenilen proxy, Tek Kapı (public istemci,
   loopback, back-channel), uygulama bazlı erişim izni, istemci bazlı 2FA şartı (step-up), önbellek, token budama,
   refresh mutlak sınırı, ölçüm hız sınırı gevşetmesi ve rol modeli (`RolModeliTests`: doğrulayıcı, seed, role dizisi,
-  Hesabım, 2FA'nın hiçbir rolde zorunlu olmaması) testleri.
+  Hesabım, 2FA'nın hiçbir rolde zorunlu olmaması), yerleşim (`YerlesimTests`: gezinti yolu yalnızca Hesabım
+  sayfalarında, üst çubuk kontrastı, giriş sayfasında harici görsel/logo yok) ve `StartPyTutarlilikTests` (start.py'deki
+  test kullanıcıları, roller ve kullanıcı-uygulama eşlemesi koddaki `BaslangicVerisi`/`Istemciler` ile aynı mı; uyuşmazlıkta
+  hangi kullanıcıda ne farklı olduğunu yazar) testleri.
   `IstemciMfaTests` "yalnızca şifreyle açılmış oturum + 2FA açık" durumunu, 2FA'yı depoya güvenlik damgasını
   değiştirmeden yazarak kurar. `OidcYardimcisi` istemci parametreli (varsayılan
   demo-obis; public istemci için `PublicTokenIsteAsync`).
@@ -282,6 +311,9 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   yalnızca personel verir); Etik Kurul, Bölüm Kurul, Lisans Projeleri, Danışmanlık, İŞKUR, MÜDEK ve Sınav Analizi test
   projeleri de aynı; kapsam ve şart testleri `<Ad>EkranTests`'te. Kimlik sunucusu tarafı `OtomasyonIstemcileriTests`,
   `KurulVeProjeIstemcileriTests` ve `KalanOtomasyonIstemcileriTests` (kayıt, access_denied, aud, kart, simge).
+  R11 yerleşim testleri (gezinti yolu, menü simgeleri, üst çubuk kontrastı, başlık çizgisi) `OtomasyonTemelTestleri.Yerlesim.cs`'te
+  (10 otomasyon); denetimler `tests/Selcuk.Otomasyon.TestOrtak/YerlesimDenetimi*.cs` (ad alanı `Selcuk.TestYardimcilari`; saf
+  işlevler) ve bunu Staj (`StajYerlesimTests`, kendi fabrikasıyla) ve Identity test projeleri de bağlantıyla derler.
 - `tests/Selcuk.Demo.Obis.Tests`, `tests/Selcuk.Demo.Yemekhane.Tests`: yönlendirme, rol, önbellek (`no-store`), ortak
   düzen ve `_content` dosyaları, Notlarım özeti ve Token İnceleme (Development, sahte JWT'ler) testleri; gerçek kimlik
   sunucusu yerine sabit discovery bilgisi ve sahte kimlik doğrulama şeması kullanır (`ObisFactory`: `ortam`,

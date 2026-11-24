@@ -19,6 +19,11 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <!-- Yerleşim denetimleri (gezinti yolu, menü simgeleri, üst çubuk kontrastı): bütün otomasyonlarla ortak, saf işlevler. -->
+  <ItemGroup>
+    <Compile Include="..\Selcuk.Otomasyon.TestOrtak\YerlesimDenetimi*.cs" Link="TestOrtak\%(Filename)%(Extension)" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\Selcuk.Otomasyon.Staj\Selcuk.Otomasyon.Staj.csproj" />
   </ItemGroup>

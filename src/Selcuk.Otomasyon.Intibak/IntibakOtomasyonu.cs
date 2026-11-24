@@ -41,15 +41,15 @@ public static class IntibakOtomasyonu
 
     public static readonly IReadOnlyList<MenuOgesi> Menu =
     [
-        new("İntibak başvurusu", "/Ogrenci/Basvuru", "Geliş türü, önceki kurum ve transkriptle başvuru.", Roller.Ogrenci),
-        new("Başvurum", "/Ogrenci/Basvurum", "Başvurunun durumu ve aşamaları.", Roller.Ogrenci),
-        new("İntibak sonucu", "/Ogrenci/Sonuc", "Önceki derslerin eşdeğerleri ve muafiyet kararları.", Roller.Ogrenci),
-        new("Bekleyen başvurular", "/Komisyon/BekleyenBasvurular", "Komisyon incelemesindeki başvurular.", Roller.IntibakKomisyonu),
-        new("Ders eşleştirme", "/Komisyon/DersEslestirme", "Önceki dersleri müfredat dersleriyle eşleştir, muafiyete karar ver.", Roller.IntibakKomisyonu),
-        new("Komisyon kararları", "/Komisyon/Kararlar", "Komisyonun verdiği kararlar ve sonraki aşamaları.", Roller.IntibakKomisyonu),
-        new("Onay listesi", "/Baskan/OnayListesi", "Komisyondan gelen kararları onayla veya geri gönder.", Roller.BolumBaskani),
-        new("İntibak raporları", "/Sekreter/Raporlar", "Bölümdeki intibak kararlarının listesi.", Roller.BolumSekreteri),
-        new("Yönetim kurulu evrakı", "/Fakulte/YonetimKuruluEvraki", "Fakülte yönetim kuruluna gidecek kararlar, bölümlere göre.", Roller.FakulteSekreteri),
+        new("İntibak başvurusu", "/Ogrenci/Basvuru", "Geliş türü, önceki kurum ve transkriptle başvuru.", Roller.Ogrenci) { Simge = "form" },
+        new("Başvurum", "/Ogrenci/Basvurum", "Başvurunun durumu ve aşamaları.", Roller.Ogrenci) { Simge = "belge" },
+        new("İntibak sonucu", "/Ogrenci/Sonuc", "Önceki derslerin eşdeğerleri ve muafiyet kararları.", Roller.Ogrenci) { Simge = "onay" },
+        new("Bekleyen başvurular", "/Komisyon/BekleyenBasvurular", "Komisyon incelemesindeki başvurular.", Roller.IntibakKomisyonu) { Simge = "liste" },
+        new("Ders eşleştirme", "/Komisyon/DersEslestirme", "Önceki dersleri müfredat dersleriyle eşleştir, muafiyete karar ver.", Roller.IntibakKomisyonu) { Simge = "eslestirme" },
+        new("Komisyon kararları", "/Komisyon/Kararlar", "Komisyonun verdiği kararlar ve sonraki aşamaları.", Roller.IntibakKomisyonu) { Simge = "kurul" },
+        new("Onay listesi", "/Baskan/OnayListesi", "Komisyondan gelen kararları onayla veya geri gönder.", Roller.BolumBaskani) { Simge = "onay" },
+        new("İntibak raporları", "/Sekreter/Raporlar", "Bölümdeki intibak kararlarının listesi.", Roller.BolumSekreteri) { Simge = "rapor" },
+        new("Yönetim kurulu evrakı", "/Fakulte/YonetimKuruluEvraki", "Fakülte yönetim kuruluna gidecek kararlar, bölümlere göre.", Roller.FakulteSekreteri) { Simge = "arsiv" },
     ];
 
     public static readonly IReadOnlyList<string> Asamalar =

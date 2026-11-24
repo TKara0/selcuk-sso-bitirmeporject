@@ -62,12 +62,12 @@ public static class MezuniyetOtomasyonu
 
     public static readonly IReadOnlyList<MenuOgesi> Menu =
     [
-        new("Mezuniyet durumum", "/Ogrenci/Durumum", "AKTS, GNO, zorunlu dersler, staj ve eksikler.", Roller.Ogrenci),
-        new("Mezuniyet başvurusu", "/Ogrenci/Basvuru", "Başvuru formu ve başvurunun aşamaları.", Roller.Ogrenci),
-        new("İlişik kesme", "/Ogrenci/IlisikKesme", "Kütüphane, bölüm ve laboratuvar gibi birimlerin durumu.", Roller.Ogrenci),
-        new("Mezuniyet adayları", "/Komisyon/Adaylar", "Adayların kontrol sonuçları; onayla veya eksik bildir.", Roller.MezuniyetKomisyonu),
-        new("Dekanlığa gidecek liste", "/Sekreter/DekanlikListesi", "Komisyonca onaylanan, dekanlığa gönderilecek mezunlar.", Roller.BolumSekreteri),
-        new("Gelen mezuniyet listeleri", "/Fakulte/GelenListeler", "Bölümlerden gelen listeler ve diploma hazırlık durumu.", Roller.FakulteSekreteri),
+        new("Mezuniyet durumum", "/Ogrenci/Durumum", "AKTS, GNO, zorunlu dersler, staj ve eksikler.", Roller.Ogrenci) { Simge = "kontrol" },
+        new("Mezuniyet başvurusu", "/Ogrenci/Basvuru", "Başvuru formu ve başvurunun aşamaları.", Roller.Ogrenci) { Simge = "form" },
+        new("İlişik kesme", "/Ogrenci/IlisikKesme", "Kütüphane, bölüm ve laboratuvar gibi birimlerin durumu.", Roller.Ogrenci) { Simge = "onay" },
+        new("Mezuniyet adayları", "/Komisyon/Adaylar", "Adayların kontrol sonuçları; onayla veya eksik bildir.", Roller.MezuniyetKomisyonu) { Simge = "kullanicilar" },
+        new("Dekanlığa gidecek liste", "/Sekreter/DekanlikListesi", "Komisyonca onaylanan, dekanlığa gönderilecek mezunlar.", Roller.BolumSekreteri) { Simge = "liste" },
+        new("Gelen mezuniyet listeleri", "/Fakulte/GelenListeler", "Bölümlerden gelen listeler ve diploma hazırlık durumu.", Roller.FakulteSekreteri) { Simge = "arsiv" },
     ];
 
     public static readonly IReadOnlyList<string> Asamalar =

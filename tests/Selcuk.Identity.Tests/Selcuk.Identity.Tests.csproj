@@ -22,6 +22,11 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <!-- Yerleşim denetimleri (gezinti yolu yapısı, üst çubuk kontrastı): otomasyon test projeleriyle ortak, saf işlevler. -->
+  <ItemGroup>
+    <Compile Include="..\Selcuk.Otomasyon.TestOrtak\YerlesimDenetimi.cs" Link="TestOrtak\YerlesimDenetimi.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\Selcuk.Identity\Selcuk.Identity.csproj" />
   </ItemGroup>

@@ -1,0 +1,17 @@
+@* Gezinti yolu. Model: IReadOnlyList<GeziniOgesi>; son öğe geçerli sayfadır (bağlantı değil, aria-current="page"). *@
+@model IReadOnlyList<GeziniOgesi>
+<nav class="gezinti-yolu" aria-label="Gezinti yolu">
+    <ol>
+        @for (var i = 0; i < Model.Count; i++)
+        {
+            @if (i == Model.Count - 1)
+            {
+                <li><span aria-current="page">@Model[i].Metin</span></li>
+            }
+            else
+            {
+                <li><a href="@Model[i].Adres">@Model[i].Metin</a></li>
+            }
+        }
+    </ol>
+</nav>

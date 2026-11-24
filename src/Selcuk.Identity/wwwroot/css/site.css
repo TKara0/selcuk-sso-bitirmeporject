@@ -1,8 +1,125 @@
 /*
  * Kimlik sunucusuna özel yerleşimler. Renk, yazı, aralık ve köşe değerleri ortak tasarım sisteminin token'larıdır
  * (_content/Selcuk.Arayuz/css/selcuk.css); burada yeni renk tanımlanmaz. Tek istisna Uygulamalarım'daki
- * otomasyon simgelerinin vurgu renkleridir (.uygulama-simge-<ad>; uygulamanın kendi site.css'indeki değerler).
+ * otomasyon simgelerinin vurgu renkleridir (.uygulama-simge-<ad>; uygulamanın kendi site.css'indeki değerler) ve
+ * koyu temadaki üst çubuk zemini (aşağıda; kapı panelinin zemini sayfa zeminine fazla yakın olduğu için bir ton açık
+ * lacivert).
+ *
+ * Fakülte sitesinin sayfa yerleşiminden esinlenen öğeler (koyu lacivert üst çubuk, başlık altı çizgi, gezinti yolu)
+ * bu dosyada; bölüm otomasyonlarında aynıları otomasyon.css'tedir (değerler aynı). Giriş ekranında üst çubuk yoktur
+ * (kapı paneli zaten koyu lacivert); yalnızca başlık çizgisi uygulanır. Gerçek kurum amblemi, logosu veya resmî site
+ * metni kullanılmaz. Gölge yok.
  */
+
+/* ---------- Koyu lacivert üst çubuk ----------
+   Açık temada kapı panelinin zemini (--kapi-zemin, #12263A); koyu temada bu zemin (#0A1520) sayfa zeminine (#0E1B27)
+   çok yakın olduğu için bir ton açık lacivert (#1F3F5F; sayfa zeminine karşı 1,61:1, yüzeye karşı 1,40:1). Metin, soluk
+   metin ve açık firuze kapı paneli token'larıdır (#E6EEF0, #B9C9CF, #5CC3C0): açık temada 13,09 / 9,03 / 7,35:1, koyu
+   temada 9,23 / 6,37 / 5,18:1. */
+:root {
+    --ust-zemin: var(--kapi-zemin);
+    --ust-metin: var(--kapi-metin);
+    --ust-soluk: var(--kapi-soluk);
+    --ust-vurgu: var(--kapi-cizgi);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --ust-zemin: #1F3F5F;
+    }
+}
+
+.ust-cubuk {
+    color: var(--ust-metin);
+    background: var(--ust-zemin);
+    border-bottom-color: var(--ust-zemin);
+}
+
+.ust-cubuk .marka {
+    color: var(--ust-metin);
+}
+
+.ust-cubuk .marka .kapi-kucuk,
+.ust-cubuk .hesap-dugmesi .kapi-kucuk {
+    color: var(--ust-vurgu);
+}
+
+.ust-cubuk :focus-visible {
+    outline-color: var(--ust-vurgu);
+}
+
+.ust-cubuk .hesap-listesi :focus-visible {
+    outline-color: var(--firuze);
+}
+
+.ust-cubuk .hesap-dugmesi {
+    color: var(--ust-metin);
+    background: transparent;
+    border-color: var(--ust-soluk);
+}
+
+.ust-cubuk .hesap-dugmesi:hover,
+.ust-cubuk .hesap-dugmesi[aria-expanded="true"] {
+    background: transparent;
+    border-color: var(--ust-vurgu);
+}
+
+.ust-cubuk .hesap-dugmesi .ok {
+    color: var(--ust-soluk);
+}
+
+.ust-cubuk .etiket-notr {
+    color: var(--ust-soluk);
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--ust-soluk);
+}
+
+/* ---------- Başlık altı çizgi ----------
+   Sayfa başlığının (h1) ve Uygulamalarım grup başlıklarının (h2) altında kısa, kalın, mürekkep renginde çizgi.
+   Dekoratiftir: CSS ile çizilir, ekran okuyucuya bir şey okunmaz. */
+main h1::after,
+.grup-baslik::after {
+    content: "";
+    display: block;
+    width: 3.5rem;
+    height: 4px;
+    margin-top: var(--a3);
+    background: var(--murekkep);
+    border-radius: 2px;
+}
+
+/* ---------- Gezinti yolu (Hesabım sayfalarında, başlığın altında) ----------
+   Son öğe geçerli sayfadır. Dar ekranda satır sarılır, sayfa yatay kaymaz. */
+.gezinti-yolu {
+    margin: 0 0 var(--a6);
+    font-size: var(--boyut-kucuk);
+}
+
+.gezinti-yolu ol {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--a1) var(--a2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.gezinti-yolu li {
+    display: flex;
+    gap: var(--a2);
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.gezinti-yolu li + li::before {
+    content: "/";
+    content: "/" / "";
+    color: var(--soluk);
+}
+
+.gezinti-yolu [aria-current="page"] {
+    color: var(--soluk);
+}
 
 /* Giriş ekranı */
 .giris-alt {

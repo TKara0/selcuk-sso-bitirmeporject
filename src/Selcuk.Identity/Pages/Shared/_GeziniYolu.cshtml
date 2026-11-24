@@ -1,0 +1,21 @@
+@*
+    Gezinti yolu (Hesabım sayfalarında h1'in altında): "Uygulamalarım / Hesabım / Sayfa". Model: (Metin, Adres) listesi;
+    son öğe geçerli sayfadır (bağlantı değil, aria-current="page"). Giriş, girişin ikinci adımı, ek doğrulama, onay,
+    çıkış ve hata sayfalarında kullanılmaz.
+*@
+@model IReadOnlyList<(string Metin, string? Adres)>
+<nav class="gezinti-yolu" aria-label="Gezinti yolu">
+    <ol>
+        @for (var i = 0; i < Model.Count; i++)
+        {
+            @if (i == Model.Count - 1)
+            {
+                <li><span aria-current="page">@Model[i].Metin</span></li>
+            }
+            else
+            {
+                <li><a href="@Model[i].Adres">@Model[i].Metin</a></li>
+            }
+        }
+    </ol>
+</nav>

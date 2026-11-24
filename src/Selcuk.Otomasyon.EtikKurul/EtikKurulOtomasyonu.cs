@@ -31,11 +31,11 @@ public static class EtikKurulOtomasyonu
 
     public static readonly IReadOnlyList<MenuOgesi> Menu =
     [
-        new("Etik başvurusu", "/Akademisyen/Basvuru", "Proje, araştırma türü, katılımcılar ve veri toplama yöntemiyle başvuru.", Roller.Akademisyen),
-        new("Başvurularım", "/Akademisyen/Basvurularim", "Etik başvurularının durumu ve aşamaları.", Roller.Akademisyen),
-        new("Atanan dosyalar", "/Kurul/AtananDosyalar", "Görüşün istenen başvurular.", Roller.EtikKurulUyesi),
-        new("Görüş", "/Kurul/Gorus", "Değerlendirmedeki dosyalar için görüş ve gerekçe.", Roller.EtikKurulUyesi),
-        new("Karar listesi", "/Baskan/KararListesi", "Bölümündeki başvurular için kurul kararları.", Roller.BolumBaskani),
+        new("Etik başvurusu", "/Akademisyen/Basvuru", "Proje, araştırma türü, katılımcılar ve veri toplama yöntemiyle başvuru.", Roller.Akademisyen) { Simge = "form" },
+        new("Başvurularım", "/Akademisyen/Basvurularim", "Etik başvurularının durumu ve aşamaları.", Roller.Akademisyen) { Simge = "liste" },
+        new("Atanan dosyalar", "/Kurul/AtananDosyalar", "Görüşün istenen başvurular.", Roller.EtikKurulUyesi) { Simge = "arsiv" },
+        new("Görüş", "/Kurul/Gorus", "Değerlendirmedeki dosyalar için görüş ve gerekçe.", Roller.EtikKurulUyesi) { Simge = "kontrol" },
+        new("Karar listesi", "/Baskan/KararListesi", "Bölümündeki başvurular için kurul kararları.", Roller.BolumBaskani) { Simge = "onay" },
     ];
 
     public static readonly IReadOnlyList<string> Asamalar = ["Başvuru", "Ön inceleme", "Kurul değerlendirmesi", "Karar"];

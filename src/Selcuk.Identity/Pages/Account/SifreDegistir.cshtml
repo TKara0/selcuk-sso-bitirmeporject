@@ -5,6 +5,7 @@
     ViewData[Duzen.Ayar.Genislik] = "dar";
 }
 <h1>Şifre değiştir</h1>
+<partial name="_GeziniYolu" model="@(new (string, string?)[] { ("Uygulamalarım", Url.Content("~/")), ("Hesabım", Url.Page("/Account/Hesabim")), ("Şifre değiştir", null) })" />
 <p class="giris-metni">Şifren değişince diğer cihaz ve tarayıcılardaki oturumların kapanır, bu oturum açık kalır.</p>
 
 <partial name="_FormHatalari" />

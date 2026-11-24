@@ -5,6 +5,10 @@
     selcuk.js; betik kapalıysa açık kalır), temsili işlem mesajı (TempData) ve alt bilgide veri kaynağı rozeti.
     Giriş yapmış kullanıcıya üst çubukta, hesap menüsünün yanında "Uygulamalarım" bağlantısı (kimlik sunucusunun kök
     adresi, Kimlik:Authority'den türetilir; aynı sekmede açılır, betik gerekmez).
+    Üst çubuk koyu lacivert (otomasyon.css; vurgu rengi simge rozetinde ve çubuğun altındaki çizgide), menü öğelerinin
+    başında dekoratif simge (MenuOgesi.Simge, _MenuSimgeleri sprite'ı), menü ve içerik yuvarlatılmış kartlarda. Giriş
+    yapmış kullanıcıya her ekranın başlığının (h1) altında gezinti yolu (GeziniYolu; ekran sayfaları değişmeden düzen
+    ekler); giriş, çıkış, hata ve erişim reddedildi sayfalarında yok.
     Stiller: otomasyon.css (bu kütüphane) ve uygulamanın kendi /css/site.css'i (vurgu rengi).
 *@
 @inject OtomasyonBilgisi Bilgi
@@ -21,6 +25,12 @@
     var gecerli = ViewContext.RouteData.Values["page"] as string;
     var gruplar = User.Identity?.IsAuthenticated == true ? Menu.Gruplar(User) : [];
     var mesaj = TempData[TemsiliIslem.TempDataAnahtari] as string;
+    var gezinti = User.Identity?.IsAuthenticated == true ? GeziniYolu.Olustur(gecerli, Bilgi, Menu) : null;
+    Microsoft.AspNetCore.Html.IHtmlContent govde = RenderBody();
+    if (gezinti is not null)
+    {
+        govde = GeziniYolu.BasligaEkle(govde, await Html.PartialAsync("_GeziniYolu", gezinti));
+    }
 }
 @section Stiller {
     <link rel="stylesheet" href="~/_content/Selcuk.Otomasyon.Ortak/css/otomasyon.css" asp-append-version="true" />
@@ -48,6 +58,7 @@
     {
         @* Geniş ekranda her zaman açık kenar menüsü; dar ekranda "Menü" düğmeli liste (selcuk.js, data-menu). Betik
            kapalıysa otomasyon-betiksiz.css dar ekranda da kenar menüsünü gösterir. *@
+        <partial name="_MenuSimgeleri" />
         <nav class="otomasyon-menusu menu-genis" aria-label="@Bilgi.Ad menüsü">
             <div class="menu-listesi" id="otomasyon-menu-listesi">
                 <partial name="_OtomasyonMenuListesi" model="gruplar" view-data="@(new ViewDataDictionary(ViewData) { ["MenuOnek"] = "menu" })" />
@@ -69,6 +80,6 @@
                 <p>@mesaj</p>
             </div>
         }
-        @RenderBody()
+        @govde
     </div>
 </div>

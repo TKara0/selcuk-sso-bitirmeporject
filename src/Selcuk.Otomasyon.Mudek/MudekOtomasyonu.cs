@@ -50,11 +50,11 @@ public static class MudekOtomasyonu
 
     public static readonly IReadOnlyList<MenuOgesi> Menu =
     [
-        new("Ders çıktısı veri girişi", "/Akademisyen/VeriGirisi", "Kendi derslerinin ders çıktıları için ölçülen oran.", Roller.Akademisyen),
-        new("Raporlar", "/Rapor/Donem", "Dönem raporu özeti.", Roller.BolumBaskani, Roller.MudekKomisyonu),
-        new("Rapor ve evrak arşivi", "/Sekreter/Arsiv", "MÜDEK raporları ve belgelerinin durumu.", Roller.BolumSekreteri),
-        new("Program çıktıları", "/Komisyon/ProgramCiktilari", "Program çıktıları, bağlı ders çıktıları ve gerçekleşme oranı.", Roller.MudekKomisyonu),
-        new("Eksikler", "/Komisyon/Eksikler", "Eşik altında veya verisi girilmemiş çıktılar.", Roller.MudekKomisyonu),
+        new("Ders çıktısı veri girişi", "/Akademisyen/VeriGirisi", "Kendi derslerinin ders çıktıları için ölçülen oran.", Roller.Akademisyen) { Simge = "form" },
+        new("Raporlar", "/Rapor/Donem", "Dönem raporu özeti.", Roller.BolumBaskani, Roller.MudekKomisyonu) { Simge = "rapor" },
+        new("Rapor ve evrak arşivi", "/Sekreter/Arsiv", "MÜDEK raporları ve belgelerinin durumu.", Roller.BolumSekreteri) { Simge = "arsiv" },
+        new("Program çıktıları", "/Komisyon/ProgramCiktilari", "Program çıktıları, bağlı ders çıktıları ve gerçekleşme oranı.", Roller.MudekKomisyonu) { Simge = "grafik" },
+        new("Eksikler", "/Komisyon/Eksikler", "Eşik altında veya verisi girilmemiş çıktılar.", Roller.MudekKomisyonu) { Simge = "bilgi" },
     ];
 
     public static void Ayarla(OtomasyonSecenekleri secenekler)

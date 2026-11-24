@@ -56,6 +56,31 @@ app.UseSelcukOtomasyon();
   birleşimi görür. Aynı roller sayfanın yetki ilkesidir: menüde görünmeyen ekrana adresle gidilince
   `/ErisimReddedildi`. Menüde olmayan diğer sayfalar en az giriş ister; role bağlı bir sayfa menüde değilse kendi
   `[Authorize(Roles = …)]`'ını taşımalıdır; taşımazsa açılış denetimi uygulamayı durdurur (ortak sayfalar hariç).
+- **Fakülte sitesinden esinlenen yerleşim (R11; yeniden tasarım değil, renk token'ları ve yazı tipi aynı):**
+  - **Üst çubuk** koyu lacivert (`--ust-zemin`): açık temada kapı paneli zemini `#12263A`, koyu temada `#1F3F5F` (kapı
+    zemini `#0A1520` sayfa zemini `#0E1B27`'ye 1,06:1 yakın olduğu için bir ton açık lacivert). Çubukta metin
+    `--kapi-metin` (açık 13,09:1, koyu 9,23:1), soluk metin ve "Test" rozeti `--kapi-soluk` (9,03 / 6,37:1), kimlik vurgusu
+    (kapı işareti) açık firuze `--kapi-cizgi` (7,35 / 5,18:1); koyu temada çubuk sayfa zeminine 1,61:1, yüzeye 1,40:1.
+    Uygulamanın vurgu rengi simge rozetinde ve çubuğun altında 3 px çizgi olarak kalır. Aynı değerler kimlik sunucusunun
+    `site.css`'inde de vardır (testler iki dosyayı da denetler).
+  - **Başlık çizgisi:** h1'in altında 3,5 rem x 4 px, uygulamanın vurgu renginde dekoratif çizgi (`main h1::after`, CSS;
+    ekran okuyucuya bir şey okunmaz).
+  - **Gezinti yolu** (`GeziniYolu`, `Pages/Shared/_GeziniYolu.cshtml`): `<nav aria-label="Gezinti yolu"><ol>`; "Uygulamalarım /
+    Otomasyon adı / Ekran adı". İlk öğenin adresi `OtomasyonBilgisi.KimlikSunucusuAdresi` (Kimlik:Authority kökü; üst
+    çubuktaki "Uygulamalarım" bağlantısıyla aynı, geçerli değilse ilk öğe yazılmaz), ikinci öğe otomasyonun ana sayfası (`/`),
+    ekran adı `MenuOgesi.Baslik`. Ana sayfada yalnızca ilk iki öğe, `/Profilim`'de "Profilim". Son öğe `aria-current="page"` ve
+    bağlantı değildir. Menüde olmayan sayfalarda (giriş, çıkış, hata, erişim reddedildi) ve girişsiz kullanıcıda yoktur.
+    Ekran sayfalarına dokunulmaz: `_OtomasyonDuzen` sayfa gövdesini üretir ve ilk `</h1>`'in hemen altına ekler. Dar ekranda
+    satır sarılır, uzun adlar kırılır (yatay kayma yok).
+  - **İkonlu menü:** `MenuOgesi`'ne isteğe bağlı `Simge` (`new("Başlık", "/Yol", "Açıklama", Roller.X) { Simge = "liste" }`).
+    Simgeler `MenuSimgeleri` kataloğundadır: ana-sayfa, form, liste, onay, takvim, belge, arsiv, kullanicilar, grafik, rapor,
+    bilgi, kurul, defter, arama, eslestirme, kontrol (16 genel çizgi simgesi) ve ikonsuz veya bilinmeyen adda varsayılan
+    `nokta`. Sayfaya `_MenuSimgeleri` ile tek gizli SVG sprite olarak yazılır (`<symbol id="ms-ad">`; harici dosya, kütüphane,
+    satır içi stil yok), her öğe `<use href="#ms-ad">` kullanır. Simge `aria-hidden="true"`'dur ve `<a>`'nın dışında, `<li>`
+    içindedir: bağlantının metni ve işaretlemesi değişmez, tıklanabilir alan CSS ile satıra genişler. Menü ve içerik beyaz,
+    köşeleri yuvarlatılmış kartlardır; ayrım ince kenarlıkla (gölge yok), öğeler arasında ince ayraç. Menüde alt menü
+    olmadığı için açılır ok yoktur.
+  - Yeni otomasyon eklerken her `MenuOgesi`'ne anlamlı bir `Simge` ver (testler varsayılan noktayı kabul etmez).
 - **Ortak parçalar** (`Pages/Shared`, modeller `OrtakParcalar.cs`): `_DurumRozeti` (`DurumRozeti(ad, DurumTuru.Bekliyor |
   Olumlu | Olumsuz | Bilgi)`; anlam metindedir, renk yalnızca destekler, tür `data-durum`'da), `_BasvuruAdimlari`
   (`BasvuruAdimlari.Olustur(aşamalar, şuAnkiSıra)`; `<ol>`, her aşamada "Tamamlandı / Şu an / Bekliyor" metni, şu anki
@@ -106,7 +131,7 @@ karşılığına bakın.
 6. **izinliRoller.** roller.md plan matrisindeki satırlar: otomasyona ekranı olan her rol. Listede olmayan rol
    authorize'da `access_denied` alır ve Uygulamalarım'da kartı görmez.
 7. **Menü.** `<Ad>Otomasyonu.Menu`: her temsili ekran bir `MenuOgesi` (başlık, `/Rol/Ekran` yolu, kısa açıklama,
-   rol). Sayfalar `Pages/<Rol>/<Ekran>.cshtml`; tek `<h1>`, tablolarda `tablo tablo-yigin`, kayıt satırlarında
+   rol, `{ Simge = "…" }` ile `MenuSimgeleri` kataloğundan anlamlı bir simge; gezinti yolundaki ekran adı bu başlıktır). Sayfalar `Pages/<Rol>/<Ekran>.cshtml`; tek `<h1>`, tablolarda `tablo tablo-yigin`, kayıt satırlarında
    `data-<ad>="<kimlik>"` (testler kapsamı bununla denetler).
 8. **Veri kaynağı arayüzü.** `Sozlesme/` klasöründe DTO'lar (record) ve `I<Ad>VeriKaynagi` (yalnızca okuma; her yöntemin
    XML yorumunda API yolu). `Mock<Ad>VeriKaynagi` (kapsamı `KullaniciKapsami` ile süzer) ve `Api<Ad>VeriKaynagi`

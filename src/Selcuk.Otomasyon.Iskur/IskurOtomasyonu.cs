@@ -37,9 +37,9 @@ public static class IskurOtomasyonu
 
     public static readonly IReadOnlyList<MenuOgesi> Menu =
     [
-        new("Devam durumum", "/Ogrenci/DevamDurumum", "Aylık devam kayıtların ve toplamı.", Roller.Ogrenci),
-        new("Devam girişi", "/Sorumlu/DevamGirisi", "Öğrenci ve gün seçerek devam saati gir.", Roller.IskurSorumlusu),
-        new("Takip", "/Sorumlu/Takip", "Öğrenci başına aylık devam özeti ve uyarılar.", Roller.IskurSorumlusu),
+        new("Devam durumum", "/Ogrenci/DevamDurumum", "Aylık devam kayıtların ve toplamı.", Roller.Ogrenci) { Simge = "takvim" },
+        new("Devam girişi", "/Sorumlu/DevamGirisi", "Öğrenci ve gün seçerek devam saati gir.", Roller.IskurSorumlusu) { Simge = "form" },
+        new("Takip", "/Sorumlu/Takip", "Öğrenci başına aylık devam özeti ve uyarılar.", Roller.IskurSorumlusu) { Simge = "grafik" },
     ];
 
     public static void Ayarla(OtomasyonSecenekleri secenekler)
