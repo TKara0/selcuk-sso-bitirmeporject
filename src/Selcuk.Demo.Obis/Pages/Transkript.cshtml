@@ -1,0 +1,61 @@
+@page
+@model Selcuk.Demo.Obis.Pages.TranskriptModel
+@{
+    ViewData["Title"] = "Transkript";
+    ViewData[Duzen.Ayar.Genislik] = "genis";
+}
+<partial name="_SayfaBasligi" model="@("Transkript")" />
+<p class="giris-metni">Dönem dönem dersler, AKTS ve harf notları (örnek veri; resmî bir belge değildir).</p>
+
+<dl class="ozetler">
+    <div class="ozet">
+        <dt>Genel ortalama (4'lük)</dt>
+        <dd>@OrnekOgrenciVerisi.Ortalama(Model.Kayit.GenelOrtalama)</dd>
+    </div>
+    <div class="ozet">
+        <dt>Tamamlanan AKTS</dt>
+        <dd>@Model.Kayit.ToplamAkts</dd>
+    </div>
+    <div class="ozet">
+        <dt>Tamamlanan dönem</dt>
+        <dd>@Model.Kayit.Donemler.Count</dd>
+    </div>
+</dl>
+
+@if (Model.Kayit.Donemler.Count == 0)
+{
+    <p>Kayıt yok.</p>
+}
+
+@foreach (var donem in Model.Kayit.Donemler)
+{
+    var baslikKimligi = "donem-" + donem.Ad.Replace(' ', '-');
+    <section class="obis-bolum" aria-labelledby="@baslikKimligi">
+        <h2 id="@baslikKimligi">@donem.Ad</h2>
+        <div class="tablo-kabi">
+            <table class="tablo tablo-yigin">
+                <caption class="gorunmez">@donem.Ad dönemi dersleri</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Ders kodu</th>
+                        <th scope="col">Ders adı</th>
+                        <th scope="col" class="sayi">AKTS</th>
+                        <th scope="col">Harf</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var ders in donem.Dersler)
+                    {
+                        <tr>
+                            <td data-etiket="Ders kodu">@ders.Kod</td>
+                            <th scope="row" class="yigin-baslik">@ders.Ad</th>
+                            <td class="sayi" data-etiket="AKTS">@ders.Akts</td>
+                            <td data-etiket="Harf"><span class="etiket etiket-uygulama">@ders.Harf</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <p class="obis-donem-ozeti">Dönem AKTS: <strong>@donem.ToplamAkts</strong> · Dönem ortalaması: <strong>@OrnekOgrenciVerisi.Ortalama(donem.Ortalama)</strong></p>
+    </section>
+}

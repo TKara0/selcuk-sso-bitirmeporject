@@ -1,0 +1,44 @@
+@page
+@model Selcuk.Demo.Obis.Pages.UzaktanSinavModel
+@{
+    ViewData["Title"] = "Uzaktan Sınav";
+    ViewData[Duzen.Ayar.Genislik] = "genis";
+}
+<partial name="_TemsiliForm" />
+<partial name="_SayfaBasligi" model="@("Uzaktan Sınav")" />
+
+<div class="obis-kutu obis-kutu-mavi" role="note">
+    <p><strong>Bilgi:</strong> Bu sayfa temsilidir. Gerçek bir uzaktan sınav sistemine bağlantı yoktur; sınav başlatılmaz ve
+    hiçbir yanıt kaydedilmez.</p>
+</div>
+
+<section class="obis-bolum" aria-labelledby="oturumlar-baslik">
+    <h2 id="oturumlar-baslik">Örnek sınav oturumları</h2>
+    <div class="tablo-kabi">
+        <table class="tablo tablo-yigin">
+            <caption class="gorunmez">Örnek uzaktan sınav oturumları</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Ders</th>
+                    <th scope="col">Oturum</th>
+                    <th scope="col">Süre</th>
+                    <th scope="col">İşlem</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <th scope="row" class="yigin-baslik">İngilizce I (örnek)</th>
+                    <td data-etiket="Oturum">Örnek oturum 1</td>
+                    <td data-etiket="Süre">45 dk</td>
+                    <td><button type="submit" form="temsili-islem" class="obis-baglanti">Sınava gir (temsili)</button></td>
+                </tr>
+                <tr>
+                    <th scope="row" class="yigin-baslik">Türk Dili I (örnek)</th>
+                    <td data-etiket="Oturum">Örnek oturum 2</td>
+                    <td data-etiket="Süre">30 dk</td>
+                    <td><button type="submit" form="temsili-islem" class="obis-baglanti">Sınava gir (temsili)</button></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>

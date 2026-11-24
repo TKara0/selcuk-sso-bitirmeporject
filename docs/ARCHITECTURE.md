@@ -14,10 +14,12 @@ src/Selcuk.Istemci.Ortak       AddSelcukSSO, Back-Channel alıcısı, OturumIpta
 src/Selcuk.Otomasyon.Ortak     AddSelcukOtomasyon/UseSelcukOtomasyon, menü→yetki, VeriKaynagi
 src/Selcuk.Otomasyon.*         Intibak/Staj/EtikKurul/Mezuniyet/BolumKurul/Danismanlik/Iskur/Mudek/LisansProjeleri/
                                SinavAnalizi/CapYandal (5301-5311): Sozlesme/ (DTO + arayüz), Veri/ (Mock + Api)
-src/Selcuk.Demo.Obis|Yemekhane|Api
+src/Selcuk.Demo.Obis|Yemekhane|Api   Demo OBİS: Pages/Shared (_Layout, _ObisHesapMenusu, _SayfaBasligi, _TemsiliForm), Data/
+                               (ObisMenusu, ObisSimgeleri, OrnekOgrenciVerisi), wwwroot/css/site.css (--obis-* mavi tonlar)
 araclar/tek-kapi               Node.js portal (ayrı AGENTS.md)
 tools/Selcuk.Olcum             otomatik ölçüm (yalnızca localhost+https)
 tests/                         her src projesi için *.Tests; Otomasyon.TestOrtak ortak kaynak (bağlantıyla derlenir)
+start.py                       tek komutla başlatma (ön kontrol, run-all -ArkaPlan, durdur, --kurulum)
 scripts/                       run-all, durdur-hepsi, olcum-calistir, arayuz-esitle, ekran-goruntuleri, olcum_analiz
 docs/                          bu sistem + konu belgeleri
 ```
@@ -68,6 +70,19 @@ Yeni otomasyon kontrol listesi: [otomasyon-sablonu.md](otomasyon-sablonu.md).
 - Otomasyon `VeriKaynagi:Mod` = `Mock` (varsayılan örnek veri) | `Api` (`ApiAdresi` https, Bearer access token;
   karşı API'ler **henüz yok**, sözleşmeler [api-sozlesmeleri/](api-sozlesmeleri/)).
 - Tek Kapı: şifreli yerel kasa `araclar/tek-kapi/data/` (git'e girmez).
+
+## Tek komutla başlatma (`start.py`)
+
+Depo kökündeki `start.py` yalnızca Python standart kütüphanesini kullanır (Windows). Uygulama listesini yinelemez:
+`scripts/run-all.ps1`'deki `@{ Ad; Baslik; Proje; Port }` satırlarını okur (`tek-kapi` satırı hariç) ve uygulamaları
+`run-all.ps1 -ArkaPlan` ile başlatır (çıktı `logs/<ad>.log`, PID'ler `logs/run-all.pids`); kapatma `durdur-hepsi.ps1`.
+Akış: ön kontrol (✓/✗; eksikse komutu söyler ve durur) → run-all → her portta https cevabı bekleme (cevap vermeyen
+uygulamanın log sonu, gizli sözcük içeren satırlar maskelenerek) → tablo ve test kullanıcıları (şifresiz) → tarayıcı →
+bekleme; `Ctrl+C` veya başka oturumdan `--durdur` ile kapatılır ve portlarda dinleyen işlem kalmadığı doğrulanır.
+`--kurulum`, yalnızca eksik user-secrets anahtarlarını `dotnet user-secrets set` (JSON stdin'den) ile yazar: istemci
+sırrı kimlik sunucusunda ve uygulamada aynı değerdir (32 bayt, base64); var olan değer değiştirilmez, değer yazdırılmaz;
+`--deneme` hiçbir şey yazmaz. Kimlik sunucusundaki test kullanıcı ve istemci listesi `start.py`'de ayrıca durur
+(`BaslangicVerisi.cs` ve `Istemciler.cs` ile aynı olmalı; yeni istemci/kullanıcı eklenince burası da güncellenir).
 
 ## Test mimarisi
 

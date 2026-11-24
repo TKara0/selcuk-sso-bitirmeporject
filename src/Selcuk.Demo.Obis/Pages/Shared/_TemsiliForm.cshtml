@@ -1,0 +1,7 @@
+@*
+    Temsili işlem formu (sayfada bir kez): düğmeler bu forma form="temsili-islem" ile bağlanır. Antiforgery token'ı
+    form etiketi üretir; veri değişmez, kullanıcı mesajla aynı sayfaya döner (TemsiliIslem sayfası).
+*@
+<form id="temsili-islem" method="post" asp-page="/TemsiliIslem">
+    <input type="hidden" name="donus" value="@(Context.Request.Path + Context.Request.QueryString)" />
+</form>

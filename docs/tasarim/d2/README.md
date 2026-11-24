@@ -53,6 +53,15 @@ parlaklık formülüyle hesaplandı; zeminler D1 token'larıdır (`--tas` #EDF0E
 | Demo OBİS (lacivert) | #2F4F8F / #9DB5E8 | #E3E9F5 / #1C2A45 |
 | Demo Yemekhane (nar) | #9C3D54 / #E99AAE | #F7E4E9 / #3B1E28 |
 
+### Demo OBİS arayüzü (mavi şerit, gri sekme çubuğu; R10)
+
+Demo OBİS'in yeni arayüzü `--uygulama-vurgu` (lacivert, aşağıdaki tablo) yanında kendi `--obis-*` token'larını kullanır
+(`src/Selcuk.Demo.Obis/wwwroot/css/site.css`; tam kontrast tablosu dosya başlığında, `ObisArayuzTests` her iki temada
+denetler). Özet: beyaz / şerit `#2A6AB0` 5,55:1 (koyu `#1B4A7A` 9,10:1); beyaz / şerit-koyu `#123B66` 11,39:1; beyaz / mavi
+düğme 5,55:1 (koyu `#2F6DB0` 5,34:1); başlık metni `#123B66` / açık mavi `#DCEAF7` 9,31:1; bağlantı `#0B4A85` açık mavi,
+sarı `#FFF3C4`, yeşil `#DDF0DA`, gri `#E4E8EC`, yüzey zeminlerinde 7,31-9,00:1 (koyu `#9CC7F2`: 6,86-8,58:1);
+`--murekkep` bu zeminlerde ≥ 12,50:1 (koyu ≥ 10,32:1). Hepsi ≥ 4,5:1.
+
 ### Demo OBİS (lacivert)
 
 | Metin / öğe | Zemin | Kullanım | Açık tema | Koyu tema | Eşik | Sonuç |
@@ -153,8 +162,10 @@ ekranlarını; otomasyon ekranları sonraki bölümleri listeler.
 | Kimlik sunucusu | Hata | `hata` | ✓ |
 | Kimlik sunucusu | Çok fazla deneme (429) | `cok-fazla-istek` | ✓ |
 | Demo OBİS | Giriş yapılmamış ana sayfa | `obis-karsilama` | ✓ |
-| Demo OBİS | Ana sayfa (giriş yapılmış) | `obis-ana` | ✓ |
-| Demo OBİS | Notlarım | `obis-notlarim` | ✓ |
+| Demo OBİS | Anasayfa (öğrenci; yeni arayüz) | `obis-ana` | ✓ |
+| Demo OBİS | Transkript | `obis-transkript` | ✓ |
+| Demo OBİS | Anasayfa, 390 px dar ekran | `obis-dar-ekran` | ✓ (yalnızca mobil) |
+| Demo OBİS | Not Durumu (`/Notlarim`) | `obis-notlarim` | ✓ |
 | Demo OBİS | Ders Yönetimi (akademisyen) | `obis-ders-yonetimi` | ✓ |
 | Demo OBİS | Token İnceleme | `obis-token-inceleme` | ✓ |
 | Demo OBİS | Profilim | `obis-profilim` | ✓ |

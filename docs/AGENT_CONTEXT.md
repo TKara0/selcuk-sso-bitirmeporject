@@ -20,7 +20,7 @@ Türkçe. Tüm veri kurgusaldır; gerçek Selçuk sistemlerine yalnızca `aracla
 | `src/Selcuk.Demo.{Obis,Yemekhane,Api}` (:5101/5102/5201) | Demo istemciler ve kaynak sunucusu |
 | `src/Selcuk.Roller`, `src/Selcuk.Arayuz` | Rol kataloğu (tek kaynak), ortak tasarım sistemi |
 | `araclar/tek-kapi` (:4545) | Node.js yerel ESSO portalı; kendi `AGENTS.md`'si var |
-| `tools/Selcuk.Olcum`, `tests/` | Ölçüm aracı (Debug/Release), 18 .NET test projesi, 786 test (+ `TestOrtak`, bağlantıyla derlenen ortak kaynak) |
+| `tools/Selcuk.Olcum`, `tests/` | Ölçüm aracı (Debug/Release), 18 .NET test projesi, 818 test (+ `TestOrtak`, bağlantıyla derlenen ortak kaynak) |
 
 Kritik dosyalar: `src/Selcuk.Identity/Program.cs` (OpenIddict/Identity/ara katman kurulumu), `Data/Istemciler.cs`
 (istemci kayıtları), `Oidc/` (token yaşam döngüsü, tek çıkış, erişim izni), `Data/BaslangicVerisi.cs` (seed).

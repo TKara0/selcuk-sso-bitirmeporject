@@ -1,9 +1,13 @@
 @page
-@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Ortam
+@model Selcuk.Demo.Obis.Pages.IndexModel
 @{
-    ViewData["Title"] = "Ana sayfa";
+    ViewData["Title"] = "Anasayfa";
+    ViewData[Duzen.Ayar.Genislik] = "genis";
+    var girisli = User.Identity?.IsAuthenticated == true;
+    var bas = ObisMenusu.BasHarfler(User.Identity?.Name);
+    var tabloBasligi = Model.Ogrenci ? "Öğrenci bilgileri" : "Akademisyen bilgileri";
 }
-@if (User.Identity?.IsAuthenticated != true)
+@if (!girisli)
 {
     <section class="karsilama">
         <h1 class="baslik-buyuk">Demo OBİS</h1>
@@ -11,36 +15,122 @@
         <partial name="_TekSifreGirisi" model="@Url.Page("/Giris")" />
     </section>
 }
+else if (Model.Ogrenci || Model.Akademisyen)
+{
+    <partial name="_TemsiliForm" />
+    <partial name="_SayfaBasligi" model="@("Anasayfa")" />
+
+    <div class="obis-ikili">
+        <div class="obis-sol">
+            <section class="obis-kimlik" aria-labelledby="kimlik-baslik">
+                <h2 id="kimlik-baslik" class="gorunmez">@tabloBasligi</h2>
+                <div class="obis-fotograf" role="img" aria-label="Örnek profil görseli: @bas">
+                    <span aria-hidden="true">@bas</span>
+                </div>
+                <table class="obis-bilgi-tablosu">
+                    <caption class="gorunmez">@tabloBasligi</caption>
+                    <tbody>
+                        @if (Model.Ogrenci)
+                        {
+                            <tr><th scope="row">Öğrenci No</th><td class="mono">@Model.KullaniciAdi</td></tr>
+                        }
+                        else
+                        {
+                            <tr><th scope="row">Kullanıcı Adı</th><td class="mono">@Model.KullaniciAdi</td></tr>
+                        }
+                        <tr><th scope="row">Adı Soyadı</th><td>@Model.AdSoyad</td></tr>
+                        <tr><th scope="row">Fakülte</th><td>@Html.Raw(ObisSimgeleri.Konum)@Model.Fakulte</td></tr>
+                        <tr><th scope="row">Bölüm</th><td>@Html.Raw(ObisSimgeleri.Konum)@Model.Bolum</td></tr>
+                        @if (Model.Ogrenci)
+                        {
+                            <tr><th scope="row">Danışman</th><td>@Model.Kayit.Danisman</td></tr>
+                            <tr><th scope="row">Sınıf</th><td>@Model.Kayit.Sinif</td></tr>
+                        }
+                        else
+                        {
+                            <tr><th scope="row">Unvan</th><td>Öğretim Üyesi (örnek)</td></tr>
+                            <tr><th scope="row">Danışmanlık</th><td>12 öğrenci (örnek)</td></tr>
+                        }
+                        <tr><th scope="row">Eposta</th><td>@Html.Raw(ObisSimgeleri.Eposta)@Model.Eposta</td></tr>
+                    </tbody>
+                </table>
+            </section>
+
+            @if (Model.Ogrenci)
+            {
+                <div class="obis-danisman">
+                    <p class="obis-etiket">Danışman İletişim</p>
+                    <button type="submit" form="temsili-islem" class="dugme dugme-obis">@Html.Raw(ObisSimgeleri.Eposta)Danışmanıma Mail At</button>
+                    <p class="obis-not"><em>Danışmanına ders kaydı ve akademik konularda ileti göndermek için kullanılır (temsili düğme).</em></p>
+                </div>
+
+                <section class="obis-kutu obis-kutu-yesil" aria-labelledby="islemler-baslik">
+                    <h2 id="islemler-baslik">Öğrenci işlemleri</h2>
+                    <ul class="obis-baglantilar">
+                        <li><a asp-page="/Transkript">Transkript</a></li>
+                        <li><a asp-page="/HarcDurumu">Harç Durumu</a></li>
+                        <li><a asp-page="/OnayTakip">Onay Takip</a></li>
+                        <li><button type="submit" form="temsili-islem" class="obis-baglanti">Öğrenci belgesi iste</button></li>
+                    </ul>
+                </section>
+
+                <section class="obis-kutu obis-kutu-mavi" aria-labelledby="ders-baslik">
+                    <h2 id="ders-baslik">Ders ve sınav bilgileri</h2>
+                    <ul class="obis-baglantilar">
+                        <li><a asp-page="/Notlarim">Not Durumu</a></li>
+                        <li><a asp-page="/SonYilNotlari">Son Yıl Notları</a></li>
+                        <li><a asp-page="/SinavTarihleri">Sınav Tarihleri</a></li>
+                        <li><a asp-page="/UzaktanEgitim">Uzaktan Eğitim</a></li>
+                    </ul>
+                </section>
+            }
+            else
+            {
+                <section class="obis-kutu obis-kutu-mavi" aria-labelledby="ders-baslik">
+                    <h2 id="ders-baslik">Bu dönem verdiğin dersler</h2>
+                    <ul class="obis-liste">
+                        @foreach (var ders in SahteVeri.Dersler)
+                        {
+                            <li>@ders.Kod · @ders.Ad (@ders.OgrenciSayisi öğrenci)</li>
+                        }
+                    </ul>
+                    <p><a asp-page="/DersYonetimi">Ders Yönetimi</a></p>
+                </section>
+
+                <section class="obis-kutu obis-kutu-yesil" aria-labelledby="islemler-baslik">
+                    <h2 id="islemler-baslik">Akademik işlemler (temsili)</h2>
+                    <ul class="obis-baglantilar">
+                        <li><button type="submit" form="temsili-islem" class="obis-baglanti">Not girişi</button></li>
+                        <li><button type="submit" form="temsili-islem" class="obis-baglanti">Danışmanlık onayları</button></li>
+                    </ul>
+                </section>
+            }
+        </div>
+
+        <aside class="obis-sag" aria-labelledby="duyuru-baslik">
+            <h2 id="duyuru-baslik" class="obis-panel-baslik">Duyuru</h2>
+            <div class="obis-kutu obis-kutu-sari" role="note">
+                <p><button type="submit" form="temsili-islem" class="obis-baglanti">Örnek duyuru: ders kayıt dönemiyle ilgili deneme bilgilendirmesi</button></p>
+                <p>Bu metin uydurmadır; gerçek bir duyuru değildir.</p>
+            </div>
+            <div class="obis-kutu obis-kutu-mavi" role="note">
+                <p><strong>Bilgi:</strong> Bu ekranda gördüğün veriler örnektir.</p>
+                <p><strong>Bilgi:</strong> Yapılan işlemler hiçbir yere kaydedilmez.</p>
+                <p><strong>Bilgi:</strong> Giriş Tek Şifre Giriş Sistemi'nde yapılır.</p>
+            </div>
+            <div class="obis-kutu obis-kutu-yesil" role="note">
+                <p>Örnek anket: deneme bilgilendirmesi (temsili).</p>
+                <div class="obis-dugmeler">
+                    <button type="submit" form="temsili-islem" class="dugme dugme-obis">Ankete katıl</button>
+                    <button type="submit" form="temsili-islem" class="dugme dugme-obis">Tüm duyurular</button>
+                </div>
+            </div>
+        </aside>
+    </div>
+}
 else
 {
-    <h1>Hoş geldin, @User.Identity.Name</h1>
-    <p class="giris-metni">Demo OBİS'e Tek Şifre ile giriş yaptın; diğer uygulamalara şifre sormadan geçebilirsin.</p>
-
-    <ul class="satirlar">
-        @if (User.IsInRole(Roller.Ogrenci))
-        {
-            <li>
-                <p class="satir-baslik"><a asp-page="/Notlarim">Notlarım</a></p>
-                <p class="ipucu">Bu dönemin notları, toplam kredi ve ağırlıklı ortalama.</p>
-            </li>
-        }
-        @if (User.IsInRole(Roller.Akademisyen))
-        {
-            <li>
-                <p class="satir-baslik"><a asp-page="/DersYonetimi">Ders Yönetimi</a></p>
-                <p class="ipucu">Bu dönem verdiğin dersler ve öğrenci sayıları.</p>
-            </li>
-        }
-        <li>
-            <p class="satir-baslik"><a asp-page="/Profilim">Profilim</a></p>
-            <p class="ipucu">Kimlik sunucusundan gelen ad, rol, fakülte ve bölüm bilgilerin.</p>
-        </li>
-        @if (Ortam.IsDevelopment())
-        {
-            <li>
-                <p class="satir-baslik"><a asp-page="/TokenInceleme">Token İnceleme</a></p>
-                <p class="ipucu">id_token ve access_token içeriği (yalnızca geliştirme ortamında).</p>
-            </li>
-        }
-    </ul>
+    <partial name="_SayfaBasligi" model="@("Anasayfa")" />
+    <p class="giris-metni">Hoş geldin, @User.Identity!.Name. Demo OBİS'te bu hesabın rolü için ekran yoktur; bilgilerin için Profilim'i aç.</p>
+    <p><a asp-page="/Profilim">Profilim</a></p>
 }

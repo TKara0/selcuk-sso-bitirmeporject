@@ -1,12 +1,12 @@
 @page
 @model Selcuk.Demo.Obis.Pages.NotlarimModel
 @{
-    ViewData["Title"] = "Notlarım";
+    ViewData["Title"] = "Not Durumu";
     ViewData[Duzen.Ayar.Genislik] = "genis";
     var tr = System.Globalization.CultureInfo.GetCultureInfo("tr-TR");
 }
-<h1>Notlarım</h1>
-<p class="giris-metni">2026-2027 Güz dönemi (örnek veri).</p>
+<partial name="_SayfaBasligi" model="@("Not Durumu")" />
+<p class="giris-metni">Notlarım: 2026-2027 Güz dönemi notların (örnek veri; Demo API'den gelir).</p>
 
 @if (Model.Hata is not null)
 {

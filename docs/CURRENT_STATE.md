@@ -1,7 +1,7 @@
 # CURRENT_STATE
 
-Son güncelleme: 2026-11-24 (Release ölçümü, ekran görüntülerinin yenilenmesi, belge güncellemesi).
-Son commit: bu belgeyi içeren "Release ölçümü, ekran görüntülerinin yenilenmesi ve belge güncellemesi" (öncesi `b7f4a93`);
+Son güncelleme: 2026-11-25 (Demo OBİS yeni arayüz ve start.py).
+Son commit: bu belgeyi içeren "Demo OBİS yeni arayüz ve start.py" (öncesi `f4ff7eb`);
 hash için `git log -1`. Dal `main`.
 
 ## Çalışanlar (kodda var ve testle kapsanıyor)
@@ -11,7 +11,10 @@ hash için `git log -1`. Dal `main`.
 - Token yaşam döngüsü: 15 dk access, 8 sa kayan refresh, 12 sa mutlak sınır, tekrar kullanım tespiti, budama.
 - Şifre sıfırlama/değiştirme, kilit (5/15 dk), hız sınırı, 2FA (TOTP, kurtarma kodu, cihaz hatırlama, step-up),
   denetim kaydı + güvenlik geçmişi, uygulama bazlı erişim izni, rol kataloğu (çok rollü kullanıcı).
-- Ortak tasarım sistemi; Demo OBİS, Demo Yemekhane, Demo API; on bir bölüm otomasyonunun hepsi hazır (temsili ekran,
+- Tek komutla başlatma: `python start.py` (ön kontrol, `run-all.ps1 -ArkaPlan`, https bekleme, Ctrl+C / `--durdur`;
+  `--kurulum` eksik user-secrets'ı üretir). Bkz. README > Hızlı başlangıç.
+- Ortak tasarım sistemi; Demo OBİS (gerçek bir öğrenci bilgi sisteminin sayfa düzenine benzeyen temsili arayüz: mavi şerit,
+  sekme çubuğu, 10 öğrenci ve 2 akademisyen sekmesi), Demo Yemekhane, Demo API; on bir bölüm otomasyonunun hepsi hazır (temsili ekran,
   Mock veri): İntibak 5301, Staj 5302, Etik Kurul 5303, Mezuniyet 5304, Bölüm Kurul Karar 5305, Öğrenci Danışmanlık
   5306, İŞKUR 5307, MÜDEK 5308, Lisans Projeleri 5309, Sınav Başarısı Analizi 5310, ÇAP-Yandal 5311.
 - Tek Kapı SSO modu (bağımsız mod 35 + SSO 14 kontrol).
@@ -27,11 +30,32 @@ hash için `git log -1`. Dal `main`.
 
 ## Doğrulama durumu
 
-- Bu adımda çalıştırıldı ve geçti: `dotnet build` (0 uyarı), `dotnet test SelcukSSO.sln` (varsayılan paralel; 18 .NET test projesi, **786** test), Tek Kapı
+- Bu adımda çalıştırıldı ve geçti: `dotnet build` (0 uyarı), `dotnet test SelcukSSO.sln` (varsayılan paralel; 18 .NET test projesi, **818** test), Tek Kapı
   `npm test` (**49** kontrol: 35 + 14). Sayılar `docs/test-kapsami.md`'de.
 - Kod kapsamı 2026-11-24'te 18 proje için yeniden ölçüldü: satır %91,7, dal %77,4 (`docs/test-kapsami.md`).
 
-## Bu adımın değişiklikleri (R9, ölçüm, ekran görüntüleri ve belgeler)
+## Bu adımın değişiklikleri (R10, Demo OBİS arayüzü ve start.py)
+
+- Demo OBİS arayüzü yeniden tasarlandı (yalnızca `src/Selcuk.Demo.Obis` ve testleri): mavi üst şerit ("Demo OBİS · Öğrenci
+  Bilgi Sistemi", "Test" rozeti, hesap menüsünde yuvarlak baş harf görseli), gri sekme çubuğu (kare amblem alanında projenin
+  kendi kapı işareti), sabit "Demo ekran" bandı, açık mavi sayfa başlığı şeridi, renkli bilgi kutuları. Yeni öğrenci
+  ekranları: Onay Takip, Son Yıl Notları, Transkript, Harç Durumu, Sınav Tarihleri, Uzaktan Eğitim, Uzaktan Sınav, YKK
+  Kararı (Not Durumu = mevcut `/Notlarim`, adres değişmedi, Demo API'den). Akademisyen: Anasayfa + Ders Yönetimi. Token
+  İnceleme hesap menüsünde. Temsili düğmeler tek `/TemsiliIslem` POST ucuna (antiforgery zorunlu, veri değişmez). Örnek veri
+  (`Data/OrnekOgrenciVerisi.cs`) uydurma ve 203011001-003 için ayrı ayrı. Gerçek kurum logosu, duyuru metni, adresi ve giriş
+  formu yok; simgeler yerel SVG; CSP, `selcuk.css` ve `Selcuk.Arayuz/wwwroot` değişmedi. Mavi tonlar ve kontrast oranları
+  `site.css` başlığında (açık ve koyu tema).
+- `start.py` (depo kökü): ön kontrol (Python, .NET 10, LocalDB + veritabanı, sertifika, user-secrets anahtar adları,
+  portlar), `run-all.ps1 -ArkaPlan` ile başlatma, her portun https cevabını bekleme, durum tablosu, test kullanıcıları
+  (şifresiz), tarayıcı, Ctrl+C / `--durdur` ile kapatma ve doğrulama; `--kurulum [--deneme]` eksik user-secrets'ı üretir
+  (var olana dokunmaz, değer yazmaz). Tek Kapı başlatılmaz.
+- Testler: Demo OBİS 31 → 63 (+32); toplam 786 → 818; hiçbiri silinmedi, hiçbiri zayıflatılmadı.
+  `CsrfTests.Senaryolar` listesine yeni POST işleyicisi (`TemsiliIslem`) eklendi (test, yeni işleyici için senaryo ister);
+  `ObisFactory` sahte kimliğe kullanıcı adı, ad ve e-posta başlıkları aldı.
+- `scripts/ekran-goruntuleri.mjs`: OBİS grubuna Transkript ve dar ekran çekimleri eklendi; yalnızca OBİS grubu çekildi
+  (`--sadece obis`: 13 ekran, 6 tez görseli); OBİS PNG'leri aynı adlarla yenilendi, tez 39-41 eklendi (tez görseli toplamı 41).
+
+## Önceki adım (R9, ölçüm, ekran görüntüleri ve belgeler)
 
 - Performans ölçümü yayın (Release) derlemesiyle yenilendi: `scripts/olcum-calistir.ps1 -Yapilandirma Release`
   (`run-all.ps1` da `-Yapilandirma` alır). İki Release turu, bir Debug turu ve 26 Ekim kodunun (`07121a6`) bugünkü

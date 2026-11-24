@@ -18,7 +18,7 @@ namespace Selcuk.Demo.Obis.Tests;
 /// Demo OBİS'i kimlik sunucusu olmadan çalıştırır. Discovery bilgisi sabit verilir; böylece
 /// OpenID Connect challenge'ı ağ isteği yapmadan üretilir. sahteKimlik açıkken kullanıcı,
 /// istekteki X-Test-Rol başlığından (virgülle ayrılmış birden çok rol olabilir; isteğe bağlı X-Test-Bolum ve
-/// X-Test-Fakulte) oluşturulur (gerçek kimlik sunucusu yerine); oturumda sahte bir access token
+/// X-Test-Fakulte, X-Test-Kullanici (preferred_username), X-Test-Ad (name), X-Test-Eposta) oluşturulur (gerçek kimlik sunucusu yerine); oturumda sahte bir access token
 /// (<see cref="SahteAccessToken"/>) bulunur. Demo API'ye istekler demoApi işleyicisine gider; verilmezse API kapalıdır
 /// (bağlantı hatası), testler ağa çıkmaz. ortam verilirse (ör. Development: Token İnceleme) o ortamda çalışır;
 /// tokenlar verilirse oturumdaki token'lar onlardır.
@@ -32,6 +32,9 @@ public sealed class ObisFactory(
     public const string RolBasligi = "X-Test-Rol";
     public const string BolumBasligi = "X-Test-Bolum";
     public const string FakulteBasligi = "X-Test-Fakulte";
+    public const string KullaniciBasligi = "X-Test-Kullanici";
+    public const string AdBasligi = "X-Test-Ad";
+    public const string EpostaBasligi = "X-Test-Eposta";
     public const string SahteAccessToken = "test-erisim-tokeni";
     private const string TestSemasi = "Test";
     private const string Authority = "https://localhost:5001/";
@@ -107,10 +110,14 @@ public sealed class ObisFactory(
             var identity = new ClaimsIdentity(
             [
                 new Claim("sub", "test-kullanici"),
-                new Claim("name", "Test Kullanıcısı"),
+                new Claim("name", Request.Headers.TryGetValue(AdBasligi, out var ad) ? ad.ToString() : "Test Kullanıcısı"),
                 .. rol.ToString().Split(',').Select(r => new Claim("role", r)),
             ], Scheme.Name, "name", "role");
-            foreach (var (baslik, claim) in new[] { (BolumBasligi, "bolum"), (FakulteBasligi, "fakulte") })
+            foreach (var (baslik, claim) in new[]
+            {
+                (BolumBasligi, "bolum"), (FakulteBasligi, "fakulte"),
+                (KullaniciBasligi, "preferred_username"), (EpostaBasligi, "email"),
+            })
             {
                 if (Request.Headers.TryGetValue(baslik, out var deger))
                 {

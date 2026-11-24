@@ -1,0 +1,40 @@
+@page
+@model Selcuk.Demo.Obis.Pages.YkkKarariModel
+@{
+    ViewData["Title"] = "YKK Kararı";
+    ViewData[Duzen.Ayar.Genislik] = "genis";
+}
+<partial name="_SayfaBasligi" model="@("YKK Kararı")" />
+<p class="giris-metni">Yönetim kurulu kararlarından örnekler. Karar metinleri uydurmadır.</p>
+
+@if (Model.Kayit.Kararlar.Count == 0)
+{
+    <p>Kayıt yok.</p>
+}
+else
+{
+    <div class="tablo-kabi">
+        <table class="tablo tablo-yigin">
+            <caption class="gorunmez">Örnek yönetim kurulu kararları</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Karar no</th>
+                    <th scope="col">Konu</th>
+                    <th scope="col">Tarih</th>
+                    <th scope="col">Sonuç</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var karar in Model.Kayit.Kararlar)
+                {
+                    <tr>
+                        <td class="mono" data-etiket="Karar no">@karar.No</td>
+                        <th scope="row" class="yigin-baslik">@karar.Konu</th>
+                        <td data-etiket="Tarih">@OrnekOgrenciVerisi.Tarih(karar.Tarih)</td>
+                        <td data-etiket="Sonuç"><span class="etiket etiket-uygulama">@karar.Sonuc</span></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

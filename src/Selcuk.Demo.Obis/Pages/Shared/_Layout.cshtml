@@ -1,14 +1,29 @@
-@* Demo OBİS'in düzeni: ortak düzen (Selcuk.Arayuz) + uygulama adı, simgesi, sekmeler ve hesap menüsü. *@
+@*
+    Demo OBİS'in düzeni, ortak düzenin (Selcuk.Arayuz, _SelcukDuzen) üstünde: üst çubukta mavi şerit (sistem adı, "Test"
+    rozeti, "Uygulamalarım" bağlantısı, kullanıcı adı + yuvarlak profil görseli + açılır menü), altında gri sekme çubuğu
+    (kare amblem alanında projenin kendi kapı işareti; sekmeler üstte simge, altta metin; etkin sekmede aria-current),
+    sekme çubuğunun altında sabit "Demo ekran" bandı, içerikte temsili işlem mesajı (TempData). Hiçbir kurum amblemi,
+    gerçek metin veya dış kaynak yoktur; simgeler yerel SVG'dir (ObisSimgeleri). Stiller yalnızca wwwroot/css/site.css'te.
+*@
 @inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Ortam
 @inject Selcuk.Istemci.Ortak.KimlikSunucusuBilgisi KimlikSunucusu
 @{
     Layout = "_SelcukDuzen";
-    ViewData[Duzen.Ayar.UygulamaAdi] = "Demo OBİS";
+    ViewData[Duzen.Ayar.UygulamaAdi] = "Demo OBİS · Öğrenci Bilgi Sistemi";
     ViewData[Duzen.Ayar.UygulamaSimgesi] = "DO";
-    ViewData[Duzen.Ayar.AltBilgi] = "Demo OBİS yalnızca test amaçlıdır, veriler uydurmadır. Giriş Tek Şifre Giriş Sistemi ile yapılır.";
+    ViewData[Duzen.Ayar.AltBilgi] = "Demo OBİS bir bitirme projesidir, resmî sistem değildir; veriler uydurmadır. Giriş Tek Şifre Giriş Sistemi ile yapılır.";
 
+    var girisli = User.Identity?.IsAuthenticated == true;
     var gecerli = ViewContext.RouteData.Values["page"] as string;
     string? Gecerli(string sayfa) => gecerli == sayfa ? "page" : null;
+    var sekmeler = girisli ? ObisMenusu.Sekmeler(User) : [];
+    var mesaj = TempData[Selcuk.Demo.Obis.Pages.TemsiliIslemModel.TempDataAnahtari] as string;
+
+    var hesapBaglantilari = new List<HesapMenusuBaglantisi> { new("Profilim", Url.Page("/Profilim")!, gecerli == "/Profilim") };
+    if (Ortam.IsDevelopment())
+    {
+        hesapBaglantilari.Add(new("Token İnceleme", Url.Page("/TokenInceleme")!, gecerli == "/TokenInceleme"));
+    }
 }
 @section Stiller {
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
@@ -17,33 +32,38 @@
    (Kimlik:Authority'den türetilir; yalnızca https veya http://127.0.0.1; aynı sekmede açılır, betik gerekmez). *@
 @section HesapMenusu {
     <div class="ust-baglantilar">
-        @if (User.Identity?.IsAuthenticated == true && KimlikSunucusu.Adres is { } uygulamalarimAdresi)
+        @if (girisli && KimlikSunucusu.Adres is { } uygulamalarimAdresi)
         {
             <a class="uygulamalarim-baglantisi" href="@uygulamalarimAdresi">Uygulamalarım</a>
         }
-        <partial name="_IstemciHesapMenusu" model="@(new[] { new HesapMenusuBaglantisi("Profilim", Url.Page("/Profilim")!, gecerli == "/Profilim") })" />
+        <partial name="_ObisHesapMenusu" model="hesapBaglantilari" />
     </div>
 }
 @section Sekmeler {
-    @if (User.Identity?.IsAuthenticated == true)
+    @if (girisli)
     {
-        <nav class="sekmeler" aria-label="@ViewData[Duzen.Ayar.UygulamaAdi]">
-            <ul>
-                <li><a asp-page="/Index" aria-current="@Gecerli("/Index")">Ana sayfa</a></li>
-                @if (User.IsInRole(Roller.Ogrenci))
-                {
-                    <li><a asp-page="/Notlarim" aria-current="@Gecerli("/Notlarim")">Notlarım</a></li>
-                }
-                @if (User.IsInRole(Roller.Akademisyen))
-                {
-                    <li><a asp-page="/DersYonetimi" aria-current="@Gecerli("/DersYonetimi")">Ders Yönetimi</a></li>
-                }
-                @if (Ortam.IsDevelopment())
-                {
-                    <li><a asp-page="/TokenInceleme" aria-current="@Gecerli("/TokenInceleme")">Token İnceleme</a></li>
-                }
-            </ul>
-        </nav>
+        <div class="obis-sekme-cubugu">
+            <div class="obis-amblem" aria-hidden="true">@Html.Raw(KapiIsareti.Kucuk)</div>
+            <nav class="obis-sekmeler" aria-label="Demo OBİS menüsü">
+                <ul>
+                    @foreach (var sekme in sekmeler)
+                    {
+                        <li><a asp-page="@sekme.Sayfa" aria-current="@Gecerli(sekme.Sayfa)">@Html.Raw(sekme.Simge)<span>@sekme.Metin</span></a></li>
+                    }
+                </ul>
+            </nav>
+        </div>
     }
+    <div class="bant demo-bant" role="note">
+        @Html.Raw(Simge.Bilgi)
+        <p>Demo ekran: gösterilen veriler örnektir, yapılan işlemler kaydedilmez.</p>
+    </div>
+}
+@if (mesaj is not null)
+{
+    <div class="bant bant-uygulama" role="status">
+        @Html.Raw(Simge.Bilgi)
+        <p>@mesaj</p>
+    </div>
 }
 @RenderBody()

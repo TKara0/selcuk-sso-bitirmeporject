@@ -24,7 +24,7 @@ public sealed class CsrfTests : IDisposable
     public void Dispose() => _factory.Dispose();
 
     /// <summary>Senaryo anahtarları: "Sayfa/Yolu" (varsayılan işleyici) veya "Sayfa/Yolu:IsimliIsleyici".</summary>
-    public static readonly string[] Senaryolar = ["Cikis"];
+    public static readonly string[] Senaryolar = ["Cikis", "TemsiliIslem"];
 
     private static async Task<List<string>> KesfetAsync(IServiceProvider servisler)
     {

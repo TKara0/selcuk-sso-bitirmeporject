@@ -1,0 +1,44 @@
+@page
+@model Selcuk.Demo.Obis.Pages.UzaktanEgitimModel
+@{
+    ViewData["Title"] = "Uzaktan Eğitim";
+    ViewData[Duzen.Ayar.Genislik] = "genis";
+}
+<partial name="_TemsiliForm" />
+<partial name="_SayfaBasligi" model="@("Uzaktan Eğitim")" />
+
+<div class="obis-kutu obis-kutu-mavi" role="note">
+    <p><strong>Bilgi:</strong> Bu sayfa temsilidir. Gerçek bir uzaktan eğitim sistemine bağlantı yoktur; ders kaydı, canlı ders veya
+    kayıt izleme yapılmaz.</p>
+</div>
+
+<section class="obis-bolum" aria-labelledby="dersler-baslik">
+    <h2 id="dersler-baslik">Örnek uzaktan eğitim dersleri</h2>
+    <div class="tablo-kabi">
+        <table class="tablo tablo-yigin">
+            <caption class="gorunmez">Örnek uzaktan eğitim dersleri</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Ders kodu</th>
+                    <th scope="col">Ders adı</th>
+                    <th scope="col">Biçim</th>
+                    <th scope="col">İşlem</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td data-etiket="Ders kodu">ING101</td>
+                    <th scope="row" class="yigin-baslik">İngilizce I</th>
+                    <td data-etiket="Biçim">Örnek canlı ders</td>
+                    <td><button type="submit" form="temsili-islem" class="obis-baglanti">Derse katıl (temsili)</button></td>
+                </tr>
+                <tr>
+                    <td data-etiket="Ders kodu">TDB101</td>
+                    <th scope="row" class="yigin-baslik">Türk Dili I</th>
+                    <td data-etiket="Biçim">Örnek ders kaydı</td>
+                    <td><button type="submit" form="temsili-islem" class="obis-baglanti">Kaydı izle (temsili)</button></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>

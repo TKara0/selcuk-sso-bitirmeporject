@@ -1,0 +1,55 @@
+@page
+@model Selcuk.Demo.Obis.Pages.OnayTakipModel
+@{
+    ViewData["Title"] = "Onay Takip";
+    ViewData[Duzen.Ayar.Genislik] = "genis";
+    var adimlar = Model.Kayit.Adimlar();
+    var tamam = adimlar.All(a => a.Durum == AdimDurumu.Tamamlandi);
+}
+<partial name="_SayfaBasligi" model="@("Onay Takip")" />
+<p class="giris-metni">@OgrenciKaydi.OnayDonemi dönemi ders kayıt onayının durumu (örnek veri).</p>
+
+<section aria-labelledby="adimlar-baslik" class="obis-bolum">
+    <h2 id="adimlar-baslik">Ders kayıt onayı adımları</h2>
+    <ol class="obis-adimlar">
+        @foreach (var adim in adimlar)
+        {
+            <li class="obis-adim obis-adim-@(adim.Durum.ToString().ToLowerInvariant())" aria-current="@(adim.Durum == AdimDurumu.Bekliyor ? "step" : null)">
+                <span class="obis-adim-ad">@adim.Ad</span>
+                <span class="etiket etiket-obis">@adim.Aciklama</span>
+            </li>
+        }
+    </ol>
+    @if (tamam)
+    {
+        <p>Ders kaydın tamamlandı.</p>
+    }
+</section>
+
+<section aria-labelledby="dersler-baslik" class="obis-bolum">
+    <h2 id="dersler-baslik">Seçilen dersler</h2>
+    <div class="tablo-kabi">
+        <table class="tablo tablo-yigin">
+            <caption class="gorunmez">@OgrenciKaydi.OnayDonemi dönemi için seçilen dersler</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Ders kodu</th>
+                    <th scope="col">Ders adı</th>
+                    <th scope="col" class="sayi">AKTS</th>
+                    <th scope="col">Durum</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var ders in Model.Kayit.SecilenDersler)
+                {
+                    <tr>
+                        <td data-etiket="Ders kodu">@ders.Kod</td>
+                        <th scope="row" class="yigin-baslik">@ders.Ad</th>
+                        <td class="sayi" data-etiket="AKTS">@ders.Akts</td>
+                        <td data-etiket="Durum">@(Model.Kayit.DersOnayli ? "Danışman onayladı" : "Danışman onayı bekliyor")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>

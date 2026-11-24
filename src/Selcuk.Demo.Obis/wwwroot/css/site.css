@@ -1,17 +1,534 @@
 /*
  * Demo OBİS'e özel yerleşimler. Renk, yazı, aralık ve köşe değerleri ortak tasarım sisteminin token'larıdır
- * (_content/Selcuk.Arayuz/css/selcuk.css). Burada yalnızca uygulamanın vurgu rengi (lacivert) tanımlanır; firuze
- * kimlikle ilgili öğelerde kalır. Kontrast tablosu: docs/tasarim/d2/README.md.
+ * (_content/Selcuk.Arayuz/css/selcuk.css). Burada uygulamanın vurgu rengi (lacivert) ve Demo OBİS arayüzünün mavi
+ * tonları (--obis-*) tanımlanır; firuze kimlikle ilgili öğelerde kalır. Beyaz metin ve mavi metin en az 4,5:1 olsun
+ * diye koyu mavi tonlar seçildi (açık mavi zeminler yalnızca koyu metinle). Kontrast oranları (WCAG; ObisArayuzTests
+ * denetler):
+ *
+ *   Açık tema                                   Oran     Koyu tema                                   Oran
+ *   beyaz / --obis-serit  (#2A6AB0)             5,55     beyaz / --obis-serit  (#1B4A7A)             9,10
+ *   beyaz / --obis-serit-koyu (#123B66)        11,39     beyaz / --obis-serit-koyu (#102F52)        13,54
+ *   beyaz / --obis-dugme  (#2A6AB0)             5,55     beyaz / --obis-dugme  (#2F6DB0)             5,34
+ *   --obis-baslik (#123B66) / --obis-acik      9,31      --obis-baslik (#BCD8F5) / --obis-acik       8,94
+ *   --obis-baglanti (#0B4A85) / --obis-acik    7,36      --obis-baglanti (#9CC7F2) / --obis-acik     7,43
+ *   --obis-baglanti / --obis-sari (#FFF3C4)    8,09      --obis-baglanti / --obis-sari (#3F3512)     6,86
+ *   --obis-baglanti / --obis-yesil (#DDF0DA)   7,52      --obis-baglanti / --obis-yesil (#1B3A27)    7,06
+ *   --obis-baglanti / yüzey, taş, gri          9,00 / 7,85 / 7,31   (koyu: 8,58 / 9,85 / 8,47)
+ *   --murekkep / gri, sarı, açık, yeşil        12,50 / 13,83 / 12,58 / 12,87   (koyu: 12,74 / 10,32 / 11,18 / 10,62)
+ *   --soluk / --obis-gri (#E4E8EC)              5,63     --soluk / --obis-gri (#1B2835)              7,48
+ *   --obis-cubuk (#123B66) / taş (dekoratif)    9,93     --obis-cubuk (#3E7BBF) / taş (dekoratif)    3,98
+ *
+ * Gri: sekme çubuğu ve bilgi tablosunun etiket sütunu; sarı, mavi, yeşil: duyuru ve bilgi kutuları. Genel kontrast
+ * tablosu: docs/tasarim/d2/README.md.
  */
 :root {
     --uygulama-vurgu: #2F4F8F;
     --uygulama-vurgu-acik: #E3E9F5;
+
+    /* Demo OBİS arayüzü (kontrast tablosu yukarıda) */
+    --obis-serit: #2A6AB0;        /* üst şerit */
+    --obis-serit-koyu: #123B66;   /* "Test" rozeti, düğme ve hesap düğmesi üzerine gelince */
+    --obis-dugme: #2A6AB0;        /* mavi düğme */
+    --obis-uzerinde: #FFFFFF;     /* mavi zeminler üzerindeki metin */
+    --obis-acik: #DCEAF7;         /* başlık şeridi ve bilgi kutusu */
+    --obis-baslik: #123B66;       /* açık mavi zeminde başlık metni */
+    --obis-baglanti: #0B4A85;     /* kutulardaki bağlantılar, etkin sekme çizgisi */
+    --obis-cubuk: #123B66;        /* başlık şeridinin kalın dikey çubukları (dekoratif) */
+    --obis-gri: #E4E8EC;          /* sekme çubuğu, bilgi tablosu etiket sütunu */
+    --obis-sari: #FFF3C4;         /* duyuru kutusu */
+    --obis-yesil: #DDF0DA;        /* işlem kutusu */
 }
 
 @media (prefers-color-scheme: dark) {
     :root {
         --uygulama-vurgu: #9DB5E8;
         --uygulama-vurgu-acik: #1C2A45;
+
+        --obis-serit: #1B4A7A;
+        --obis-serit-koyu: #102F52;
+        --obis-dugme: #2F6DB0;
+        --obis-uzerinde: #FFFFFF;
+        --obis-acik: #16324D;
+        --obis-baslik: #BCD8F5;
+        --obis-baglanti: #9CC7F2;
+        --obis-cubuk: #3E7BBF;
+        --obis-gri: #1B2835;
+        --obis-sari: #3F3512;
+        --obis-yesil: #1B3A27;
+    }
+}
+
+/* ---------- Demo OBİS arayüzü: mavi şerit, gri sekme çubuğu, renkli bilgi kutuları ---------- */
+
+/* Üst şerit ve düğmeler: beyaz metin; sekme ve başlık çizgileri ve kutulardaki bağlantılar --obis-baglanti. */
+.icerik-genis {
+    max-width: calc(1200px + 2 * var(--a4));
+}
+
+.ust-cubuk.uygulama-cubugu {
+    color: var(--obis-uzerinde);
+    background: var(--obis-serit);
+    border-top: 0;
+    border-bottom: 0;
+}
+
+.uygulama-cubugu .marka,
+.uygulama-cubugu .uygulamalarim-baglantisi {
+    color: var(--obis-uzerinde);
+}
+
+.uygulama-cubugu .marka:focus-visible,
+.uygulama-cubugu .uygulamalarim-baglantisi:focus-visible,
+.obis-hesap .hesap-dugmesi:focus-visible {
+    outline-color: var(--obis-uzerinde);
+}
+
+/* "Test" rozeti: koyu mavi zeminde beyaz. */
+.uygulama-cubugu .etiket-notr {
+    color: var(--obis-uzerinde);
+    background: var(--obis-serit-koyu);
+}
+
+/* Hesap düğmesi: şeritte düz; ad, yuvarlak profil görseli (baş harfler), ok. Liste açıldığında yüzey renginde kalır. */
+.obis-hesap .hesap-dugmesi {
+    color: var(--obis-uzerinde);
+    background: transparent;
+    border-color: transparent;
+}
+
+.obis-hesap .hesap-dugmesi:hover,
+.obis-hesap .hesap-dugmesi[aria-expanded="true"] {
+    background: var(--obis-serit-koyu);
+}
+
+.obis-hesap .hesap-dugmesi .ok {
+    color: var(--obis-uzerinde);
+}
+
+.obis-hesap .hesap-listesi {
+    color: var(--murekkep);
+}
+
+.obis-hesap .hesap-listesi :focus-visible {
+    outline-color: var(--obis-baglanti);
+}
+
+.obis-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 36px;
+    height: 36px;
+    font-size: var(--boyut-kucuk);
+    font-weight: 700;
+    line-height: 1;
+    color: var(--obis-baslik);
+    background: var(--yuzey);
+    border-radius: 50%;
+}
+
+/* Sekme çubuğu: açık gri zemin; solda kare amblem alanı (projenin kendi kapı işareti), sonra üstte simge altta metin
+   olan sekmeler, aralarında ince dikey ayraç. Etkin sekme beyaz, üst kenarında mavi çizgi. Dar ekranda sekmeler kendi
+   içinde yatay kayar (sayfa yatay kaymaz). */
+.obis-sekme-cubugu {
+    display: flex;
+    align-items: stretch;
+    background: var(--obis-gri);
+    border-bottom: 1px solid var(--cizgi);
+}
+
+.obis-amblem {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 72px;
+    color: var(--obis-baglanti);
+    background: var(--yuzey);
+    border-right: 1px solid var(--cizgi);
+}
+
+.obis-sekmeler {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+
+.obis-sekmeler ul {
+    display: flex;
+    width: max-content;
+    min-width: 100%;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.obis-sekmeler li + li {
+    border-left: 1px solid var(--cizgi);
+}
+
+.obis-sekmeler a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--a1);
+    min-width: 92px;
+    height: 100%;
+    min-height: 72px;
+    padding: var(--a2) var(--a3);
+    color: var(--soluk);
+    font-size: var(--boyut-kucuk);
+    line-height: 1.25;
+    text-align: center;
+    text-decoration: none;
+    white-space: nowrap;
+    border-top: 4px solid transparent;
+}
+
+.obis-sekmeler a:hover {
+    color: var(--murekkep);
+    background: var(--yuzey);
+}
+
+.obis-sekmeler a[aria-current="page"] {
+    color: var(--murekkep);
+    font-weight: 700;
+    background: var(--yuzey);
+    border-top-color: var(--obis-baglanti);
+}
+
+.obis-sekmeler a:focus-visible {
+    outline-color: var(--obis-baglanti);
+    outline-offset: -4px;
+}
+
+/* Sabit demo bandı: sekme çubuğunun altında, tam genişlikte (otomasyonların "Temsili ekran" bandı gibi). */
+.demo-bant {
+    margin: 0;
+    padding: var(--a2) var(--a6);
+    background: var(--obis-sari);
+    border-left: 0;
+    border-bottom: 1px solid var(--cizgi);
+    border-radius: 0;
+}
+
+.demo-bant > svg {
+    color: var(--obis-baglanti);
+}
+
+/* Sayfa başlığı şeridi: açık mavi zemin, iki kenarda kalın koyu mavi dikey çubuk, büyük harfli mavi başlık. */
+.obis-sayfa-basligi {
+    display: flex;
+    align-items: center;
+    margin: 0 0 var(--a6);
+    padding: var(--a3) var(--a6);
+    background: var(--obis-acik);
+    border-right: 8px solid var(--obis-cubuk);
+    border-left: 8px solid var(--obis-cubuk);
+}
+
+.obis-sayfa-basligi h1 {
+    margin: 0;
+    color: var(--obis-baslik);
+    font-size: var(--boyut-b2);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+.obis-bolum {
+    margin: 0 0 var(--a6);
+}
+
+.obis-bolum .tablo-kabi {
+    margin-bottom: var(--a2);
+}
+
+.obis-donem-ozeti {
+    margin: 0;
+    color: var(--soluk);
+}
+
+/* Anasayfa: iki sütun (sol: kimlik ve kutular, sağ: duyuru paneli); dar ekranda tek sütun. */
+.obis-ikili {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    gap: var(--a6);
+    align-items: start;
+}
+
+.obis-sol,
+.obis-sag {
+    display: flex;
+    flex-direction: column;
+    gap: var(--a4);
+    min-width: 0;
+}
+
+@media (max-width: 899.98px) {
+    .obis-ikili {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.obis-kimlik {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--a4);
+}
+
+/* Fotoğraf kutusu: gerçek fotoğraf yok; kullanıcının baş harfleri. */
+.obis-fotograf {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 132px;
+    height: 165px;
+    color: var(--obis-baglanti);
+    font-size: var(--boyut-b1);
+    font-weight: 700;
+    background: var(--obis-gri);
+    border: 1px solid var(--cizgi);
+    border-radius: var(--kose-kontrol);
+}
+
+.obis-bilgi-tablosu {
+    flex: 1 1 auto;
+    min-width: 0;
+    border-collapse: collapse;
+    background: var(--yuzey);
+    border: 1px solid var(--cizgi);
+}
+
+.obis-bilgi-tablosu th,
+.obis-bilgi-tablosu td {
+    padding: var(--a2) var(--a4);
+    text-align: left;
+    border: 1px solid var(--cizgi);
+    overflow-wrap: anywhere;
+}
+
+.obis-bilgi-tablosu th {
+    width: 8.5em;
+    font-weight: 700;
+    text-align: right;
+    background: var(--obis-gri);
+}
+
+.obis-konum {
+    margin-right: var(--a2);
+    color: var(--obis-baglanti);
+    vertical-align: -3px;
+}
+
+@media (max-width: 599.98px) {
+    .obis-kimlik {
+        flex-direction: column;
+    }
+
+    .obis-fotograf {
+        width: 112px;
+        height: 140px;
+    }
+
+    .obis-bilgi-tablosu {
+        width: 100%;
+    }
+
+    .obis-bilgi-tablosu th {
+        width: 7em;
+    }
+}
+
+.obis-danisman {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--a3) var(--a4);
+}
+
+.obis-etiket {
+    margin: 0;
+    font-weight: 700;
+}
+
+.obis-not {
+    flex: 1 0 100%;
+    margin: 0;
+    color: var(--soluk);
+    font-size: var(--boyut-kucuk);
+}
+
+/* Mavi düğme (temsili işlemler): beyaz metin --obis-dugme zemininde AA. */
+.dugme-obis {
+    color: var(--obis-uzerinde);
+    background: var(--obis-dugme);
+}
+
+.dugme-obis:hover {
+    background: var(--obis-serit-koyu);
+}
+
+/* Bilgi kutuları: açık sarı (duyuru), açık mavi (bilgi), açık yeşil (işlemler). Metin --murekkep, bağlantılar
+   --obis-baglanti (her zeminde AA). */
+.obis-kutu {
+    margin: 0;
+    padding: var(--a4) var(--a5);
+    color: var(--murekkep);
+    border: 1px solid var(--cizgi);
+    border-radius: var(--kose-kontrol);
+}
+
+.obis-kutu h2 {
+    margin: 0 0 var(--a3);
+    font-size: var(--boyut-govde);
+}
+
+.obis-kutu p {
+    margin: 0 0 var(--a2);
+}
+
+.obis-kutu p:last-child,
+.obis-kutu ul:last-child {
+    margin-bottom: 0;
+}
+
+.obis-kutu-sari {
+    background: var(--obis-sari);
+}
+
+.obis-kutu-mavi {
+    background: var(--obis-acik);
+}
+
+.obis-kutu-yesil {
+    background: var(--obis-yesil);
+}
+
+.uygulama-icerigi .obis-kutu a:not(.dugme),
+.obis-baglanti {
+    color: var(--obis-baglanti);
+    font-weight: 700;
+}
+
+.obis-baglanti {
+    min-height: 24px;
+    padding: 0;
+    font: inherit;
+    font-weight: 700;
+    text-align: left;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    background: none;
+    border: 0;
+    cursor: pointer;
+}
+
+.obis-baglanti:focus-visible {
+    outline-color: var(--obis-baglanti);
+}
+
+.obis-baglantilar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--a2) var(--a6);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.obis-liste {
+    margin: 0 0 var(--a3);
+    padding-left: var(--a5);
+}
+
+.obis-dugmeler {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--a2);
+    margin-top: var(--a3);
+}
+
+.obis-panel-baslik {
+    margin: 0;
+    padding: var(--a2) var(--a4);
+    color: var(--obis-baslik);
+    font-size: var(--boyut-govde);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: var(--obis-acik);
+    border-left: 8px solid var(--obis-cubuk);
+}
+
+/* Onay Takip: ders kayıt onayı adımları (sıralı liste; bekleyen adımda aria-current="step", durum metinle de yazılır). */
+.obis-adimlar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--a3);
+    margin: 0 0 var(--a4);
+    padding: 0;
+    list-style: none;
+    counter-reset: adim;
+}
+
+.obis-adim {
+    flex: 1 1 200px;
+    padding: var(--a3) var(--a4);
+    background: var(--yuzey);
+    border: 1px solid var(--cizgi);
+    border-top: 4px solid var(--cizgi);
+    border-radius: var(--kose-kontrol);
+    counter-increment: adim;
+}
+
+.obis-adim-ad {
+    display: block;
+    margin-bottom: var(--a2);
+    font-weight: 700;
+}
+
+.obis-adim-ad::before {
+    content: counter(adim) ". ";
+}
+
+.obis-adim-tamamlandi {
+    border-top-color: var(--obis-baglanti);
+}
+
+.obis-adim[aria-current="step"] {
+    background: var(--obis-acik);
+    border-top-color: var(--obis-cubuk);
+}
+
+.etiket-obis {
+    color: var(--obis-baglanti);
+    background: var(--obis-acik);
+}
+
+.obis-adim[aria-current="step"] .etiket-obis {
+    background: var(--yuzey);
+}
+
+@media (max-width: 599.98px) {
+    .obis-amblem {
+        width: 48px;
+    }
+
+    .obis-sekmeler a {
+        min-width: 80px;
+    }
+
+    .obis-sayfa-basligi {
+        padding: var(--a3) var(--a4);
+    }
+
+    .obis-sayfa-basligi h1 {
+        font-size: var(--boyut-b3);
+    }
+
+    .demo-bant {
+        padding: var(--a2) var(--a4);
     }
 }
 

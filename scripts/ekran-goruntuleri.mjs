@@ -5,6 +5,7 @@
 //   docs/tasarim/d2/    gözden geçirme için her ekranın açık, koyu (1280 × 800) ve 390px (mobil) hâli, tam sayfa
 //   docs/tez-gorselleri/ tez için seçilmiş ekranlar, açık tema, 1440px genişlik, tam sayfa
 //     (35-38: Uygulamalarım grupları ve alt uygulamalardaki dönüş bağlantısı; ikisi yalnızca üst çubuğu, öğe görüntüsü)
+//     (39-41: Demo OBİS yeni arayüzü: Anasayfa (öğrenci), Transkript ve 390px dar ekran; sonuncusu 390 px genişlikte)
 //
 // Kullanım (proje kökünden; bir kez: cd araclar\tek-kapi; npm ci):
 //   node --use-system-ca scripts/ekran-goruntuleri.mjs
@@ -201,7 +202,24 @@ const TEZ_SIRASI = ['giris', 'onay', 'uygulamalarim', 'obis-notlarim', 'obis-tok
   'bolum-kurul-oylama', 'lisans-projeleri-asamalarim', 'lisans-projeleri-eslestirme',
   'danismanlik-gorusme-talebi', 'danismanlik-ogrencilerim', 'iskur-devam-durumum', 'iskur-takip',
   'mudek-program-ciktilari', 'mudek-veri-girisi', 'sinav-analizi-derslerim', 'sinav-analizi-bolum-geneli',
-  'uygulamalarim-gruplu-baskan', 'uygulamalarim-ogrenci', 'staj-uygulamalarim-baglantisi', 'obis-uygulamalarim-baglantisi'];
+  'uygulamalarim-gruplu-baskan', 'uygulamalarim-ogrenci', 'staj-uygulamalarim-baglantisi', 'obis-uygulamalarim-baglantisi',
+  'obis-ana', 'obis-transkript', 'obis-dar-ekran'];
+
+// Dar ekran görünümü (390 × 844): d2'ye <ad>-mobil.png, tez görsellerine (varsa) 390 px genişlikte tam sayfa.
+async function darEkranCek(sayfa, ad) {
+  if (!seciliMi(ad)) return;
+  await sayfa.setViewportSize({ width: 390, height: 844 });
+  await sayfa.emulateMedia({ colorScheme: 'light' });
+  await hazirla(sayfa);
+  await sirKontrolu(sayfa, ad);
+  await tasmaKontrolu(sayfa, ad, 'dar ekran');
+  await sayfa.screenshot({ path: path.join(D2, `${ad}-mobil.png`), fullPage: true });
+  const sira = TEZ_SIRASI.indexOf(ad);
+  if (sira >= 0) await sayfa.screenshot({ path: path.join(TEZ, `${String(sira + 1).padStart(2, '0')}-${ad}.png`), fullPage: true });
+  await sayfa.setViewportSize({ width: 1280, height: 800 });
+  cekilenler.push(ad);
+  console.log(`  ✓ ${ad}`);
+}
 
 // Sayfanın tamamı veya (oge verilirse) yalnızca o öğe (ör. üst çubuk).
 const goruntule = (sayfa, yol, oge) =>
@@ -649,6 +667,11 @@ async function mevcutCekimler(tarayici) {
   await izinVer(sayfa);
   await adresiBekle(sayfa, new RegExp(`^${OBIS}/$`));
   await cek(sayfa, 'obis-ana');
+  await git(sayfa, OBIS + '/Transkript');
+  await sayfa.waitForSelector('.tablo');
+  await cek(sayfa, 'obis-transkript');
+  await git(sayfa, OBIS + '/');
+  await darEkranCek(sayfa, 'obis-dar-ekran');
   await git(sayfa, OBIS + '/Notlarim');
   await sayfa.waitForSelector('.notlar');
   await cek(sayfa, 'obis-notlarim');

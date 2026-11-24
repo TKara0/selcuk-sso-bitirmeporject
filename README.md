@@ -1,5 +1,47 @@
 # Tek Şifre Giriş Sistemi (SelcukSSO)
 
+## Hızlı başlangıç
+
+Projeyi ilk kez açan biri için tek komutla bütün sistem (kimlik sunucusu, iki demo, Demo API ve on bir otomasyon).
+
+**Gereksinimler (Windows):** Python 3.10+, .NET 10 SDK, SQL Server LocalDB, HTTPS geliştirme sertifikası.
+Ayrıntı ve kurulum komutları: [Kurulum](#kurulum). Python tarafında yalnızca standart kütüphane kullanılır (`pip` yok).
+
+**İlk kurulum (bir kez):**
+
+```powershell
+python start.py --kurulum --deneme   # önce ne yapacağını göster (hiçbir şey yazmaz; yalnızca anahtar adları)
+python start.py --kurulum            # eksik user-secrets değerlerini rastgele üretip yazar
+dotnet tool restore
+dotnet ef database update --project src/Selcuk.Identity   # veritabanı
+dotnet dev-certs https --trust                            # sertifikaya güven (Windows onay penceresi açar)
+```
+
+`--kurulum` istemci sırlarını README'deki [Sırlar](#sırlar-user-secrets) kuralıyla (32 rastgele bayt, base64) üretir;
+kimlik sunucusundaki istemci sırrı ile uygulamadaki `Kimlik:ClientSecret` aynı değer olur. **Var olan hiçbir değeri
+değiştirmez**, değerleri ekrana, loga veya dosyaya yazmaz (yalnızca anahtar adlarını gösterir) ve sertifikayı kendiliğinden
+güvenilir yapmaz (komutu önerir).
+
+**Çalıştırma:**
+
+```powershell
+python start.py
+```
+
+Betik ön kontrolleri yapar (Python, .NET 10, LocalDB ve veritabanı, sertifika, user-secrets anahtar adları, portlar; her
+biri ✓/✗ satırı, eksikse ne yapılacağını söyler ve durur), `scripts/run-all.ps1 -ArkaPlan` ile uygulamaları başlatır,
+her portun https ile cevap vermesini bekler, uygulama/adres/durum tablosunu ve test kullanıcılarının hangi uygulamaları
+gördüğünü yazar (şifre yazmaz), tarayıcıda https://localhost:5001 (Uygulamalarım) adresini açar ve açık kalır.
+Şifreleri görmek için: `dotnet user-secrets list --project src/Selcuk.Identity`.
+
+**Durdurma:** çalışan pencerede `Ctrl+C` (`scripts/durdur-hepsi.ps1` çağrılır, portların kapandığı doğrulanır) ya da
+başka bir oturumdan `python start.py --durdur`.
+
+Seçenekler: `--sadece staj,obis` (yalnızca seçili uygulamalar; kimlik sunucusu her zaman başlar), `--tarayici-acma`
+(tarayıcıyı açma), `--zaman-asimi SN` (uygulama başına cevap bekleme süresi, varsayılan 120). Cevap vermeyen uygulamanın
+`logs/<ad>.log` son satırları gösterilir ve kalan uygulamalar kapatılır. Tek Kapı başlatılmaz. `scripts/run-all.ps1`
+doğrudan da kullanılabilir ([Çalıştırma](#çalıştırma)).
+
 Bitirme projesi: fakülte ve bölüm web uygulamaları için merkezi kimlik sunucusu.
 
 > **Proje tanımı (bölümün verdiği):** "Fakülte ve bölüm genelinde kullanılan tüm web otomasyonları için merkezi
@@ -903,15 +945,40 @@ sayfalar (Profilim, Erişim reddedildi, Giriş hatası, Hata, Çıkış) iki uyg
 
 ### Demo OBİS (`src/Selcuk.Demo.Obis`, https://localhost:5101)
 
+Arayüz gerçek bir öğrenci bilgi sisteminin **sayfa düzenine** benzer, ama onunla karıştırılmaması için temsilidir:
+en üstte tam genişlikte **mavi şerit** (sistem adı "Demo OBİS · Öğrenci Bilgi Sistemi", "Test" rozeti, sağda
+"Uygulamalarım" bağlantısı, kullanıcının adı soyadı, baş harflerinden üretilen yuvarlak profil görseli ve açılır menü; menüde
+Profilim, Development'ta Token İnceleme ve Çıkış), altında **gri sekme çubuğu** (solda kare amblem alanı: projenin kendi
+kapı işareti; sekmeler üstte simge, altta metin; etkin sekme beyaz, üst kenarında mavi çizgi ve `aria-current="page"`),
+sekme çubuğunun altında sabit **"Demo ekran: gösterilen veriler örnektir, yapılan işlemler kaydedilmez."** bandı, içerikte
+açık mavi **sayfa başlığı şeridi** (kenarlarda kalın koyu mavi çubuklar, büyük harfli başlık). Alt bilgide "resmî sistem
+değildir". Gerçek kurum amblemi, gerçek duyuru metni, gerçek adres veya giriş formu yoktur; duyurular ve bilgilendirmeler
+uydurmadır ("Örnek duyuru: …"); bağlantılar uygulama içi sayfalara veya temsili işleme gider; simgeler yerel SVG'dir
+(`Data/ObisSimgeleri.cs`; harici kütüphane, CDN veya yazı tipi yok). Dar ekranda sekmeler kendi içinde yatay kayar, iki
+sütunlu Anasayfa tek sütuna iner. Mavi tonlar ve kontrast oranları `wwwroot/css/site.css` başlığında (beyaz ve mavi metin en
+az 4,5:1; açık ve koyu tema).
+
 | Sayfa | Erişim |
 |---|---|
-| Ana sayfa (`/`) | Herkese açık: uygulama adı, tek cümle ve "Tek Şifre ile giriş yap"; giriş yapınca sayfa bağlantıları |
-| Notlarım (`/Notlarim`) | Yalnızca `ogrenci`. Notlar sunucu tarafında **Demo API'den** (`GET /api/notlar`, oturumdaki access token ile) çekilir; tablo (ders kodu, ders adı, kredi, vize, final, harf etiketi), üstünde toplam kredi ve dönem ağırlıklı ortalaması (4'lük sistem; krediler OBİS'in ders kataloğundan, `SahteVeri.Krediler`; API değişmedi). Dar ekranda her ders iki satır. API'ye ulaşılamazsa hata bandında "Not bilgileri şu an alınamıyor" |
+| Anasayfa (`/`) | Girişsiz: uygulama adı, tek cümle ve "Tek Şifre ile giriş yap". Öğrenci: iki sütun; solda baş harfli fotoğraf kutusu ve bilgi tablosu (Öğrenci No `preferred_username`'den, Adı Soyadı, Fakülte, Bölüm, Eposta id_token claim'lerinden; Danışman ve Sınıf örnek veriden), "Danışman İletişim" + "Danışmanıma Mail At" (temsili) ve yeşil/mavi bağlantı kutuları; sağda "DUYURU" paneli (sarı duyuru, mavi "Bilgi:" kutusu, yeşil kutu ve mavi düğmeler). Akademisyen: aynı düzen, akademisyen bilgileri ve verdiği dersler |
+| Onay Takip (`/OnayTakip`) | Yalnızca `ogrenci`: ders kayıt onayı adımları (ders seçimi, danışman onayı, bölüm kontrolü, Öğrenci İşleri kaydı; bekleyen adımda `aria-current="step"`, durum metinle de yazılır) ve seçilen dersler |
+| Son Yıl Notları (`/SonYilNotlari`) | Yalnızca `ogrenci`: 2025-2026 akademik yılının dersleri, harf ve sonuç, yıl ortalaması |
+| Not Durumu (`/Notlarim`) | Yalnızca `ogrenci` (adres değişmedi). Notlar sunucu tarafında **Demo API'den** (`GET /api/notlar`, oturumdaki access token ile) çekilir; tablo (ders kodu, ders adı, kredi, vize, final, harf etiketi), üstünde toplam kredi ve dönem ağırlıklı ortalaması (4'lük sistem; krediler OBİS'in ders kataloğundan, `SahteVeri.Krediler`; API değişmedi). Dar ekranda her ders iki satır. API'ye ulaşılamazsa hata bandında "Not bilgileri şu an alınamıyor" |
+| Transkript (`/Transkript`) | Yalnızca `ogrenci`: dönem dönem dersler (kod, ad, AKTS, harf), dönem AKTS'si ve ortalaması, genel ortalama |
+| Harç Durumu (`/HarcDurumu`) | Yalnızca `ogrenci`: örnek harç kalemleri (tutar, son ödeme, ödendi/bekliyor); "Ödeme yap" temsilidir |
+| Sınav Tarihleri (`/SinavTarihleri`) | Yalnızca `ogrenci`: örnek sınav takvimi |
+| Uzaktan Eğitim (`/UzaktanEgitim`), Uzaktan Sınav (`/UzaktanSinav`) | Yalnızca `ogrenci`: temsili bilgi sayfaları; gerçek sisteme bağlantı yok, düğmeler temsili işlemdir |
+| YKK Kararı (`/YkkKarari`) | Yalnızca `ogrenci`: örnek karar listesi |
 | Ders Yönetimi (`/DersYonetimi`) | Yalnızca `akademisyen`, aynı tablo dili |
-| Profilim (`/Profilim`) | Giriş yapmış herkes: ad soyad, kullanıcı adı, roller (katmana göre gruplu, Türkçe adlarla, kapsamlı rolde birimiyle), fakülte, bölüm, e-posta |
-| Token İnceleme (`/TokenInceleme`) | Yalnızca Development: id_token ve access_token için ayrı bölümler; her başlık alanı ve claim bir satır (ad ve değer Mono, uzun değer kırpılır ve tam hâli `title`'da, Türkçe kısa açıklama); access token bölümünde "kişisel bilgi içermez" bandı; ham JSON "Ham hâlini göster" ile açılır; token'ın kendisi ve imzası gösterilmez; refresh token'ın yalnızca var olduğu ve (yaklaşık) son kullanma zamanı |
-| Erişim reddedildi (`/ErisimReddedildi`) | Yetkisiz rol buraya yönlendirilir |
+| Profilim (`/Profilim`) | Giriş yapmış herkes (hesap menüsünden): ad soyad, kullanıcı adı, roller (katmana göre gruplu, Türkçe adlarla, kapsamlı rolde birimiyle), fakülte, bölüm, e-posta |
+| Token İnceleme (`/TokenInceleme`) | Yalnızca Development (hesap menüsünde, sekmede değil): id_token ve access_token için ayrı bölümler; her başlık alanı ve claim bir satır (ad ve değer Mono, uzun değer kırpılır ve tam hâli `title`'da, Türkçe kısa açıklama); access token bölümünde "kişisel bilgi içermez" bandı; ham JSON "Ham hâlini göster" ile açılır; token'ın kendisi ve imzası gösterilmez; refresh token'ın yalnızca var olduğu ve (yaklaşık) son kullanma zamanı |
+| Temsili işlem (`/TemsiliIslem`) | Giriş yapmış herkes, yalnızca POST: bütün temsili düğmelerin ortak ucu. Antiforgery zorunlu (token yoksa 400); veriyi değiştirmez, "Bu ekran temsilidir; işlem kaydedilmedi." mesajıyla geldiği (uygulama içi) sayfaya döner |
+| Erişim reddedildi (`/ErisimReddedildi`) | Yetkisiz rol buraya yönlendirilir (örn. akademisyen öğrenci sekmesinin adresine giderse) |
 | Çıkış (`/Cikis`) | Yerel çerezi siler, kimlik sunucusunun end-session uç noktasına gider, dönüşte ana sayfa |
+
+Örnek veri (`Data/OrnekOgrenciVerisi.cs`) uydurmadır ve test öğrencileri (203011001-003) için ayrı ayrıdır (danışman "Örnek
+Akademisyen…", genel bilgisayar mühendisliği ders adları); kayıt oturumdaki `preferred_username`'e göre seçilir, öğrenci
+yalnızca kendi kaydını görür; tanınmayan kullanıcı adı için ekranlar "Kayıt yok." gösterir.
 
 ### Demo Yemekhane (`src/Selcuk.Demo.Yemekhane`, https://localhost:5102)
 

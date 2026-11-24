@@ -1,0 +1,57 @@
+@page
+@model Selcuk.Demo.Obis.Pages.SonYilNotlariModel
+@{
+    ViewData["Title"] = "Son Yıl Notları";
+    ViewData[Duzen.Ayar.Genislik] = "genis";
+    var dersler = Model.Kayit.SonYil.SelectMany(d => d.Dersler.Select(ders => (Donem: d.Ad, Ders: ders))).ToList();
+    var gecen = dersler.Count(d => d.Ders.Gecti);
+}
+<partial name="_SayfaBasligi" model="@("Son Yıl Notları")" />
+<p class="giris-metni">2025-2026 akademik yılının notları (örnek veri).</p>
+
+@if (dersler.Count == 0)
+{
+    <p>Kayıt yok.</p>
+}
+else
+{
+    <dl class="ozetler">
+        <div class="ozet">
+            <dt>Yıl ortalaması (4'lük)</dt>
+            <dd>@OrnekOgrenciVerisi.Ortalama(TranskriptOzeti.Ortalama(dersler.Select(d => d.Ders)))</dd>
+        </div>
+        <div class="ozet">
+            <dt>Geçilen ders</dt>
+            <dd>@gecen / @dersler.Count</dd>
+        </div>
+    </dl>
+
+    <div class="tablo-kabi">
+        <table class="tablo tablo-yigin">
+            <caption class="gorunmez">2025-2026 akademik yılı notları</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Dönem</th>
+                    <th scope="col">Ders kodu</th>
+                    <th scope="col">Ders adı</th>
+                    <th scope="col" class="sayi">AKTS</th>
+                    <th scope="col">Harf</th>
+                    <th scope="col">Sonuç</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var (donem, ders) in dersler)
+                {
+                    <tr>
+                        <td data-etiket="Dönem">@donem</td>
+                        <td data-etiket="Ders kodu">@ders.Kod</td>
+                        <th scope="row" class="yigin-baslik">@ders.Ad</th>
+                        <td class="sayi" data-etiket="AKTS">@ders.Akts</td>
+                        <td data-etiket="Harf"><span class="etiket etiket-uygulama">@ders.Harf</span></td>
+                        <td data-etiket="Sonuç">@(ders.Gecti ? "Geçti" : "Kaldı")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

@@ -1,0 +1,61 @@
+@page
+@model Selcuk.Demo.Obis.Pages.HarcDurumuModel
+@{
+    ViewData["Title"] = "Harç Durumu";
+    ViewData[Duzen.Ayar.Genislik] = "genis";
+    var bekleyen = Model.Kayit.Harclar.Where(h => !h.Odendi).Sum(h => h.Tutar);
+}
+<partial name="_TemsiliForm" />
+<partial name="_SayfaBasligi" model="@("Harç Durumu")" />
+<p class="giris-metni">Örnek harç ve katkı payı kalemleri. Tutarlar gerçek değildir.</p>
+
+@if (Model.Kayit.Harclar.Count == 0)
+{
+    <p>Kayıt yok.</p>
+}
+else
+{
+    <dl class="ozetler">
+        <div class="ozet">
+            <dt>Ödenmesi gereken (örnek)</dt>
+            <dd>@OrnekOgrenciVerisi.Tutar(bekleyen)</dd>
+        </div>
+    </dl>
+
+    <div class="tablo-kabi">
+        <table class="tablo tablo-yigin">
+            <caption class="gorunmez">Harç kalemleri</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Dönem</th>
+                    <th scope="col">Kalem</th>
+                    <th scope="col" class="sayi">Tutar</th>
+                    <th scope="col">Son ödeme</th>
+                    <th scope="col">Durum</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var harc in Model.Kayit.Harclar)
+                {
+                    <tr>
+                        <td data-etiket="Dönem">@harc.Donem</td>
+                        <th scope="row" class="yigin-baslik">@harc.Kalem</th>
+                        <td class="sayi" data-etiket="Tutar">@OrnekOgrenciVerisi.Tutar(harc.Tutar)</td>
+                        <td data-etiket="Son ödeme">@OrnekOgrenciVerisi.Tarih(harc.SonOdeme)</td>
+                        <td data-etiket="Durum">
+                            <span class="etiket @(harc.Odendi ? "etiket-uygulama" : "etiket-tehlike")">@(harc.Odendi ? "Ödendi" : "Bekliyor")</span>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (bekleyen > 0)
+    {
+        <p>
+            <button type="submit" form="temsili-islem" class="dugme dugme-obis">Ödeme yap</button>
+        </p>
+        <p class="ipucu">Ödeme düğmesi temsilidir; hiçbir ödeme alınmaz.</p>
+    }
+}

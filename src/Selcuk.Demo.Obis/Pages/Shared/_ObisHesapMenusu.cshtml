@@ -1,0 +1,48 @@
+@*
+    Demo OBİS'in hesap menüsü (üst şeritte sağda): kullanıcının adı soyadı, baş harflerinden üretilen yuvarlak profil
+    görseli (gerçek fotoğraf yok) ve açılır menü oku. Listede Profilim, (Development'ta) Token İnceleme ve Çıkış
+    (/Cikis'e antiforgery'li POST; RP-initiated logout). Davranış (aç/kapat, Esc) ortak selcuk.js'te (data-menu).
+    Girişsiz kullanıcıya "Giriş yap" bağlantısı (/Giris; form yok, giriş kimlik sunucusunda yapılır).
+*@
+@model IReadOnlyList<HesapMenusuBaglantisi>
+@if (User.Identity?.IsAuthenticated == true)
+{
+    var kullaniciAdi = User.FindFirst("preferred_username")?.Value;
+
+    <nav class="hesap-menusu obis-hesap" aria-label="Hesap" data-menu>
+        <button type="button" class="hesap-dugmesi" aria-expanded="false" aria-controls="hesap-listesi" data-menu-dugme>
+            <span class="gorunmez">Hesap menüsü:</span>
+            <span class="hesap-adi">@User.Identity.Name</span>
+            <span class="obis-avatar" aria-hidden="true">@ObisMenusu.BasHarfler(User.Identity.Name)</span>
+            <span class="ok">@Html.Raw(Simge.AsagiOk)</span>
+        </button>
+        <ul class="hesap-listesi" id="hesap-listesi" hidden>
+            <li class="hesap-basligi">
+                <p><strong>@User.Identity.Name</strong></p>
+                @if (!string.IsNullOrEmpty(kullaniciAdi))
+                {
+                    <p class="ipucu mono">@kullaniciAdi</p>
+                }
+                <p class="ipucu">Tek Şifre ile giriş yapıldı</p>
+            </li>
+            @foreach (var baglanti in Model)
+            {
+                <li><a href="@baglanti.Adres" aria-current="@(baglanti.Gecerli ? "page" : null)">@baglanti.Metin</a></li>
+            }
+            <li class="ayirici">
+                <form method="post" asp-page="/Cikis">
+                    <button type="submit">Çıkış yap</button>
+                </form>
+            </li>
+        </ul>
+        <noscript>
+            <form method="post" asp-page="/Cikis">
+                <button type="submit" class="dugme dugme-ikincil">Çıkış yap</button>
+            </form>
+        </noscript>
+    </nav>
+}
+else
+{
+    <a class="dugme dugme-ikincil" href="/Giris">Giriş yap</a>
+}

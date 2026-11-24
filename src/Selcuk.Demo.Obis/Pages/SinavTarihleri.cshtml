@@ -1,0 +1,44 @@
+@page
+@model Selcuk.Demo.Obis.Pages.SinavTarihleriModel
+@{
+    ViewData["Title"] = "Sınav Tarihleri";
+    ViewData[Duzen.Ayar.Genislik] = "genis";
+}
+<partial name="_SayfaBasligi" model="@("Sınav Tarihleri")" />
+<p class="giris-metni">@OgrenciKaydi.OnayDonemi dönemi örnek sınav takvimi.</p>
+
+@if (Model.Kayit.Sinavlar.Count == 0)
+{
+    <p>Kayıt yok.</p>
+}
+else
+{
+    <div class="tablo-kabi">
+        <table class="tablo tablo-yigin">
+            <caption class="gorunmez">Sınav takvimi</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Ders kodu</th>
+                    <th scope="col">Ders adı</th>
+                    <th scope="col">Sınav</th>
+                    <th scope="col">Tarih</th>
+                    <th scope="col">Saat</th>
+                    <th scope="col">Salon</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var sinav in Model.Kayit.Sinavlar.OrderBy(s => s.Tarih).ThenBy(s => s.Saat))
+                {
+                    <tr>
+                        <td data-etiket="Ders kodu">@sinav.DersKodu</td>
+                        <th scope="row" class="yigin-baslik">@sinav.DersAdi</th>
+                        <td data-etiket="Sınav">@sinav.Tur</td>
+                        <td data-etiket="Tarih">@OrnekOgrenciVerisi.Tarih(sinav.Tarih)</td>
+                        <td data-etiket="Saat">@OrnekOgrenciVerisi.Saat(sinav.Saat)</td>
+                        <td data-etiket="Salon">@sinav.Salon</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
