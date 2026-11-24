@@ -14,7 +14,8 @@ Kaynak: README > Yapılacaklar, tehdit modeli, mimari.md. Öncelikler koddan/bel
 | Planlı otomasyonlar: Öğrenci Danışmanlık 5306, İŞKUR 5307, MÜDEK 5308, Sınav Başarısı Analizi 5310 | P2 | Tamamlandı (temsili ekran, Mock veri; 11 otomasyonun hepsi hazır) | `otomasyon-sablonu.md` kontrol listesi | – |
 | Kalıcı denetim/e-posta kuyruğu (outbox), back-channel yeniden deneme | P2 | Açık (R2, R6) | DB şeması | Migration |
 | Dağıtık önbellek (Redis/SQL) ve dağıtık hız sınırı | P2 | Açık (R3, R4, R10) | Çok örnek dağıtımı hedefi | Altyapı |
-| CSRF testi (tokensiz POST=400) | P2 | Açık (R13) | – | Düşük |
+| CSRF testi (tokensiz POST=400) | P2 | Tamamlandı (R13 kapandı; `CsrfTests`) | `docs/tehdit-modeli.md` T2 | – |
+| Rol değişince oturum kapatma + denetim | P2 | Tamamlandı (R19 kapandı; `RolDegisikligiIslemi`, yalnızca servis, arayüz yok) | `docs/tehdit-modeli.md` E7 | Yönetim paneli geldiğinde bu servisi çağırmalı |
 | WebAuthn/passkey, rol bazlı 2FA zorunluluğu | P2 | Açık (R9) | Ürün kararı | Kullanılabilirlik |
 | Introspection (RFC 7662) | P2 | Bilinçli ertelendi (R1) | – | Karmaşıklık |
 | Tek Kapı'nın iptali | Karar verildi ([DECISIONS](DECISIONS.md)): yeni işlere dahil edilmez, sonra iptal edilecek | Bekliyor (tarih belirlenmedi) | Toplantı kararı | Kaldırılana kadar mevcut testleri geçmeli |

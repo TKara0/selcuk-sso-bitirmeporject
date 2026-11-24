@@ -113,6 +113,7 @@ builder.Services.AddHostedService<EpostaGonderimHizmeti>();
 
 builder.Services.AddScoped<SahteSifreDogrulayici>();
 builder.Services.AddScoped<SifreDegisikligi>();
+builder.Services.AddScoped<RolDegisikligiIslemi>();
 builder.Services.AddScoped<IkiAdimIslemleri>();
 builder.Services.AddHizSiniri(builder.Configuration, builder.Environment);
 

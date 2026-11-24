@@ -1,8 +1,8 @@
 # CURRENT_STATE
 
-Son güncelleme: 2026-11-24 (Uygulamalarım grupları, demolarda dönüş bağlantısı ve sunucu tarafı oturum). Son commit: bu
-belgeyi içeren "Uygulamalarım grupları, demolarda dönüş bağlantısı ve sunucu tarafı oturum" (öncesi `fa06e55`); hash için
-`git log -1`. Dal `main`.
+Son güncelleme: 2026-11-24 (kararsız test düzeltmesi, CSRF testleri, rol değişince oturum kapatma, güncel kod kapsamı).
+Son commit: bu belgeyi içeren "Kararsız test düzeltmesi, CSRF testleri, rol değişince oturum kapatma ve güncel kod
+kapsamı" (öncesi `0bdc87f`); hash için `git log -1`. Dal `main`.
 
 ## Çalışanlar (kodda var ve testle kapsanıyor)
 
@@ -26,11 +26,27 @@ belgeyi içeren "Uygulamalarım grupları, demolarda dönüş bağlantısı ve s
 
 ## Doğrulama durumu
 
-- Bu adımda çalıştırıldı ve geçti: `dotnet build` (0 uyarı), `dotnet test SelcukSSO.sln -m:1` (18 .NET test projesi, **759** test; paralel koşuda R21), Tek Kapı
+- Bu adımda çalıştırıldı ve geçti: `dotnet build` (0 uyarı), `dotnet test SelcukSSO.sln` (varsayılan paralel; 18 .NET test projesi, **786** test), Tek Kapı
   `npm test` (**49** kontrol: 35 + 14). Sayılar `docs/test-kapsami.md`'de.
 - Kod kapsamı satır %82,5 / dal %69,7 Adım 8 ölçümüdür; sonradan yeniden ölçülmedi (otomasyon projeleri dahil değil).
 
-## Bu adımın değişiklikleri (R7, kullanılabilirlik)
+## Bu adımın değişiklikleri (R8, güvenlik ve testler)
+
+- R21 (kararsız test) kapandı: kök neden `WebApplicationFactory`'nin `DeferredHost.StartAsync`'inin, `app.Run()` ile
+  başlarken `ValidateOnStart` hatası yüzünden hemen dispose edilen host'a erişmesiydi (`ObjectDisposedException`).
+  Otomasyon ayar doğrulaması `UseSelcukOtomasyon` içinde, host başlamadan fırlıyor (üretimde de aynı Türkçe hatayla
+  açılış durur). `OturumBiletDeposu` ad alanı `Selcuk.Istemci.Ortak` oldu (testlere yalnızca `using` eklendi).
+- CSRF (R13 kapandı): `CsrfTests` (Identity 15, Demo OBİS 2, Demo Yemekhane 4); POST işleyicisi listesi çalışan
+  uygulamadan toplanır, antiforgery'siz 400 ve yan etkisizlik, token'la aynı istek 400 almaz; protokol uçları antiforgery
+  beklemez.
+- Rol değişikliği (R19 kapandı): `RolDegisikligiIslemi` (servis; arayüz/uç nokta yok), `BaslangicVerisi` çağırır; rol
+  kümesi değişince güvenlik damgası + Back-Channel Logout + token iptali + `RolDegisti` denetim kaydı; değişmiyorsa hiçbir
+  şey. `RolDegisikligiTests` (6).
+- Kod kapsamı yeniden ölçüldü (11 otomasyon, Otomasyon.Ortak, Roller, Arayuz dahil): satır %91,7, dal %77,4
+  (`docs/test-kapsami.md`); `scripts/kapsam_birlestir.py` eklendi.
+- Testler: +27 (Identity 21, Demo OBİS 2, Demo Yemekhane 4), hiçbiri silinmedi.
+
+## Önceki adım (R7, kullanılabilirlik)
 
 - Uygulamalarım: kartlar istemci `grup` özelliğine göre h2 başlıklı gruplarda (Kampüs uygulamaları, Öğrenci işleri,
   Kurullar ve komisyonlar, Kalite ve analiz; grupsuz "Diğer"); kartı olmayan grup gösterilmez. Tek Kapı kaydı değişmedi.

@@ -163,7 +163,7 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   oturumu çerez doğrulamasında reddeder; kayıtlar `IDistributedCache`'te, varsayılan bellek içi, en az çerez süresi
   kadar). Çerez süresi `Kimlik:OturumSuresi` (varsayılan 8 saat, kayan). `GirisDonusHatasi` `/signin-oidc`
   hatalarını `/GirisHatasi`'na yönlendirir; `UcuncuTarafGiris` initiate_login isteğindeki `iss`'i doğrular (yanlışsa
-  400). `OturumBiletDeposu` (isteğe bağlı `SunucuTarafliOturum`, varsayılan kapalı; ad alanı `Selcuk.Otomasyon.Ortak` kaldı) ve
+  400). `OturumBiletDeposu` (isteğe bağlı `SunucuTarafliOturum`, varsayılan kapalı) ve
   `KimlikSunucusuBilgisi` ("Uygulamalarım" adresi). `TokenYenileyici`: çerezdeki access token'ın süresine 1 dk'dan az kaldıysa çerez doğrulamasında refresh token
   ile yeniler (aynı refresh token için tek uçuş, sonuç 1 dk paylaşılır; invalid_grant'te yerel oturum kapanır);
   çıkışta (`OnRedirectToIdentityProviderForSignOut`) önce refresh token'ı iptal eder. Ek kapsamlar

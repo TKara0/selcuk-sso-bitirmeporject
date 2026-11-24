@@ -39,6 +39,7 @@ Otomasyon.X → Otomasyon.Ortak; Demolar → Istemci.Ortak, Arayuz, Roller. Tek 
 | Ad-hoc yetkilendirme/iptal | `Oidc/TokenIptali.cs` |
 | Tek çıkış gönderimi | `Oidc/BackChannelLogoutGonderici.cs` (+ `IstemciOturumlari` tablosu) |
 | Şifre/2FA/kilit/hız sınırı | `Hesap/` (`IkiAdimIslemleri`, `TekKullanimlikTotpSaglayici`, `HizSiniri`, `SahteSifreDogrulayici`) |
+| Rol değişikliği | `Hesap/RolDegisikligiIslemi`: rol kümesini değiştiren tek yol; küme değişirse güvenlik damgası, Back-Channel Logout, token iptali ve `RolDegisti` denetimi (`SifreDegisikligi`'ndeki mekanizmayla aynı); `BaslangicVerisi` çağırır, arayüz yok |
 | Denetim | `Denetim/` (kuyruk → arka plan yazma/temizleme; HMAC `AnahtarliOzet`) |
 | E-posta | `Eposta/` (kuyruk + arka plan gönderim; Dev'de `.eml` dosyası) |
 | Güvenlik başlıkları, proxy | `GuvenlikBasliklari.cs`, `GuvenilenProxyler.cs` |
@@ -55,7 +56,7 @@ Arka plan hizmetleri: denetim yazma/temizleme, e-posta gönderim, token budama.
 bellek içi). `AddSelcukSSO(configuration, sso => sso.SunucuTarafliOturum = true)` ile (varsayılan kapalı) çerez yalnızca
 anahtar taşır: `OturumBiletDeposu` (`Selcuk.Istemci.Ortak`, Data Protection ile şifreli `IDistributedCache`, süre çerez
 ömrüyle aynı, çıkışta ve Back-Channel Logout'ta hemen silinir). Otomasyon şablonu, Demo OBİS ve Demo Yemekhane açar. Depo
-sınıfının ad alanı eski yerinden kalma `Selcuk.Otomasyon.Ortak`'tır (mevcut testlerin değişmemesi için). Alt uygulamaların
+sınıfının ad alanı `Selcuk.Istemci.Ortak`'tır. Alt uygulamaların
 "Uygulamalarım" bağlantısının adresi `KimlikSunucusuBilgisi` servisindendir (`Kimlik:Authority` kökü; yalnızca https veya
 `http://127.0.0.1`). Kimlik sunucusunun Uygulamalarım sayfası kartları istemci `grup` özelliğine göre gruplar
 (`Istemciler.Gruplar`, `KartSirasi`; grupsuz → "Diğer").

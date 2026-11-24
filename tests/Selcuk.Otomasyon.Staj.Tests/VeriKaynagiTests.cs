@@ -12,6 +12,7 @@ using Microsoft.IdentityModel.Tokens;
 using Selcuk.Otomasyon.Ortak;
 using Selcuk.Otomasyon.Staj.Sozlesme;
 using Selcuk.Otomasyon.Staj.Veri;
+using Selcuk.Istemci.Ortak;
 
 namespace Selcuk.Otomasyon.Staj.Tests;
 

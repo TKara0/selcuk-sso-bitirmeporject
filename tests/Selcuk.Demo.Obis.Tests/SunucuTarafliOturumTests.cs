@@ -17,6 +17,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
+using Selcuk.Istemci.Ortak;
 
 namespace Selcuk.Demo.Obis.Tests;
 
@@ -126,7 +127,7 @@ public sealed class SunucuTarafliOturumTests
         Assert.Equal("Microsoft.AspNetCore.Authentication.Cookies-SessionId", Assert.Single(bilet.Principal.Claims).Type);
 
         // Token'lar sunucu tarafındaki depoda (Data Protection ile şifreli).
-        Assert.IsType<Selcuk.Otomasyon.Ortak.OturumBiletDeposu>(ayarlar.SessionStore);
+        Assert.IsType<OturumBiletDeposu>(ayarlar.SessionStore);
         var depoda = (await ayarlar.SessionStore!.RetrieveAsync(anahtar))!;
         Assert.Equal(AccessToken, depoda.Properties.GetTokenValue("access_token"));
         Assert.Equal(RefreshToken, depoda.Properties.GetTokenValue("refresh_token"));

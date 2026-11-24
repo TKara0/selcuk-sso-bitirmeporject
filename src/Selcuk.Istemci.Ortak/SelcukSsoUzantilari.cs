@@ -139,7 +139,7 @@ public static class SelcukSsoUzantilari
         if (secenekler.SunucuTarafliOturum)
         {
             // Oturum bileti sunucu tarafında, çerezde yalnızca anahtar (localhost'ta çerez birikimi, HTTP 431).
-            Selcuk.Otomasyon.Ortak.OturumBiletDeposu.Kaydet(services);
+            OturumBiletDeposu.Kaydet(services);
         }
 
         return services;

@@ -5,11 +5,8 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using Selcuk.Istemci.Ortak;
 
-// Ad alanı bilerek Selcuk.Otomasyon.Ortak kaldı: depo önce otomasyon şablonundaydı, Istemci.Ortak'a taşınırken mevcut
-// testlerin (Assert.IsType<OturumBiletDeposu>) değişmeden derlenmesi için ad alanı korundu.
-namespace Selcuk.Otomasyon.Ortak;
+namespace Selcuk.Istemci.Ortak;
 
 /// <summary>
 /// Oturum biletinin (claim'ler ve SaveTokens ile access/refresh/id token) sunucu tarafında saklanması

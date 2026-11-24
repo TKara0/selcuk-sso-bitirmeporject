@@ -39,6 +39,7 @@ public sealed class OtomasyonSecenekleri
         {
             services.AddOptions<T>().Bind(configuration.GetSection(bolum)).ValidateOnStart();
             services.AddSingleton<IValidateOptions<T>>(new AyarDogrulayici<T>(bolum));
+            services.AddSingleton<IAcilisAyarDogrulamasi>(new AcilisAyarDogrulamasi<T>());
         });
 
     private sealed class AyarDogrulayici<T>(string bolum) : IValidateOptions<T> where T : class, IDogrulanabilirAyar
@@ -65,6 +66,24 @@ public sealed class OtomasyonSecenekleri
                 : sp.GetRequiredService<TMock>());
         };
     }
+}
+
+/// <summary>
+/// Ayarın istek hattı kurulurken (<see cref="OtomasyonUzantilari.UseSelcukOtomasyon"/>, host başlamadan önce)
+/// doğrulanması. ValidateOnStart ayrıca durur, ama host başlarken fırlayan hatayı uygulama host'u hemen dispose eder;
+/// WebApplicationFactory'nin başlatması aynı anda host'un servislerine eriştiğinden hata, yük altında rastgele
+/// ObjectDisposedException'a dönüşebiliyordu. Hata giriş noktasından (Main) fırlayınca host dispose edilmez ve aynı
+/// OptionsValidationException her zaman görünür; üretimde de açılış aynı Türkçe iletiyle durur.
+/// </summary>
+internal interface IAcilisAyarDogrulamasi
+{
+    void Dogrula(IServiceProvider servisler);
+}
+
+internal sealed class AcilisAyarDogrulamasi<T> : IAcilisAyarDogrulamasi where T : class
+{
+    // IOptions<T>.Value kayıtlı IValidateOptions<T>'yi çalıştırır; geçersizse OptionsValidationException fırlatır.
+    public void Dogrula(IServiceProvider servisler) => _ = servisler.GetRequiredService<IOptions<T>>().Value;
 }
 
 /// <summary>Açılışta doğrulanan otomasyon ayarı (<see cref="OtomasyonSecenekleri.Ayarlar{T}"/>).</summary>
@@ -141,6 +160,7 @@ public static class OtomasyonUzantilari
 
         services.AddOptions<VeriKaynagiAyarlari>().Bind(configuration.GetSection(VeriKaynagiAyarlari.Bolum)).ValidateOnStart();
         services.AddSingleton<IValidateOptions<VeriKaynagiAyarlari>, VeriKaynagiDogrulayici>();
+        services.AddSingleton<IAcilisAyarDogrulamasi>(new AcilisAyarDogrulamasi<VeriKaynagiAyarlari>());
         services.AddScoped<OtomasyonApiIstemcisi>();
         services.AddHttpClient(OtomasyonApiIstemcisi.HttpIstemciAdi).ConfigureHttpClient(OtomasyonApiIstemcisi.Yapilandir);
         secenekler.VeriKaynagiKaydi!(services);
@@ -161,6 +181,12 @@ public static class OtomasyonUzantilari
     public static WebApplication UseSelcukOtomasyon(this WebApplication app)
     {
         SayfaYetkiDenetimi.Denetle(app);
+        // Geçersiz ayar, host başlamadan (Run'dan önce, giriş noktasında) Türkçe OptionsValidationException ile durdurur.
+        foreach (var dogrulama in app.Services.GetServices<IAcilisAyarDogrulamasi>())
+        {
+            dogrulama.Dogrula(app.Services);
+        }
+
         app.UseSelcukGuvenlikBasliklari();
         app.UseExceptionHandler("/Hata");
         // Back-Channel Logout yanıtları (sunucudan sunucuya) HTML hata sayfasına çevrilmez.

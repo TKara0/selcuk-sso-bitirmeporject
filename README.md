@@ -126,10 +126,20 @@ rollerin birimi için yeni claim yok: id_token'daki `bolum` ve `fakulte` kullan�
 demo uygulamaların **Profilim** sayfası rolleri katmana göre gruplu, Türkçe adlarıyla ve kapsamlı rollerde birimiyle
 gösterir ("Bölüm başkanı (Bilgisayar Mühendisliği)"); hesap menüsünde kullanıcı adının altında kullanıcı türü yazar.
 
+**Rol değişikliği** (`src/Selcuk.Identity/Hesap/RolDegisikligiIslemi.cs`): rol kümesini değiştiren tek yol (şu an yalnızca
+başlangıç verisi çağırır; arayüz veya uç nokta yoktur). Rol kümesi gerçekten değişirse (rol eklendi veya çıkarıldı) ve
+sonuç küme `RolDogrulayici` kurallarına uyuyorsa: güvenlik damgası yenilenir (kimlik sunucusundaki oturumlar bir sonraki
+istekte kapanır), açık istemci oturumlarına Back-Channel Logout gönderilir, kullanıcının yetkilendirmeleri ve token'ları
+(refresh token'lar dahil) iptal edilir (şifre sıfırlamadaki mekanizmanın aynısı) ve **"Rollerin değişti; açık oturumların
+kapatıldı"** (`RolDegisti`) denetim kaydı yazılır: `ayrinti` alanı `eski=a,b; yeni=a,c`, sır yok. Küme değişmiyorsa hiçbir
+şey yapılmaz (her açılışta herkesin oturumu kapanmaz). Verilmiş bir access token'ın rol claim'i süresi dolana (en çok
+15 dk) kadar eski kalır.
+
 **Test kullanıcıları** (yalnızca Development; ad soyadlar uydurma, e-postalar `<kullanıcı adı>@test.local`; hepsi
 Teknoloji Fakültesi, `personel.test` ve `fakultesekreter.test` dışındakiler Bilgisayar Mühendisliği). Seed, rolleri
 `RolDogrulayici`'dan geçirir; kurala uymayan bir tanım açılışı açık bir hatayla durdurur. Var olan kullanıcının şifresine
-ve 2FA ayarlarına dokunulmaz, yalnızca eksik rolleri eklenir. Şifreler rastgele üretilip user-secrets'a yazılmıştır;
+ve 2FA ayarlarına dokunulmaz, yalnızca eksik rolleri eklenir; rol kümesi gerçekten değişirse (`RolDegisikligiIslemi`,
+bkz. aşağıdaki "Rol değişikliği" notu) kullanıcının açık oturumları kapatılır. Şifreler rastgele üretilip user-secrets'a yazılmıştır;
 görmek için `dotnet user-secrets list --project src/Selcuk.Identity` çıktısındaki `TestKullanicilari:<Anahtar>:Sifre`
 değerine bakın:
 
@@ -764,7 +774,11 @@ yazdığı bir başlıkla HTTP isteğini HTTPS gibi gösteremez.
 14. **Antiforgery, HTTPS ve HSTS.** Tüm formlarda antiforgery token; HTTPS yönlendirmesi ve OpenIddict'in HTTPS
     zorunluluğu; HSTS Development dışında açık (tarayıcı `localhost` için HSTS'yi önbelleğe almasın diye Development'ta
     kapalı). *Gerekçe:* siteler arası istek sahteciliğini (CSRF) ve şifrelenmemiş
-    bağlantıda çerez/token çalınmasını önler.
+    bağlantıda çerez/token çalınmasını önler. Koruma testle doğrulanır: her Razor POST işleyicisi antiforgery'siz 400 alır
+    ve yan etki oluşturmaz (işleyici listesi çalışan uygulamadan toplanır, yeni veya unutulmuş bir işleyici testi
+    düşürür). OIDC protokol uçları (`/connect/token`, `/connect/revoke`, `/connect/userinfo`, istemcilerde
+    `/signout-backchannel`) tarayıcı formu değildir; çerez yerine kod, secret, Bearer token veya imzalı logout_token ile
+    doğrulanır, antiforgery beklemez ve eklenmemelidir.
 15. **Sırların yönetimi.** Hiçbir şifre, client secret veya SMTP şifresi repoda yoktur: Development'ta
     `dotnet user-secrets`, diğer ortamlarda ortam değişkeni veya sır deposu. Şifreler, token'lar, sıfırlama
     bağlantıları ve çerez değerleri loglanmaz; Development e-postalarının yazıldığı klasör `.gitignore`'dadır. Test
@@ -1875,6 +1889,8 @@ yakalanır.
 | `Grubu_olmayan_veya_bilinmeyen_gruplu_istemci_sonda_Diger_altinda_gorunuyor` | Tek Kapı (grupsuz) ve bilinmeyen grup adı "Diğer"de, sonda; kart içeriği (2FA etiketi, iss'li bağlantı) aynı |
 | `Basliklar_h1_altinda_h2_bolumler_kart_kimlikleri_tek_ve_Ac_baglantilari_karti_tarif_ediyor` | Tek h1, grup başına h2 + `aria-labelledby`, h3 yok; kart kimlikleri tek, "Aç" bağlantıları `aria-describedby` ile karta bağlı |
 | `Her_kayitli_uygulamanin_grubu_tanimli_Tek_Kapi_gruplu_degil` | Her kayıt fonksiyonu beklenen grubu yazar; `KartSirasi` bütün istemcileri kapsar; `GecerliGrup` |
+| `RolDegisikligiTests` (6, Identity) | Rol eklenince ve çıkarılınca: kimlik sunucusu oturumları kapanır, refresh token `invalid_grant`, her sid'e Back-Channel Logout, `RolDegisti` denetim kaydı (eski/yeni rol listesi, sır yok), yeni girişte yeni roller; küme değişmiyorsa hiçbir şey olmaz; başka kullanıcılar etkilenmez; kurallara uymayan değişiklik uygulanmaz; başlangıç verisi eksik rol eklerse oturumları kapatır, tekrar açılışta dokunmaz |
+| `CsrfTests` (Identity: Fact 3 + Theory ×12) | Çalışan uygulamadan toplanan her POST işleyicisi (Login, IkiAdim, EkDogrulama, IkiAdimDogrulama Baslat/Etkinlestir/KodlariYenile/Kapat, SifreDegistir, SifremiUnuttum, SifreSifirla, Authorize, Logout) antiforgery'siz 400 alır, yan etki yok (oturum açılmaz, şifre/2FA/damga değişmez, e-posta gitmez, onay kaydı oluşmaz, çıkış yapılmaz), token'la aynı istek 400 almaz; işleyici listesi ve `[IgnoreAntiforgeryToken]` denetimi; protokol uçları (`/connect/token`, `/connect/revoke`, `/connect/userinfo`) antiforgery beklemez |
 | **Selcuk.Istemci.Ortak.Tests** | |
 | `Cok_rollu_kullanicida_IsInRole_her_rolde_true_olmayan_rolde_false` | Tam OIDC girişi (sahte sunucu, imzalı id_token'da `role` dizisi): her rolde `IsInRole` true, katalogdaki diğer rollerde ve dizinin metin hâlinde false |
 | `Tek_rollu_kullanicida_metin_bicimi_ayni_sekilde_isleniyor` | `role` metin olduğunda da `IsInRole` doğru |
@@ -1897,6 +1913,7 @@ yakalanır.
 | `Cikista_once_refresh_token_iptal_ediliyor_sonra_end_sessiona_gidiliyor` | Çıkış: revocation isteği (token, `token_type_hint`, client kimlik bilgileri), sonra end-session'a yönlendirme |
 | `SunucuTarafliOturumSecenekTests` (Istemci.Ortak, 3 test, 10 durum) | `SunucuTarafliOturum` varsayılan kapalı (SessionStore yok); açıkken çerez şemasının deposu `OturumBiletDeposu` ve iptal dinleyicisi aynı nesne; `KimlikSunucusuBilgisi` yalnızca https/loopback Authority kökünü verir |
 | **Selcuk.Demo.Obis.Tests** | |
+| `CsrfTests` (2) | POST işleyicisi listesi koddan (Çıkış); Çıkış antiforgery'siz 400, token'la end-session yönlendirmesi |
 | `Giris_sonrasi_oturum_tek_kucuk_cerez_cerezde_token_yok_token_lar_depoda` (SunucuTarafliOturumTests) | Gerçek çerez şemasıyla giriş (7 KB token): tek `Set-Cookie`, parça yok, değer < 500 karakter, çerez biletinde token yok, token'lar şifreli depoda |
 | `Notlarim_ve_Token_Inceleme_depodaki_token_larla_calisiyor` | Demo API çağrısının Bearer'ı depodaki access token; Token İnceleme depodaki token'ları okur |
 | `Cikis_oturum_kaydini_hemen_siliyor` | `/Cikis` POST: end-session yönlendirmesi, depo kaydı hemen silinir |
@@ -1925,6 +1942,7 @@ yakalanır.
 | `Dis_donus_adresine_yonlendirilmiyor` (×3) | State'te `https://evil.example`, `//evil.example`, `/\evil.example`: yönlendirme `/`'a |
 | `Korumali_sayfalarda_no_store_var_ana_sayfa_ve_statik_dosyada_yok` | Profilim, Notlarım, Ders Yönetimi ve girişsiz korumalı sayfanın yönlendirmesi `no-store`; ana sayfa ve CSS'te yok |
 | **Selcuk.Demo.Yemekhane.Tests** | |
+| `CsrfTests` (4) | POST işleyicisi listesi koddan (Çıkış, Rezervasyon ekle/iptal); her biri antiforgery'siz 400 ve rezervasyon değişmez, token'la çalışır |
 | `SunucuTarafliOturumTests` (4) | Demo OBİS'tekiyle aynı: tek küçük çerez ve depoda token; çıkışta ve Back-Channel Logout'ta kayıt silinir; Uygulamalarım bağlantısı Authority köküne eşit, Çıkış duruyor |
 | `Haftalik_menu_herkese_acik` | Girişsiz 200; üst çubukta uygulama simgesi (DY), "Demo Yemekhane" ve "Test" etiketi; menü görünür; "Tek Şifre ile giriş yap" |
 | `Girissiz_kullanici_Rezervasyonlarim_icin_kimlik_sunucusuna_yonlendiriliyor` | 302 → authorize, `client_id=demo-yemekhane`, `code_challenge` + `S256` |

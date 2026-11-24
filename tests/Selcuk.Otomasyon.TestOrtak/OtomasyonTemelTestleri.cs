@@ -14,6 +14,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using Selcuk.Otomasyon.Ortak;
+using Selcuk.Istemci.Ortak;
 
 namespace Selcuk.Otomasyon.TestOrtak;
 

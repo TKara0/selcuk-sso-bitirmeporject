@@ -40,6 +40,7 @@ public static class DenetimOlaylari
             DenetimOlayi.BackChannelLogoutGonderildi => "Uygulamaya çıkış bildirimi gönderildi",
             DenetimOlayi.BackChannelLogoutBasarisiz => "Uygulamaya çıkış bildirimi ulaştırılamadı",
             DenetimOlayi.HizSiniriAsildi => "Çok fazla istek (geçici engel)",
+            DenetimOlayi.RolDegisti => "Rollerin değişti; açık oturumların kapatıldı",
             _ => olay.ToString(),
         };
     }

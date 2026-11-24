@@ -64,6 +64,7 @@ public enum DenetimOlayi
     BackChannelLogoutGonderildi,
     BackChannelLogoutBasarisiz,
     HizSiniriAsildi,
+    RolDegisti,
 }
 
 public enum DenetimSonucu

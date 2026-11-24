@@ -103,10 +103,12 @@ public sealed class BaslangicVerisi(
         if (environment.IsDevelopment())
         {
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            // Var olan kullanıcıya eksik rol eklenirse oturumları kapatma ve denetim tek serviste (RolDegisikligiIslemi).
+            var rolDegisikligi = scope.ServiceProvider.GetRequiredService<RolDegisikligiIslemi>();
             foreach (var kullanici in TestKullanicilari)
             {
                 await TestKullanicisiOlusturAsync(userManager, kullanici,
-                    configuration[$"TestKullanicilari:{kullanici.AyarAnahtari}:Sifre"], logger);
+                    configuration[$"TestKullanicilari:{kullanici.AyarAnahtari}:Sifre"], logger, rolDegisikligi);
             }
 
             await OlcumKullanicilariniOlusturAsync(userManager);
@@ -226,9 +228,13 @@ public sealed class BaslangicVerisi(
     /// <summary>
     /// Kullanıcı yoksa verilen şifreyle oluşturur (şifre yoksa atlar). Varsa şifresine, 2FA ayarlarına ve diğer
     /// bilgilerine dokunmaz; yalnızca tanımdaki eksik rolleri ekler (sonuç kümesi kurallara uymuyorsa eklemez).
+    /// <paramref name="rolDegisikligi"/> verilirse (açılışta verilir) eksik roller onun üzerinden eklenir: rol kümesi
+    /// değişen kullanıcının açık oturumları kapatılır ve "RolDegisti" denetim kaydı yazılır; küme değişmiyorsa hiçbir
+    /// şey yapılmaz. Verilmezse (yalnızca testler) roller doğrudan eklenir.
     /// </summary>
     public static async Task TestKullanicisiOlusturAsync(
-        UserManager<ApplicationUser> userManager, TestKullanicisi bilgi, string? sifre, ILogger logger)
+        UserManager<ApplicationUser> userManager, TestKullanicisi bilgi, string? sifre, ILogger logger,
+        RolDegisikligiIslemi? rolDegisikligi = null)
     {
         if (await userManager.FindByNameAsync(bilgi.KullaniciAdi) is { } mevcut)
         {
@@ -236,6 +242,24 @@ public sealed class BaslangicVerisi(
             var eksik = bilgi.Roller.Except(roller, StringComparer.Ordinal).ToArray();
             if (eksik.Length == 0)
             {
+                return;
+            }
+
+            if (rolDegisikligi is not null)
+            {
+                var degisiklik = await rolDegisikligi.UygulaAsync(mevcut, eksik, []);
+                if (degisiklik.Degisti)
+                {
+                    logger.LogInformation("Test kullanıcısına roller eklendi, açık oturumları kapatıldı: {KullaniciAdi} ({Roller})",
+                        bilgi.KullaniciAdi, string.Join(", ", eksik));
+                }
+
+                if (degisiklik.Hatalar.Count > 0)
+                {
+                    logger.LogError("Test kullanıcısı {KullaniciAdi} için roller eklenmedi: {Hatalar}",
+                        bilgi.KullaniciAdi, string.Join(" ", degisiklik.Hatalar));
+                }
+
                 return;
             }
 
