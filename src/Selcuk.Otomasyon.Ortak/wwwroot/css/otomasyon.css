@@ -135,9 +135,9 @@ main h1::after {
     color: var(--soluk);
 }
 
-/* Üst çubuk: "Uygulamalarım" bağlantısı hesap menüsünün solunda. Dar ekranda çubuk sarılır (marka üstte, bağlantı ve
-   hesap düğmesi altta); bağlantı betik gerektirmez, "Menü" düğmesinden bağımsızdır. Renk --baglanti (yüzey zemininde
-   AA: 6,28:1 açık, 7,25:1 koyu), odak halkası ortak :focus-visible. */
+/* Üst çubuk: "Uygulamalarım" bağlantısı hesap menüsünün solunda; bağlantı betik gerektirmez, "Menü" düğmesinden
+   bağımsızdır. Geniş ekranda çubuk gerekirse sarılır; dar ekranda tek satırdır (aşağıdaki medya sorgusu). Odak halkası
+   ortak :focus-visible. */
 .uygulama-cubugu {
     flex-wrap: wrap;
 }
@@ -155,6 +155,74 @@ main h1::after {
     align-items: center;
     min-height: var(--dokunma);
     font-weight: 700;
+}
+
+/* Dar ekranda (600 px altı) üst çubuk tek satır: uygulama adı solda ve tek satırda kısaltılır (ellipsis; metin DOM'da
+   tam kalır, ekran okuyucu tam adı okur), "Uygulamalarım" bağlantısı yalnızca ızgara simgesidir (metin font-size: 0 ile
+   görsel olarak gizli ama erişilebilirlik ağacında durur; simge CSS ile çizilir, işaretleme ve CSP değişmez), hesap
+   düğmesi sağa yaslanır. Dokunma hedefleri en az 44x44 px (--dokunma). Geniş ekran görünümü değişmez. */
+@media (max-width: 599.98px) {
+    .uygulama-cubugu {
+        flex-wrap: nowrap;
+        gap: var(--a2);
+    }
+
+    .uygulama-cubugu .marka {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+
+    .uygulama-cubugu .marka > span:not(.uygulama-simgesi):not(.etiket) {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .uygulama-cubugu .marka > .etiket {
+        flex: none;
+    }
+
+    .uygulama-cubugu .ust-baglantilar {
+        flex: none;
+        flex-wrap: nowrap;
+        gap: var(--a2);
+        margin-left: auto;
+    }
+
+    .ust-cubuk .uygulamalarim-baglantisi {
+        justify-content: center;
+        width: var(--dokunma);
+        min-width: var(--dokunma);
+        font-size: 0;
+        border: 1px solid var(--ust-soluk);
+        border-radius: var(--kose-kontrol);
+    }
+
+    .ust-cubuk .uygulamalarim-baglantisi:hover {
+        border-color: var(--ust-vurgu);
+    }
+
+    /* Izgara simgesi: 2x2 kare, geçerli metin renginde (currentColor). */
+    .ust-cubuk .uygulamalarim-baglantisi::before {
+        content: "";
+        flex: none;
+        width: 20px;
+        height: 20px;
+        background:
+            linear-gradient(currentColor, currentColor) 0 0 / 8px 8px no-repeat,
+            linear-gradient(currentColor, currentColor) 12px 0 / 8px 8px no-repeat,
+            linear-gradient(currentColor, currentColor) 0 12px / 8px 8px no-repeat,
+            linear-gradient(currentColor, currentColor) 12px 12px / 8px 8px no-repeat;
+    }
+
+    /* 480-600 px arasında hesap düğmesinde görünen ad uzunsa kısalır; 480 px altında ortak CSS adı zaten gizler. */
+    .uygulama-cubugu .hesap-adi {
+        max-width: 16ch;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
 }
 
 /* Solda menü, sağda içerik; dar ekranda menü içeriğin üstünde ve "Menü" düğmesiyle açılır. */
@@ -324,17 +392,31 @@ main h1::after {
 }
 
 /* Ana sayfa kısayolları: satır listesinde bütün satır bağlantı. */
+/* Her satırın başında menüdeki simge (bağlantının dışında, aria-hidden); bağlantının ::after'ı satırın tamamını
+   kaplar, böylece simge de tıklanabilir (menüdeki gibi). */
 .kisayollar > li {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--a3);
     padding: 0;
 }
 
 .kisayol {
     display: flex;
+    flex: 1;
     flex-direction: column;
     gap: var(--a1);
+    min-width: 0;
     padding: var(--a4) 0;
     color: var(--murekkep);
     text-decoration: none;
+}
+
+.kisayol::after {
+    content: "";
+    position: absolute;
+    inset: 0;
 }
 
 .uygulama-icerigi a.kisayol {

@@ -17,9 +17,15 @@ else
     @* Gruplar h1'in altında h2 başlıklı bölümlerdir (başlık sırası); kartı olmayan grup yoktur. Kart numarası bütün
        sayfada tekdir ("Aç" bağlantısı aria-describedby ile kartın adına bağlanır). *@
     var kartNo = 0;
+    var notSirasi = Model.OtomasyonNotuGrupSirasi;
     for (var g = 0; g < Model.Gruplar.Count; g++)
     {
         var grup = Model.Gruplar[g];
+        if (g == notSirasi)
+        {
+            @* Bölüm otomasyonlarının ilk grubunun başlığının üstünde tek satırlık not (kartlarda tekrarlanmaz). *@
+            <p class="ipucu otomasyon-notu">Bölüm otomasyonları temsili ekranlardan oluşur ve örnek veri gösterir.</p>
+        }
         <section class="uygulama-grubu" aria-labelledby="grup-@g">
             <h2 id="grup-@g" class="grup-baslik">@grup.Baslik</h2>
             <ul class="satirlar uygulamalar">

@@ -92,7 +92,7 @@ Alınan önlemler [Güvenlik önlemleri](#güvenlik-önlemleri) bölümünde. Di
 | Revocation | `/connect/revoke` | RFC 7009: gizli istemciler refresh token'ı iptal eder (çıkışta) |
 | UserInfo | `/connect/userinfo` | Kapsama göre kullanıcı bilgisi |
 | End-session | `/connect/logout` | Çıkış sayfası; Back-Channel Logout bildirimlerini gönderir, `post_logout_redirect_uri` ile istemciye döner |
-| Uygulamalarım | `/` | Giriş yapmış kullanıcıya kayıtlı uygulamaların kartları, `grup` özelliğine göre h2 başlıklı gruplar altında (kampüs, öğrenci işleri, kurullar, kalite; grubu olmayan "Diğer"); kart `initiate_login_uri?iss=…` adresine gider |
+| Uygulamalarım | `/` | Giriş yapmış kullanıcıya kayıtlı uygulamaların kartları, `grup` özelliğine göre h2 başlıklı gruplar altında (kampüs, öğrenci işleri, kurullar, kalite; grubu olmayan "Diğer"); her kartta istemci kaydındaki simge ve vurgu rengi; ilk otomasyon grubunun başlığının üstünde tek satırlık "Bölüm otomasyonları temsili ekranlardan oluşur ve örnek veri gösterir." notu (yalnızca otomasyon kartı gören kullanıcıda); kart `initiate_login_uri?iss=…` adresine gider |
 | Şifremi unuttum | `/Account/SifremiUnuttum` | Kullanıcı adı, öğrenci no veya e-postayla sıfırlama bağlantısı isteği |
 | Şifre sıfırlama | `/Account/SifreSifirla?kullanici=…&kod=…` | E-postadaki bağlantı: yeni şifre + tekrar |
 | Hesabım | `/Account/Hesabim` | Hesap bilgileri; **Şifre değiştir** (`/Account/SifreDegistir`) |
@@ -166,7 +166,9 @@ yazılır: tek rolde metin (`"ogrenci"`), birden çok rolde JSON dizisi (`["akad
 `Selcuk.Istemci.Ortak` iki biçimi de ayrı `role` claim'lerine çevirir; `User.IsInRole` her rol için çalışır. Kapsamlı
 rollerin birimi için yeni claim yok: id_token'daki `bolum` ve `fakulte` kullanılır. Hesabım'da **Rollerin** bölümü ve
 demo uygulamaların **Profilim** sayfası rolleri katmana göre gruplu, Türkçe adlarıyla ve kapsamlı rollerde birimiyle
-gösterir ("Bölüm başkanı (Bilgisayar Mühendisliği)"); hesap menüsünde kullanıcı adının altında kullanıcı türü yazar.
+gösterir ("Bölüm başkanı (Bilgisayar Mühendisliği)"); kimlik sunucusunun hesap düğmesinde kullanıcının görünen adı (ad soyad,
+gövde yazı tipiyle; boşsa kullanıcı adı) yazar, açılan menüde görünen adın altında kullanıcı adı (ikincil satır) ve kullanıcı
+türü bulunur.
 
 **Rol değişikliği** (`src/Selcuk.Identity/Hesap/RolDegisikligiIslemi.cs`): rol kümesini değiştiren tek yol (şu an yalnızca
 başlangıç verisi çağırır; arayüz veya uç nokta yoktur). Rol kümesi gerçekten değişirse (rol eklendi veya çıkarıldı) ve
@@ -940,7 +942,9 @@ yolun aynı işi yaptığı kodda doğrulandı:
 İki demo da ortak tasarım sistemini (`Selcuk.Arayuz`, Tasarım D2) kullanır: üst çubukta uygulama simgesi (baş harfler)
 ve adı, uygulamanın renginde başlık şeridi ve sekme altı çizgisi; sağda hesap menüsü (küçük kapı işareti, Profilim,
 Çıkış yap). Firuze ve kapı işareti yalnızca kimlikle ilgili öğelerdedir ("Tek Şifre ile giriş yap", hesap menüsü);
-her uygulamanın kendi içeriği kendi rengini kullanır (OBİS lacivert, Yemekhane nar; `--uygulama-vurgu`). Ortak
+her uygulamanın kendi içeriği kendi rengini kullanır (OBİS lacivert, Yemekhane nar; `--uygulama-vurgu`). Uygulamalarım
+kartlarında Demo OBİS "OB" simgesi ve kendi şerit mavisiyle (#2A6AB0), Demo Yemekhane "YM" simgesi ve narla (#9C3D54) görünür
+(istemci kaydındaki `simge` ve `vurgu`; metin/zemin kontrastı açık ve koyu temada en az 4,5:1). Ortak
 sayfalar (Profilim, Erişim reddedildi, Giriş hatası, Hata, Çıkış) iki uygulamada aynı görünür.
 
 ### Demo OBİS (`src/Selcuk.Demo.Obis`, https://localhost:5101)
@@ -1012,8 +1016,9 @@ kaynağı seçimi, hata sayfaları, güvenlik başlıkları, Back-Channel Logout
 
 **Uygulamalarım bağlantısı:** giriş yapmış kullanıcının üst çubuğunda, hesap menüsünün solunda **Uygulamalarım**
 bağlantısı bulunur (kimlik sunucusunun kök adresi; aynı sekmede açılır). Adres `Kimlik:Authority` ayarından türetilir
-(yalnızca https veya `http://127.0.0.1`; kullanıcı girdisinden adres türetilmez, açık yönlendirme yoktur), dar ekranda da
-görünür ve betik gerektirmez. Erişim reddedildi ve hata sayfalarında da vardır; girişsiz sayfada yoktur. Demo OBİS ve
+(yalnızca https veya `http://127.0.0.1`; kullanıcı girdisinden adres türetilmez, açık yönlendirme yoktur), dar ekranda
+(600 px altı) yalnızca ızgara simgesi olarak görünür (metin görsel olarak gizli ama ekran okuyucuya açık; üst çubuk tek
+satır, uygulama adı kısaltılır, dokunma hedefleri 44x44 px) ve betik gerektirmez. Erişim reddedildi ve hata sayfalarında da vardır; girişsiz sayfada yoktur. Demo OBİS ve
 Demo Yemekhane'nin kendi düzen dosyalarında (`Pages/Shared/_Layout.cshtml`) aynı bağlantı vardır; adres
 `Selcuk.Istemci.Ortak`'taki `KimlikSunucusuBilgisi` servisinden gelir (otomasyonlarla aynı türetme, tek yerde).
 
@@ -1024,11 +1029,15 @@ Demo Yemekhane'nin kendi düzen dosyalarında (`Pages/Shared/_Layout.cshtml`) ay
 analiz** (MÜDEK, Sınav Başarısı Analizi). Kullanıcının hiç kartı olmayan grup başlığıyla birlikte gösterilmez; grubu
 olmayan (ör. Tek Kapı) veya tanımsız bir gruba yazılmış istemci sonda **Diğer** altında görünür. Grup içi sıra
 `Istemciler.KartSirasi`'dır. Yeni bir otomasyonun grubu `Istemciler.OtomasyonTanimi`'na verilir
-([docs/otomasyon-sablonu.md](docs/otomasyon-sablonu.md)). Dar ekranda satırlar mevcut düzenle akar.
+([docs/otomasyon-sablonu.md](docs/otomasyon-sablonu.md)). Dar ekranda satırlar mevcut düzenle akar. Kart açıklamaları ek not
+taşımaz: otomasyonların "temsili ekran, örnek veri" bilgisi, bölüm otomasyonlarının ilk grubunun başlığının üstünde tek satırlık
+bir notla verilir ("Bölüm otomasyonları temsili ekranlardan oluşur ve örnek veri gösterir."); not yalnızca en az bir otomasyon
+kartı gören kullanıcıda ve bir kez görünür.
 
 **Yerleşim (fakülte sitesinden esinlenen öğeler):** koyu lacivert üst çubuk (uygulamanın vurgu rengi simge rozetinde ve
 çubuğun altında ince çizgi), her başlığın altında kısa kalın çizgi, başlığın altında **gezinti yolu** ("Uygulamalarım /
-Otomasyon adı / Ekran adı") ve her menü öğesinin başında **simge** (`MenuOgesi.Simge`; yerel SVG sprite). Yalnızca yerleşim
+Otomasyon adı / Ekran adı") ve her menü öğesinin başında **simge** (`MenuOgesi.Simge`; yerel SVG sprite; ana sayfadaki
+kısayol listesinin satırları da aynı simgeyle başlar). Yalnızca yerleşim
 karakteri alınmıştır: renkler, yazı tipi ve görseller projenin kendi token'larıdır, gerçek kurum amblemi veya menü metni
 yoktur; kimlik sunucusunda gezinti yolu yalnızca Hesabım sayfalarındadır. Ayrıntı:
 [docs/otomasyon-sablonu.md](docs/otomasyon-sablonu.md), gerekçe: [docs/DECISIONS.md](docs/DECISIONS.md).
@@ -1663,8 +1672,8 @@ node --use-system-ca scripts/ekran-goruntuleri.mjs --sadece intibak,mezuniyet,ca
   çekilir. QR kod, anahtar ve kurtarma kodları çekimden önce örnek değerlerle değiştirilir; her çekimden önce sayfada
   o çalıştırmanın sırlarından biri var mı diye bakılır.
 - Çıktı: `docs/tasarim/d2/` (her ekranın açık ve koyu 1280 × 800 ile 390px mobil hâli) ve `docs/tez-gorselleri/`
-  (tez için seçilmiş ekranlar 01-38, açık tema, 1440px; 35-38 Uygulamalarım grupları ve alt uygulamalardaki dönüş
-  bağlantısı, ikisi yalnızca üst çubuk). Sonda 390px'te yatay taşma, konsol/CSP hatası ve açıklaması olmayan
+  (tez için seçilmiş ekranlar 01-44, açık tema, 1440px; 35-38 Uygulamalarım grupları ve alt uygulamalardaki dönüş
+  bağlantısı, ikisi yalnızca üst çubuk; 42-44 R11 yerleşimi: Staj defterim masaüstü ve 390px, Hesabım). Sonda 390px'te yatay taşma, konsol/CSP hatası ve açıklaması olmayan
   claim varsa listelenir.
 - Bitince yalnızca kendi başlattığı pencereleri ve Tek Kapı sürecini durdurur, geçici veritabanını ve veri klasörünü
   siler. Kimlik sunucusunun Development e-postaları her zamanki gibi `App_Data/eposta/`'ya yazılır (git'e girmez).
@@ -1996,12 +2005,14 @@ yakalanır.
 | `Izinli_rolu_olmayan_kullanici_access_denied_aliyor` (KalanOtomasyon, ×12) | Her otomasyon için izinli olmayan üç test kullanıcısı (ör. İŞKUR'da hoca.test, sekreter.test, baskan.test): `error=access_denied`, kod yok |
 | `Izinli_roller_giris_yapiyor_access_token_kendi_API_kaynagi_icin` (KalanOtomasyon, ×13) | Her izinli rol (danışman olarak hoca.test ve koordinator.test dahil): token `aud` yalnızca kendi `<ad>-api`'si, oku/yaz, rol |
 | `Uygulamalarim_kartlari_izinli_rollere_kayittaki_simgeyle_gorunuyor` (KalanOtomasyon) | baskan.test Danışmanlık, MÜDEK ve Sınav Analizi kartlarını görür, İŞKUR'u görmez; iskur.test yalnızca İŞKUR'u, sekreter.test yalnızca MÜDEK'i, 203011002 Danışmanlık ve İŞKUR'u görür |
-| `Simge_kayittan_geliyor_simgesiz_veya_gecersiz_simgede_addan_uretiliyor` | Staj "ST" (kayıttan), Demo OBİS "DO" (simgesiz: addan), geçersiz simge ("UZUN") yerine "İO"; `GecerliSimge` bir-iki harf |
+| `Simge_kayittan_geliyor_simgesiz_veya_gecersiz_simgede_addan_uretiliyor` | Staj "ST" (kayıttan), simge ve vurgu özelliği silinmiş Demo OBİS kopyası "DO" (simgesiz: addan; gerçek Demo OBİS kaydı "OB" taşır), geçersiz simge ("UZUN") yerine "İO"; `GecerliSimge` bir-iki harf |
 | `Baskan_dokuz_otomasyon_kartini_dogru_gruplarda_goruyor_Mezuniyet_ve_ISKUR_yok` (UygulamalarimGruplariTests) | baskan.test: dört grup, sırayla; 9 otomasyon kartı; Mezuniyet ve İŞKUR görünmez |
 | `Ogrenci_yalnizca_izinli_kartlari_goruyor_bos_grup_basligi_cikmiyor` | 203011001: yalnızca Kampüs ve Öğrenci işleri (7 kart); Kurullar ve Kalite başlığı yok |
 | `Grubu_olmayan_veya_bilinmeyen_gruplu_istemci_sonda_Diger_altinda_gorunuyor` | Tek Kapı (grupsuz) ve bilinmeyen grup adı "Diğer"de, sonda; kart içeriği (2FA etiketi, iss'li bağlantı) aynı |
 | `Basliklar_h1_altinda_h2_bolumler_kart_kimlikleri_tek_ve_Ac_baglantilari_karti_tarif_ediyor` | Tek h1, grup başına h2 + `aria-labelledby`, h3 yok; kart kimlikleri tek, "Aç" bağlantıları `aria-describedby` ile karta bağlı |
 | `Her_kayitli_uygulamanin_grubu_tanimli_Tek_Kapi_gruplu_degil` | Her kayıt fonksiyonu beklenen grubu yazar; `KartSirasi` bütün istemcileri kapsar; `GecerliGrup` |
+| `YerlesimTests` (5, Identity) | Gezinti yolu yalnızca Hesabım ve alt sayfalarında ("Uygulamalarım / Hesabım / Sayfa"), giriş, girişin ikinci adımı, onay, çıkış ve hata sayfalarında yok; koyu lacivert üst çubuk ve Test rozeti kontrastı (açık ve koyu); başlık çizgisi CSS ile, gölge yok; giriş sayfasında harici görsel, logo ve resmî site menüsü yok |
+| `UygulamalarimGorunumuTests` (10, Identity; R12) | Hesap düğmesinde görünen ad gövde yazı tipiyle, menüde altında kullanıcı adı (ikincil, Mono) ve kullanıcı türü; görünen ad boş veya boşluksa düğmede kullanıcı adı ve ad satırı yok; kart açıklamalarında "(temsili, örnek veri)" eki yok; bölüm otomasyonları notu otomasyon kartı gören kullanıcıda bir kez ve ilk otomasyon grubunun başlığının hemen üstünde, yalnızca demo kartı görenlerde yok; Demo OBİS "OB" (`obis`) ve Demo Yemekhane "YM" (`nar`) kartı; bu iki simgenin açık ve koyu tema kontrastı ≥ 4,5:1 |
 | `RolDegisikligiTests` (6, Identity) | Rol eklenince ve çıkarılınca: kimlik sunucusu oturumları kapanır, refresh token `invalid_grant`, her sid'e Back-Channel Logout, `RolDegisti` denetim kaydı (eski/yeni rol listesi, sır yok), yeni girişte yeni roller; küme değişmiyorsa hiçbir şey olmaz; başka kullanıcılar etkilenmez; kurallara uymayan değişiklik uygulanmaz; başlangıç verisi eksik rol eklerse oturumları kapatır, tekrar açılışta dokunmaz |
 | `CsrfTests` (Identity: Fact 3 + Theory ×12) | Çalışan uygulamadan toplanan her POST işleyicisi (Login, IkiAdim, EkDogrulama, IkiAdimDogrulama Baslat/Etkinlestir/KodlariYenile/Kapat, SifreDegistir, SifremiUnuttum, SifreSifirla, Authorize, Logout) antiforgery'siz 400 alır, yan etki yok (oturum açılmaz, şifre/2FA/damga değişmez, e-posta gitmez, onay kaydı oluşmaz, çıkış yapılmaz), token'la aynı istek 400 almaz; işleyici listesi ve `[IgnoreAntiforgeryToken]` denetimi; protokol uçları (`/connect/token`, `/connect/revoke`, `/connect/userinfo`) antiforgery beklemez |
 | **Selcuk.Istemci.Ortak.Tests** | |
@@ -2070,23 +2081,25 @@ yakalanır.
 | `Giris_yapmis_kullanici_eslestirme_cerezi_olmadan_donuste_ana_sayfaya_yonlendiriliyor` | Yemekhane'de geri tuşu, giriş yapmış: 302 → `/` |
 | `Girissiz_kullanici_eslestirme_cerezi_olmadan_donuste_GirisHatasi_sayfasina_yonlendiriliyor` | Yemekhane'de giriş yapmamış: `/GirisHatasi?neden=oturum-suresi` |
 | **Selcuk.Otomasyon.Ortak.Tests** | |
-| `SablonTests` (28) | Menü: öğrenci yalnızca öğrenci öğeleri, çok rollü birleşim katalog sırasıyla rol başlıkları altında (ortak öğe bir kez), uygun öğe yoksa boş; kapsam: claim'lerden okuma, kendi/bölüm/fakülte süzmesi, aynı adlı bölüm başka fakültede kapsam dışı, boş bilgi hiçbir kayda uymaz; `VeriKaynagi` doğrulaması (Mock, Api + https; http, boş, küçük harfli mod reddedilir); moda göre Mock/Api seçimi ve geçersiz modda `OptionsValidationException`; hatalı şablon tanımları (ad yok, `/` yok, ortak açık sayfa, katalog dışı rol, rolsüz öğe, veri kaynağı yok, aynı sayfa iki kez); oturum bileti deposu (şifreli, çerezde anahtar); Api istemcisi: Bearer, JSON, 5xx/404 → ulaşılamıyor, 401/403 → yetki, bağlantı hatası, token yoksa istek yapılmaz |
+| `SablonTests` (40) | Menü: öğrenci yalnızca öğrenci öğeleri, çok rollü birleşim katalog sırasıyla rol başlıkları altında (ortak öğe bir kez), uygun öğe yoksa boş; kapsam: claim'lerden okuma, kendi/bölüm/fakülte süzmesi, aynı adlı bölüm başka fakültede kapsam dışı, boş bilgi hiçbir kayda uymaz; `VeriKaynagi` doğrulaması (Mock, Api + https; http, boş, küçük harfli mod reddedilir); moda göre Mock/Api seçimi ve geçersiz modda `OptionsValidationException`; hatalı şablon tanımları (ad yok, `/` yok, ortak açık sayfa, katalog dışı rol, rolsüz öğe, veri kaynağı yok, aynı sayfa iki kez); oturum bileti deposu (şifreli, çerezde anahtar); Api istemcisi: Bearer, JSON, 5xx/404 → ulaşılamıyor, 401/403 → yetki, bağlantı hatası, token yoksa istek yapılmaz |
 | `AcilisVeParcaTests` (8) | Açılış denetimi: menüde olmayan, rol istemeyen (`/Gizli/Rapor`, `[AllowAnonymous]` `/Gizli/Acik`) sayfa açılışı Türkçe hatayla durdurur, kendi rolünü taşıyan (`/Gizli/Ozel`) durdurmaz; menüdekiler ve istisna listesindeki ortak sayfalar durdurmaz. Oturum bileti: kaydın süresi çerez ömrüyle aynı (bitişsiz bilette `Kimlik:OturumSuresi`), yenilemede uzar; süresi dolan kayıt okununca silinir, dolmuş bilet yazılmaz; çıkış (`RemoveAsync`), Back-Channel Logout sid'i ve sub'ı kayıtları hemen siler. Ortak parçalar: rozet sınıfı/verisi, aşama durumları, tablo başlık kimliği ve veri adı doğrulaması |
+| `YerlesimBilesenleriTests` (17) | Menü simgesi kataloğu (anlamlı simge, varsayılan nokta, sprite), `MenuOgesi.Simge`, gezinti yolu mantığı (ilk öğe Authority kökü, son öğe bağlantısız) ve ilk `</h1>`'in altına ekleme |
 | **Selcuk.Otomasyon.Staj.Tests** | |
-| `StajEkranTests` (20) | Menü (öğrenci, komisyon.test, çok rollü; girişsiz menü yok), adresle yetki reddi ve Türkçe 403 sayfası, her menü sayfası (GET ve POST) rolü olmayana kapalı, her rol kendi ekranlarını açar; kapsam: 203011001 yalnızca kendi üç kaydı, bölüm başkanı/komisyon/sekreter Elektrik-Elektronik kayıtlarını görmez, EEM'deki bölüm başkanı yalnızca kendi bölümünü, bölümsüz kullanıcı hiçbir şey; temsili işlem: antiforgery'siz 400, Onayla/Reddet/Kaydet mesajı gösterir ve kayıtlar değişmez, öğrenci formları; düzen (bant, rozet, simge, menü, stiller), başka uygulamanın TempData çerezi, Profilim, 404; güvenlik başlıkları ve `no-store`; zeytin kontrastı (beyaz 6,03:1) |
+| `StajEkranTests` (21) | Menü (öğrenci, komisyon.test, çok rollü; girişsiz menü yok), adresle yetki reddi ve Türkçe 403 sayfası, her menü sayfası (GET ve POST) rolü olmayana kapalı, her rol kendi ekranlarını açar; kapsam: 203011001 yalnızca kendi üç kaydı, bölüm başkanı/komisyon/sekreter Elektrik-Elektronik kayıtlarını görmez, EEM'deki bölüm başkanı yalnızca kendi bölümünü, bölümsüz kullanıcı hiçbir şey; temsili işlem: antiforgery'siz 400, Onayla/Reddet/Kaydet mesajı gösterir ve kayıtlar değişmez, öğrenci formları; düzen (bant, rozet, simge, menü, stiller), başka uygulamanın TempData çerezi, Profilim, 404; güvenlik başlıkları ve `no-store`; zeytin kontrastı (beyaz 6,03:1) |
 | `VeriKaynagiTests` (17) | Mock/Api seçimi, geçersiz mod ve adres açılışı durdurur, rozet; Api modu: oturumdaki token Bearer olarak gider (aud `staj-api`, `staj.oku`), durum filtresi ve yıl sorgu dizesinde; API kapalı, 500, 503, zaman aşımı, bozuk JSON → 503 "Veri kaynağına şu an ulaşılamıyor"; 401/403 → 403 yetki sayfası; stack trace yok; gerçek çerezle (Testing ve Development) Back-Channel Logout oturumu kapatır, çerez küçük (bilet sunucuda) |
+| `StajYerlesimTests` (8) | Staj'ın kendi fabrikasıyla: gezinti yolu, menü simgeleri ve ana sayfa kısayol simgeleri (aria-hidden, metin ve bağlantılar aynı), dar ekranda tek satırlık üst çubuk (R12), üst çubuk kontrastı, başlık çizgisi |
 | **Selcuk.Otomasyon.Intibak.Tests, .Mezuniyet.Tests, .CapYandal.Tests** | |
-| `<Ad>TemelTestleri` (her biri 25; `OtomasyonTemelTestleri`) | Her rol menüde yalnızca kendi öğeleri, çok rollü birleşim katalog sırasıyla, girişsiz menü yok; adresle yetki reddi (403 Türkçe), her menü sayfası (GET/POST) izinsiz role ve uygulamanın diğer rollerine kapalı, girişsize 401; her rol kendi ekranlarını açar (tek `<h1>`); düzen (bant, rozet, simge, menü, stiller), Profilim, 404; güvenlik başlıkları ve `no-store`, betik yok; vurgu kontrastı (açık: beyaz/taş/açık vurgu, koyu: yüzey/taş/koyu açık vurgu ≥ 4,5:1); temsili işlem antiforgery'siz 400, mesaj ve değişmeyen kayıtlar; Mock/Api seçimi, geçersiz ayar açılışı durdurur; Api modunda Bearer token, `aud` `<ad>-api`, `<ad>.oku`; API kapalı/500/503/zaman aşımı/bozuk JSON → 503, 401/403 → 403, stack trace yok; gerçek çerezle Back-Channel Logout oturumu kapatır ve bileti hemen siler; çıkış bileti hemen siler |
+| `<Ad>TemelTestleri` (her biri 39; `OtomasyonTemelTestleri`) | Her rol menüde yalnızca kendi öğeleri, çok rollü birleşim katalog sırasıyla, girişsiz menü yok; adresle yetki reddi (403 Türkçe), her menü sayfası (GET/POST) izinsiz role ve uygulamanın diğer rollerine kapalı, girişsize 401; her rol kendi ekranlarını açar (tek `<h1>`); düzen (bant, rozet, simge, menü, stiller), Profilim, 404; güvenlik başlıkları ve `no-store`, betik yok; vurgu kontrastı (açık: beyaz/taş/açık vurgu, koyu: yüzey/taş/koyu açık vurgu ≥ 4,5:1); temsili işlem antiforgery'siz 400, mesaj ve değişmeyen kayıtlar; Mock/Api seçimi, geçersiz ayar açılışı durdurur; Api modunda Bearer token, `aud` `<ad>-api`, `<ad>.oku`; API kapalı/500/503/zaman aşımı/bozuk JSON → 503, 401/403 → 403, stack trace yok; gerçek çerezle Back-Channel Logout oturumu kapatır ve bileti hemen siler; çıkış bileti hemen siler; yerleşim (R11/R12): gezinti yolu, menü ve ana sayfa kısayol simgeleri (aria-hidden), üst çubuk kontrastı, başlık çizgisi, dar ekranda tek satırlık üst çubuk (ellipsis, yalnızca simge "Uygulamalarım", 44x44 px) |
 | `IntibakEkranTests` (10) | Öğrenci yalnızca kendi başvurusu ve sonucu (muaf AKTS); bölüm süzmesi (komisyon, başkan, sekreter; EEM kullanıcısı yalnızca EEM); başka bölümün başvurusu adresle eşleştirmede açılmaz; fakülte sekreteri yalnızca kendi fakültesi, bölümlere göre (Mühendislik'teki yalnızca kendi kaydı); bölümsüz kullanıcıda tablonun "Kayıt yok."u; kaydırılabilir tablo bölgesi; aşamalarda tek `aria-current="step"` ve metinli durum, rozet; muafiyet notu şartı ayardan (CC → AA önerilen kararı değiştirir), geçersiz şart açılışı durdurur; transkript alanlı form antiforgery korumalı ve temsili |
 | `MezuniyetEkranTests` (6) | Öğrencinin AKTS / gereken, GNO, zorunlu ders sayıları ve eksikler listesi; şartlar ayardan (230 AKTS, 2,70 GNO: eksikler ve komisyonun GNO şartı göstergesi değişir), geçersiz şart; başvuru aşamaları ve ilişik kesme (borç rozeti, kaydı olmayan öğrencide "Kayıt yok."); komisyon ve sekreter bölüm süzmesi; fakülte sekreteri yalnızca kendi fakültesi, sayılar |
 | `CapYandalEkranTests` (7) | Öğrenci kendi başvuruları, aşamalar ve ilerleme; şart göstergesi (GNO, başarı sırası yüzdesi), kendi bölümünün programları listelenmez, form temsili; şartlar ayardan (ÇAP GNO alt sınırı 2,75 ve ilk %40 → "Başvurabilirsin"; kontenjan 2 → C26-03 yedek); geçersiz şart; koordinatör GNO sırası ve kontenjan, EEM koordinatörü yalnızca kendi programları; öğrenci takibinde devam şartının altındakilere uyarı; başkan ve sekreter bölüm süzmesi, eksik evrak, bölümsüz kullanıcıda "Kayıt yok." |
 | **Selcuk.Otomasyon.EtikKurul.Tests, .BolumKurul.Tests, .LisansProjeleri.Tests** | |
-| `<Ad>TemelTestleri` (her biri 25; `OtomasyonTemelTestleri`, Etik Kurul ve Bölüm Kurul'da `AnaRol` akademisyen / bölüm kurulu üyesi) | İntibak'takiyle aynı ortak testler |
+| `<Ad>TemelTestleri` (her biri 39; `OtomasyonTemelTestleri`, Etik Kurul ve Bölüm Kurul'da `AnaRol` akademisyen / bölüm kurulu üyesi) | İntibak'takiyle aynı ortak testler |
 | `EtikKurulEkranTests` (8) | Akademisyen yalnızca kendi başvuruları (EEM akademisyeni yalnızca kendininkiler); kurul üyesi yalnızca kendisine atanan dosyalar (başka bölümden de), başka üye başka dosyalar; görüş formunda mevcut görüş seçili; başkan yalnızca kendi bölümü, bölümsüzde "Kayıt yok."; şartlar ayardan (gereken görüş 1 → "Görüşler yeterli", süre hedefi 20 gün → "Hedefi aştı"); geçersiz şart; belge alanlı form; akademisyen + kurul üyesi iki rol başlığı |
 | `BolumKurulEkranTests` (6) | Bölüm süzmesi (başkan, üye, sekreter; EEM başkanı yalnızca EEM; bölümsüzde "Kayıt yok."); fakülte sekreteri yalnızca kendi fakültesi, bölümlere göre (Mühendislik'teki yalnızca kendi kararları); oylama: katılan / üye, gereken katılım, yeter sayı ve kabul çoğunluğu; şartlar ayardan (%70 / %60 → yeter sayı sağlanmadı, çoğunluk yok); geçersiz şart; madde formunda yalnızca planlanan toplantılar |
 | `LisansProjeleriEkranTests` (6) | Öğrenci yalnızca kendi kaydı ve aşamaları, tercihleri seçili, açık konular yalnızca kendi bölümünden; akademisyen yalnızca kendi konuları ve hocası olduğu projeler; başkan bölüm eşleştirmesi ve hoca kontenjanı (3 / 3 Dolu); şartlar ayardan (5 tercih alanı; en fazla 2 → "Aşıldı"); geçersiz şart; konu önerisi temsili |
 | **Selcuk.Otomasyon.Danismanlik.Tests, .Iskur.Tests, .Mudek.Tests, .SinavAnalizi.Tests** | |
-| `<Ad>TemelTestleri` (her biri 25; `OtomasyonTemelTestleri`, MÜDEK ve Sınav Analizi'nde `AnaRol` akademisyen, İŞKUR'da `IzinsizRoller` personel) | İntibak'takiyle aynı ortak testler |
+| `<Ad>TemelTestleri` (her biri 39; `OtomasyonTemelTestleri`, MÜDEK ve Sınav Analizi'nde `AnaRol` akademisyen, İŞKUR'da `IzinsizRoller` personel) | İntibak'takiyle aynı ortak testler |
 | `DanismanlikEkranTests` (5) | Danışman yalnızca kendi öğrencileri ve notları (koordinator.test başka öğrenciler); öğrenci yalnızca kendi kaydı ve talepleri (aşamalarda şu anki adım, reddedilen talep; danışmanı olmayan öğrencide "Henüz atanmadı"); başkan bölüm eşleşmeleri, danışmanı olmayanlar ve kontenjan (5 / 5 Dolu), EEM başkanı yalnızca EEM; şartlar ayardan (görüşme aralığı 1 gün → "Görüşme gecikti", kontenjan 4 → "Aşıldı"; hiç görüşmesi olmayan öğrenci her durumda uyarı alır); geçersiz şart |
 | `IskurEkranTests` (4) | Öğrenci yalnızca kendi devam kayıtları ve toplam saat; sorumlu yalnızca kendi bölümü (Takip ve Devam girişi; EEM sorumlusu yalnızca EEM, bölümsüzde "Kayıt yok."); şartlar ayardan (eşik %90 ve aylık sınır 50 saat → uyarı rozetleri değişir); geçersiz şart |
 | `MudekEkranTests` (4) | Akademisyen yalnızca kendi derslerinin çıktıları (mudek.test iki rol başlığı); program çıktısı gerçekleşmesi ve hedef durumu, eksikler, sekreter arşivi, EEM süzmesi; şartlar ayardan (hedef %65, eşik %50 → rapor sayıları değişir); geçersiz şart |

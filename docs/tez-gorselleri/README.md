@@ -1,9 +1,9 @@
 # Tez görselleri
 
 `node --use-system-ca scripts/ekran-goruntuleri.mjs` ile üretilir (README > Ekran görüntüleri); açık tema, 1440 px genişlik, tam sayfa
-(35-38'in ikisi yalnızca üst çubuk; 41 ise 390 px genişlikte dar ekran). Numaralar `TEZ_SIRASI` sırasındadır ve değişmez; yeni görsel sona eklenir. Görüntülerdeki
+(35-38'in ikisi yalnızca üst çubuk; 41 ve 43 ise 390 px genişlikte dar ekran). Numaralar `TEZ_SIRASI` sırasındadır ve değişmez; yeni görsel sona eklenir. Görüntülerdeki
 kişi, hesap ve değerler kurgusal test verisidir (203011…, ORN-…, `@test.local`); QR kod, anahtar ve kurtarma kodları örnek
-değerlerle değiştirilmiştir. Son yenileme: 2026-11-25 (Demo OBİS grubu yenilendi, 39-41 eklendi; 41 görsel; diğer gruplar 2026-11-24'ten). Aynı ekranların açık/koyu/mobil hâlleri:
+değerlerle değiştirilmiştir. Son yenileme: 2026-11-25 (R12: 01-41 aynı adlarla toplu yenilendi, 42-44 eklendi; 44 görsel). Aynı ekranların açık/koyu/mobil hâlleri:
 [docs/tasarim/d2/](../tasarim/d2/README.md).
 
 | No | Dosya |
@@ -49,3 +49,6 @@ değerlerle değiştirilmiştir. Son yenileme: 2026-11-25 (Demo OBİS grubu yeni
 | 39 | `39-obis-ana.png` (Demo OBİS Anasayfa, öğrenci) |
 | 40 | `40-obis-transkript.png` |
 | 41 | `41-obis-dar-ekran.png` (Demo OBİS, 390 px) |
+| 42 | `42-staj-defterim.png` (R11 yerleşimi: koyu lacivert üst çubuk, gezinti yolu, ikonlu menü; masaüstü) |
+| 43 | `43-staj-defterim-dar-ekran.png` (aynı ekran, 390 px: tek satırlık üst çubuk, "Uygulamalarım" yalnızca simge) |
+| 44 | `44-hesabim.png` (Hesabım: gezinti yolu, hesap düğmesinde görünen ad) |

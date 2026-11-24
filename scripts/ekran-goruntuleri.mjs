@@ -6,6 +6,8 @@
 //   docs/tez-gorselleri/ tez için seçilmiş ekranlar, açık tema, 1440px genişlik, tam sayfa
 //     (35-38: Uygulamalarım grupları ve alt uygulamalardaki dönüş bağlantısı; ikisi yalnızca üst çubuğu, öğe görüntüsü)
 //     (39-41: Demo OBİS yeni arayüzü: Anasayfa (öğrenci), Transkript ve 390px dar ekran; sonuncusu 390 px genişlikte)
+//     (42-44: R11 yerleşimi: gezinti yolu ve ikonlu menünün göründüğü Staj defterim ekranı, aynı ekranın 390 px dar hâli
+//      ve Hesabım sayfası)
 //
 // Kullanım (proje kökünden; bir kez: cd araclar\tek-kapi; npm ci):
 //   node --use-system-ca scripts/ekran-goruntuleri.mjs
@@ -225,7 +227,7 @@ const TEZ_SIRASI = ['giris', 'onay', 'uygulamalarim', 'obis-notlarim', 'obis-tok
   'danismanlik-gorusme-talebi', 'danismanlik-ogrencilerim', 'iskur-devam-durumum', 'iskur-takip',
   'mudek-program-ciktilari', 'mudek-veri-girisi', 'sinav-analizi-derslerim', 'sinav-analizi-bolum-geneli',
   'uygulamalarim-gruplu-baskan', 'uygulamalarim-ogrenci', 'staj-uygulamalarim-baglantisi', 'obis-uygulamalarim-baglantisi',
-  'obis-ana', 'obis-transkript', 'obis-dar-ekran'];
+  'obis-ana', 'obis-transkript', 'obis-dar-ekran', 'staj-defterim', 'staj-defterim-dar-ekran', 'hesabim'];
 
 // Dar ekran görünümü (390 × 844): d2'ye <ad>-mobil.png, tez görsellerine (varsa) 390 px genişlikte tam sayfa.
 async function darEkranCek(sayfa, ad) {
@@ -740,6 +742,10 @@ async function mevcutCekimler(tarayici) {
   await cek(sayfa, 'staj-ana');
   await git(sayfa, STAJ + '/Ogrenci/Stajlarim');
   await cek(sayfa, 'staj-stajlarim');
+  // R11 yerleşimi (gezinti yolu, ikonlu menü, koyu lacivert üst çubuk): tez için masaüstü ve 390 px dar ekran hâli.
+  await git(sayfa, STAJ + '/Ogrenci/Defter');
+  await cek(sayfa, 'staj-defterim', { mobil: false });
+  await darEkranCek(sayfa, 'staj-defterim-dar-ekran');
   await git(sayfa, STAJ + '/Komisyon/BasvuruInceleme');
   await adresiBekle(sayfa, /ErisimReddedildi/);
   await cek(sayfa, 'staj-erisim-reddedildi');

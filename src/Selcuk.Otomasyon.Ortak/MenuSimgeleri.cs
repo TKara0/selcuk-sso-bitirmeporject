@@ -49,4 +49,11 @@ public static class MenuSimgeleri
 
     /// <summary>Sprite içindeki sembolün kimliği (ör. "ms-form").</summary>
     public static string SembolKimligi(string? ad) => "ms-" + Gecerli(ad);
+
+    /// <summary>
+    /// Sprite'taki simgeyi gösteren dekoratif işaretleme (aria-hidden, odaklanamaz). Sol menü ve ana sayfadaki kısayol
+    /// listesi aynı işaretlemeyi kullanır; ad bilinmiyorsa varsayılan nokta çizilir. Kullanıcı girdisi içermez.
+    /// </summary>
+    public static string Isaret(string? ad) =>
+        $"<svg class=\"menu-simgesi\" aria-hidden=\"true\" focusable=\"false\" width=\"20\" height=\"20\"><use href=\"#{SembolKimligi(ad)}\"></use></svg>";
 }

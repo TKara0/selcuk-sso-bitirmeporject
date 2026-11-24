@@ -1,9 +1,15 @@
 @*
     Üst çubuktaki hesap menüsü: button + aria-expanded, Esc ile kapanır (selcuk.js). Yalnızca bağlantılar; form yok.
-    Listenin başında kullanıcı adı ve altında kullanıcı türü (rol kataloğundaki görünen adıyla).
+    Düğmede kullanıcının görünen adı (ad soyad, gövde yazı tipiyle; boşsa kullanıcı adı). Listenin başında görünen ad,
+    altında kullanıcı adı (Mono, ikincil) ve kullanıcı türü (rol kataloğundaki görünen adıyla).
 *@
+@inject Microsoft.AspNetCore.Identity.UserManager<Selcuk.Identity.Data.ApplicationUser> KullaniciYoneticisi
 @if (User.Identity?.IsAuthenticated == true)
 {
+    var kullaniciAdi = User.Identity.Name;
+    var adSoyad = (await KullaniciYoneticisi.GetUserAsync(User))?.AdSoyad;
+    var gorunenAd = string.IsNullOrWhiteSpace(adSoyad) ? kullaniciAdi : adSoyad.Trim();
+    var adlar = !string.Equals(gorunenAd, kullaniciAdi, StringComparison.Ordinal);
     var gecerli = ViewContext.RouteData.Values["page"] as string;
     string? Gecerli(string sayfa) => gecerli == sayfa ? "page" : null;
     var kullaniciTuru = Selcuk.Roller.Katalog.FirstOrDefault(r =>
@@ -13,12 +19,16 @@
         <button type="button" class="hesap-dugmesi" aria-expanded="false" aria-controls="hesap-listesi" data-menu-dugme>
             @Html.Raw(Simge.Kisi)
             <span class="gorunmez">Hesap menüsü:</span>
-            <span class="hesap-adi mono">@User.Identity.Name</span>
+            <span class="hesap-adi">@gorunenAd</span>
             <span class="ok">@Html.Raw(Simge.AsagiOk)</span>
         </button>
         <ul class="hesap-listesi" id="hesap-listesi" hidden>
+            @if (adlar)
+            {
+                <li class="hesap-kimligi"><p><strong>@gorunenAd</strong></p></li>
+            }
             <li class="hesap-basligi">
-                <p><strong class="mono">@User.Identity.Name</strong></p>
+                <p><strong class="mono">@kullaniciAdi</strong></p>
                 @if (kullaniciTuru is not null)
                 {
                     <p class="ipucu">@kullaniciTuru.Ad</p>

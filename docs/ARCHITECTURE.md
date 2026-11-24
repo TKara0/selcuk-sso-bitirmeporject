@@ -61,7 +61,10 @@ anahtar taşır: `OturumBiletDeposu` (`Selcuk.Istemci.Ortak`, Data Protection il
 sınıfının ad alanı `Selcuk.Istemci.Ortak`'tır. Alt uygulamaların
 "Uygulamalarım" bağlantısının adresi `KimlikSunucusuBilgisi` servisindendir (`Kimlik:Authority` kökü; yalnızca https veya
 `http://127.0.0.1`). Kimlik sunucusunun Uygulamalarım sayfası kartları istemci `grup` özelliğine göre gruplar
-(`Istemciler.Gruplar`, `KartSirasi`; grupsuz → "Diğer").
+(`Istemciler.Gruplar`, `KartSirasi`; grupsuz → "Diğer"); iki demo ve on bir otomasyonun kartında istemci kaydından gelen
+simge ve vurgu rengi (`simge`, `vurgu`; Demo OBİS "OB" mavi, Demo Yemekhane "YM" nar) bulunur. Kart açıklamaları ek not
+taşımaz; "Bölüm otomasyonları temsili ekranlardan oluşur ve örnek veri gösterir." notu yalnızca otomasyon kartı gören
+kullanıcıda, ilk otomasyon grubunun başlığının üstünde bir kez görünür (`Istemciler.OtomasyonMu`, `IndexModel.OtomasyonNotuGrupSirasi`).
 Yeni otomasyon kontrol listesi: [otomasyon-sablonu.md](otomasyon-sablonu.md).
 
 ## Yerleşim (R11: fakülte sitesinden esinlenen öğeler)
@@ -75,6 +78,12 @@ sol menü (`MenuOgesi.Simge`, tek gizli SVG sprite, simge `<li>` içinde ve `ari
 `selcuk.css`, `Selcuk.Arayuz/wwwroot` (Tek Kapı kopyası SHA-256 ile denetlenir) ve `_SelcukDuzen` değişmedi; Demo OBİS
 (kendi düzeni), Yemekhane, Demo API ve Tek Kapı etkilenmez. Gerekçe: [DECISIONS.md](DECISIONS.md). Ayrıntı:
 [otomasyon-sablonu.md](otomasyon-sablonu.md).
+
+R12 düzeltmeleri (yalnızca CSS, işaretleme ve istemci kaydı; yeni ekran yok): otomasyonlarda dar ekranda (600 px altı) tek
+satırlık üst çubuk (uygulama adı ellipsis, "Uygulamalarım" yalnızca simge, hesap düğmesi sağda, 44x44 px hedefler) ve ana
+sayfa kısayol listesinde menü simgeleri (`MenuSimgeleri.Isaret`); kimlik sunucusunda hesap düğmesi ve menü başlığında
+görünen ad (`_HesapMenusu`: `UserManager` ile `AdSoyad`, boşsa kullanıcı adı; kullanıcı adı menüde ikincil Mono satırı) ve
+Uygulamalarım'da yukarıdaki not ile Demo OBİS/Yemekhane simgeleri.
 
 ## Veri kaynakları
 

@@ -1,7 +1,8 @@
 @page
 @*
     Ortak ana sayfa: girişsiz kullanıcıya uygulamanın tanıtımı ve "Tek Şifre ile giriş yap"; giriş yapmış kullanıcıya
-    rollerine göre karşılama ve menüdeki ekranların kısayol kartları (rol başlıkları altında). Otomasyon kendi
+    rollerine göre karşılama ve menüdeki ekranların kısayolları (rol başlıkları altında; her satırın başında menüdeki
+    simge, aria-hidden). Otomasyon kendi
     Pages/Index.cshtml'ini yazarsa o kullanılır.
 *@
 @inject OtomasyonBilgisi Bilgi
@@ -40,6 +41,8 @@ else
             @foreach (var oge in gruplar[i].Ogeler)
             {
                 <li>
+                    @* Menüdeki simge (aria-hidden, bağlantının dışında; sprite düzende, _MenuSimgeleri). *@
+                    @Html.Raw(MenuSimgeleri.Isaret(oge.Simge))
                     <a class="kisayol" href="@oge.Sayfa">
                         <span class="satir-baslik">@oge.Baslik</span>
                         <span class="ipucu">@oge.Aciklama</span>

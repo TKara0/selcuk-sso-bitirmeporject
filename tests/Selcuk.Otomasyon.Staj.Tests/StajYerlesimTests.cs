@@ -84,6 +84,27 @@ public sealed class StajYerlesimTests : IDisposable
     }
 
     [Fact]
+    public async Task Dar_ekranda_ust_cubuk_tek_satir_Uygulamalarim_yalniz_simge_tam_ad_ve_metin_DOMda_44px_hedef()
+    {
+        YerlesimDenetimi.DarEkranUstCubuguDogrula(await StajFactory.MetinAsync(await Ogrenci().GetAsync("/")),
+            await CssAsync("/_content/Selcuk.Arayuz/css/selcuk.css"),
+            await CssAsync("/_content/Selcuk.Otomasyon.Ortak/css/otomasyon.css"),
+            StajOtomasyonu.Ad, StajFactory.Authority);
+    }
+
+    [Fact]
+    public async Task Ana_sayfa_kisayollarinin_simgeleri_aria_hidden_menu_simgesiyle_ayni_metin_ve_baglantilar_degismemis()
+    {
+        foreach (var rol in new[] { Roller.Ogrenci, Roller.StajKomisyonu, Roller.BolumSekreteri, Roller.BolumBaskani })
+        {
+            var html = await StajFactory.MetinAsync(await _factory.Istemci("rol.test", roller: rol).GetAsync("/"));
+            var beklenen = StajOtomasyonu.Menu.Where(o => o.Roller.Contains(rol)).Select(o => (o.Baslik, o.Sayfa, o.Aciklama, o.Simge)).ToList();
+
+            YerlesimDenetimi.KisayolSimgeleriniDogrula(html, beklenen, rol);
+        }
+    }
+
+    [Fact]
     public async Task Vurgu_cizgisi_cubugun_altinda_baslik_cizgisi_CSS_ile_cizilir()
     {
         var css = await CssAsync("/_content/Selcuk.Otomasyon.Ortak/css/otomasyon.css");

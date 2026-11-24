@@ -31,18 +31,27 @@ public class IndexModel(
         string? Vurgu = null, string? Simge = null, string? IstemciKimligi = null, string? Grup = null)
     {
         public string SimgeMetni => Simge ?? BasHarfler(Ad);
+
+        /// <summary>Kart bir bölüm otomasyonuna ait (temsili ekran notu için).</summary>
+        public bool Otomasyon => Istemciler.OtomasyonMu(IstemciKimligi);
     }
 
     /// <summary>Bir grup başlığı ve kullanıcının o gruptaki kartları (en az bir kart).</summary>
     public sealed record UygulamaGrubu(string Baslik, IReadOnlyList<UygulamaKarti> Kartlar);
 
     /// <summary>Uygulamalarım'da tanımlı vurgu renkleri (site.css); başka bir değer yok sayılır.</summary>
-    public static readonly IReadOnlySet<string> VurguRenkleri = new HashSet<string>(StringComparer.Ordinal) { "zeytin", "eflatun", "bakir", "hardal", "murdum", "arduvaz", "cam", "indigo", "petrol", "gulkurusu", "grafit" };
+    public static readonly IReadOnlySet<string> VurguRenkleri = new HashSet<string>(StringComparer.Ordinal) { "zeytin", "eflatun", "bakir", "hardal", "murdum", "arduvaz", "cam", "indigo", "petrol", "gulkurusu", "grafit", "obis", "nar" };
 
     public List<UygulamaKarti> Uygulamalar { get; } = [];
 
     /// <summary>Kartların grupları: <see cref="Istemciler.Gruplar"/> sırasıyla, en sonda "Diğer"; boş grup yok.</summary>
     public List<UygulamaGrubu> Gruplar { get; } = [];
+
+    /// <summary>
+    /// Bölüm otomasyonu kartı içeren ilk grubun <see cref="Gruplar"/>'daki sırası; temsili ekran notu o grubun başlığının
+    /// üstünde bir kez gösterilir. Kullanıcı hiçbir otomasyon kartı görmüyorsa -1 (not yok).
+    /// </summary>
+    public int OtomasyonNotuGrupSirasi => Gruplar.FindIndex(g => g.Kartlar.Any(k => k.Otomasyon));
 
     /// <summary>Karşılama başlığındaki ad: ad soyad, yoksa kullanıcı adı.</summary>
     public string Ad { get; private set; } = string.Empty;

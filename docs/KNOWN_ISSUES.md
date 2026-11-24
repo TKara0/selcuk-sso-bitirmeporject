@@ -34,5 +34,5 @@ Ek notlar:
   bilinçli denge ([DECISIONS.md](DECISIONS.md)).
 - Tek Kapı: toplantı kararıyla yeni işlere dahil edilmez ve sonra iptal edilecek ([DECISIONS](DECISIONS.md)); iptal
   tarihi belirlenmedi. O zamana kadar R11 geçerli.
-- Test kapsamı 2026-11-24'te 18 proje için yeniden ölçüldü (`docs/test-kapsami.md`); "yalnızca kendi test projesi" sütunu hesaplanmadı. `Selcuk.Olcum` dal kapsamı %57,7 (tek %60 altı değer).
+- Test kapsamı 2026-11-25'te (R12) 18 test projesiyle yeniden ölçüldü: satır %92,1, dal %78,0 (`docs/test-kapsami.md`); "yalnızca kendi test projesi" sütunu hesaplanmadı. `Selcuk.Olcum` dal kapsamı %57,7 (tek %60 altı değer).
 - Performans ölçümünde tek kullanıcılı süreler ölçüm anındaki ortama duyarlı: 26 Ekim'deki ilk giriş p50 123 ms, aynı kod bugün aynı makinede 207 ms verdi; Release ile Debug arasında fark yok (`docs/olcumler/derleme-karsilastirmasi-2026-11-24.md`). Nedeni ölçülmedi; tezde aynı gün alınmış ölçümler karşılaştırılmalı.

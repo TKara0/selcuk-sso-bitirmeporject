@@ -230,7 +230,15 @@ public sealed class OtomasyonIstemcileriTests : IDisposable
     public async Task Simge_kayittan_geliyor_simgesiz_veya_gecersiz_simgede_addan_uretiliyor()
     {
         await KaydetAsync(Istemciler.StajOtomasyonu);
-        await KaydetAsync(Istemciler.DemoObis);
+        // Simgesiz ve vurgusuz kayıt: Demo OBİS artık kendi simgesini ve vurgusunu taşıdığı için (UygulamalarimGorunumuTests)
+        // bu kontrol, o özellikleri silinmiş bir kopyayla yapılır; beklenen çıktı (addan üretilen "DO") aynıdır.
+        await KaydetAsync(secret =>
+        {
+            var tanim = Istemciler.DemoObis(secret);
+            tanim.Properties.Remove(Istemciler.SimgeOzelligi);
+            tanim.Properties.Remove(Istemciler.VurguOzelligi);
+            return tanim;
+        });
         // Geçersiz simge (iki harften uzun): addan üretilir.
         await KaydetAsync(secret =>
         {

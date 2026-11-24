@@ -131,9 +131,11 @@ değerlerle (`Örnek QR`, `ABCD EFGH …`, `ORNEK-00001` …). Görüntülerdeki
 Dosya adı `<ekran>-acik.png`, `<ekran>-koyu.png`, `<ekran>-mobil.png` (menü açık ve kurtarma modu ekranlarında
 mobil yok).
 
-91 ekran, 266 dosya (2026-11-24'te toplu yenilendi: Uygulamalarım gruplu hâliyle, demolarda ve otomasyonlarda "Uygulamalarım"
-dönüş bağlantısıyla, Güvenlik geçmişinde IP adresi gövde yazı tipiyle). Aşağıdaki tablo kimlik sunucusu, demolar ve Tek Kapı
-ekranlarını; otomasyon ekranları sonraki bölümleri listeler.
+96 ekran, 276 dosya (2026-11-25'te R12'de toplu yenilendi: hepsi aynı dosya adlarıyla; R11 yerleşimi (koyu lacivert üst çubuk,
+başlık çizgisi, gezinti yolu, ikonlu menü), R12 düzeltmeleri (otomasyonlarda 390 px'te tek satırlık üst çubuk ve "Uygulamalarım"
+simgesi, ana sayfa kısayollarında menü simgeleri, hesap düğmesinde görünen ad, Uygulamalarım'da tek not satırı ve Demo OBİS "OB" /
+Demo Yemekhane "YM" simgeleri) görüntülerde görünür. Yeni: Hesabım, Staj defterim ve Staj defterim dar ekran). Aşağıdaki tablo
+kimlik sunucusu, demolar ve Tek Kapı ekranlarını; otomasyon ekranları sonraki bölümleri listeler.
 
 | Uygulama | Ekran | Dosya önü | Mobil |
 |---|---|---|---|
@@ -150,11 +152,14 @@ ekranlarını; otomasyon ekranları sonraki bölümleri listeler.
 | Staj Otomasyonu | Üst çubuk: "Uygulamalarım" dönüş bağlantısı (yalnızca üst çubuk) | `staj-uygulamalarim-baglantisi` | ✓ |
 | Staj Otomasyonu | Ana sayfa | `staj-ana` | ✓ |
 | Staj Otomasyonu | Stajlarım (öğrenci) | `staj-stajlarim` | ✓ |
+| Staj Otomasyonu | Staj defterim (öğrenci; gezinti yolu ve ikonlu menü) | `staj-defterim` | — |
+| Staj Otomasyonu | Staj defterim, 390 px dar ekran (tek satırlık üst çubuk) | `staj-defterim-dar-ekran` | ✓ (yalnızca mobil) |
 | Staj Otomasyonu | Başvuru inceleme (komisyon) | `staj-basvuru-inceleme` | ✓ |
 | Staj Otomasyonu | Temsili işlem mesajı | `staj-temsili-islem` | — |
 | Staj Otomasyonu | Özet (bölüm başkanı) | `staj-ozet` | ✓ |
 | Staj Otomasyonu | Erişim reddedildi | `staj-erisim-reddedildi` | ✓ |
 | Kimlik sunucusu | Uygulamalarım, hesap menüsü açık | `hesap-menusu` | — |
+| Kimlik sunucusu | Hesabım (gezinti yolu, görünen ad) | `hesabim` | ✓ |
 | Kimlik sunucusu | 2FA kurulumu | `iki-adim-kurulum` | ✓ |
 | Kimlik sunucusu | Kurtarma kodları | `kurtarma-kodlari` | ✓ |
 | Kimlik sunucusu | Güvenlik geçmişi | `guvenlik-gecmisi` | ✓ |
@@ -370,3 +375,15 @@ Gözden geçirmede düzeltilenler: İŞKUR Takip tablosu altı sütunla 1440px't
 devam/planlanan saat tek hücrede, uyarı ile durum rozeti tek "Uyarı ve durum" hücresinde birleştirildi. Görüşme
 talebi, Devam girişi formları ve Raporlar / Bölüm geneli'ndeki Yazdır düğmesi altındaki başlığa yapışıktı; bölüm
 (`section`) içine alındı. Çıktı bazlı analizde sütun başlıkları kısaltıldı ("Ders ve dönem", "Geçme oranı").
+
+## R12: Demo OBİS ve Demo Yemekhane Uygulamalarım simgeleri
+
+Uygulamalarım'da iki demo kartı da varsayılan firuze simgeyle çıkıyordu; istemci kayıtlarına `simge` ve `vurgu` eklendi
+(`Istemciler.DemoObis`, `Istemciler.DemoYemekhane`; kimlik sunucusunun `site.css`'inde `.uygulama-simge-obis` ve
+`.uygulama-simge-nar`, `IndexModel.VurguRenkleri`). Metin (simge harfleri) / zemin kontrastı (WCAG; `UygulamalarimGorunumuTests`
+denetler, eşik 4,5:1):
+
+| Uygulama | Simge | Açık tema: metin / zemin | Oran | Koyu tema: metin / zemin | Oran |
+|---|---|---|---:|---|---:|
+| Demo OBİS (`obis`, kendi arayüzündeki şerit mavisi) | OB | #2A6AB0 / #E4EEF8 | 4,72 | #9CC7F2 / #16324D | 7,43 |
+| Demo Yemekhane (`nar`) | YM | #9C3D54 / #F7E4E9 | 5,37 | #E99AAE / #3B1E28 | 6,92 |

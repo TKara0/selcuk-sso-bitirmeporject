@@ -51,6 +51,10 @@ app.UseSelcukOtomasyon();
   solda rol başlıklı menü (dar ekranda "Menü" düğmesi; betik kapalıysa açık), temsili işlem mesajı ve alt bilgide veri
   kaynağı rozeti ("Veri: örnek veri" / "Veri: API"). Stiller `otomasyon.css`'te (bu kütüphane); `selcuk.css`
   değiştirilmez. Firuze ve kapı işareti yalnızca kimlik öğelerinde (hesap menüsü, "Tek Şifre ile giriş yap").
+  **Dar ekranda (600 px altı, R12) üst çubuk tek satırdır:** uygulama adı solda tek satırda kısaltılır (ellipsis; metin
+  DOM'da tam kalır, ekran okuyucu tam adı okur), "Uygulamalarım" bağlantısı yalnızca ızgara simgesi olur (CSS ile çizilir;
+  metin `font-size: 0` ile görsel olarak gizli ama erişilebilirlik ağacında durur, işaretleme ve CSP değişmez), hesap
+  düğmesi sağa yaslanır; dokunma hedefleri en az 44x44 px. Geniş ekran görünümü değişmez. Testler `DarEkranUstCubuguDogrula`.
 - **Menü ve yetki tek tanımdan:** her `MenuOgesi` başlık, sayfa yolu, kısa açıklama ve rolleri taşır. Kullanıcı
   rollerinden en az birine açık öğeleri, rol başlıkları altında (katalog sırasıyla) görür; birden çok rolü olan
   birleşimi görür. Aynı roller sayfanın yetki ilkesidir: menüde görünmeyen ekrana adresle gidilince
@@ -77,7 +81,9 @@ app.UseSelcukOtomasyon();
     bilgi, kurul, defter, arama, eslestirme, kontrol (16 genel çizgi simgesi) ve ikonsuz veya bilinmeyen adda varsayılan
     `nokta`. Sayfaya `_MenuSimgeleri` ile tek gizli SVG sprite olarak yazılır (`<symbol id="ms-ad">`; harici dosya, kütüphane,
     satır içi stil yok), her öğe `<use href="#ms-ad">` kullanır. Simge `aria-hidden="true"`'dur ve `<a>`'nın dışında, `<li>`
-    içindedir: bağlantının metni ve işaretlemesi değişmez, tıklanabilir alan CSS ile satıra genişler. Menü ve içerik beyaz,
+    içindedir: bağlantının metni ve işaretlemesi değişmez, tıklanabilir alan CSS ile satıra genişler. Ana sayfadaki kısayol
+    listesinin her satırı da aynı simgeyle başlar (R12; `MenuSimgeleri.Isaret`, aynı sprite, `aria-hidden`, bağlantı metni ve
+    adresi değişmez). Menü ve içerik beyaz,
     köşeleri yuvarlatılmış kartlardır; ayrım ince kenarlıkla (gölge yok), öğeler arasında ince ayraç. Menüde alt menü
     olmadığı için açılır ok yoktur.
   - Yeni otomasyon eklerken her `MenuOgesi`'ne anlamlı bir `Simge` ver (testler varsayılan noktayı kabul etmez).
@@ -124,7 +130,10 @@ karşılığına bakın.
    Uygulamalarım'da kartın altında göründüğü başlıktır: `Istemciler.GrupOgrenciIsleri`, `GrupKurullar` veya `GrupKalite`;
    yeni bir grup gerekirse `Istemciler.Gruplar`'a eklenir. Grup içi sıra için `Istemciler.KartSirasi`'na istemci kimliği
    eklenir, eklenmezse kart grubunun sonuna ada göre girer. `grup` verilmezse veya tanımsızsa kart "Diğer" altında
-   görünür); kapsam tanımları
+   görünür). İstemci kimliği `-otomasyonu` ile biter (`Istemciler.OtomasyonMu`); `aciklama` tek cümledir ve "temsili, örnek
+   veri" eki içermez: bu bilgi Uygulamalarım sayfasında ilk otomasyon grubunun başlığının üstündeki tek not satırındadır
+   ("Bölüm otomasyonları temsili ekranlardan oluşur ve örnek veri gösterir."; yalnızca otomasyon kartı gören kullanıcıda,
+   bir kez); kapsam tanımları
    (`Resources = { "<ad>-api" }`) ve Program.cs `RegisterScopes`. `BaslangicVerisi`'nde kapsamlar (her ortam) ve
    `IstemciKaydetAsync(…, "Istemciler:<Ad>:ClientSecret", …)` (Development). Sır user-secrets'ta: kimlik sunucusunda
    `Istemciler:<Ad>:ClientSecret`, otomasyonda `Kimlik:ClientSecret` (aynı rastgele değer, ekrana yazdırmadan).
@@ -153,7 +162,8 @@ karşılığına bakın.
     çoğu kendiliğinden gelir; kapsam ve şart testleri otomasyonun kendi sınıfında:
     menü (her rol yalnızca kendi öğeleri, çok rollü birleşim), adresle yetki reddi, kapsam (öğrenci kendi kaydı, başka
     bölüm görünmez), temsili işlem (antiforgery'siz 400; mesaj ve değişmeyen veri), Mock/Api seçimi, Api modu (Bearer,
-    hata sayfaları), güvenlik başlıkları ve `no-store`, Back-Channel Logout, vurgu kontrastı. Kimlik sunucusunda:
+    hata sayfaları), güvenlik başlıkları ve `no-store`, Back-Channel Logout, vurgu kontrastı, dar ekranda tek satırlık üst
+    çubuk ve kısayol simgeleri. Kimlik sunucusunda:
     kayıt, izinsiz rollerin `access_denied`'ı, izinli rollerin token'ı (`aud` `<ad>-api`), Uygulamalarım kartı.
 12. **Belgeler.** README (adres ve hangi test kullanıcısının hangi ekranları gördüğü), mimari.md tablosunda durum
     "var", AGENTS.md mimari bölümü, test-kapsami.md sayıları, `scripts/ekran-goruntuleri.mjs`'e temsili ekranlar.

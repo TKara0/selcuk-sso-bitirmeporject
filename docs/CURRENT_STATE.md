@@ -1,7 +1,7 @@
 # CURRENT_STATE
 
-Son güncelleme: 2026-11-25 (R11, fakülte sitesinden esinlenen yerleşim).
-Son commit: bu belgeyi içeren "Fakülte sitesinden esinlenen yerleşim: üst çubuk, başlık çizgisi, gezinti yolu, ikonlu menü" (öncesi `b8508ef`);
+Son güncelleme: 2026-11-25 (R12, son arayüz düzeltmeleri, güncel kod kapsamı ve ekran görüntülerinin yenilenmesi).
+Son commit: bu belgeyi içeren "Son arayüz düzeltmeleri, güncel kod kapsamı ve ekran görüntülerinin yenilenmesi" (öncesi `62636b6`);
 hash için `git log -1`. Dal `main`.
 
 ## Çalışanlar (kodda var ve testle kapsanıyor)
@@ -30,11 +30,34 @@ hash için `git log -1`. Dal `main`.
 
 ## Doğrulama durumu
 
-- Bu adımda çalıştırıldı ve geçti: `dotnet build` (0 uyarı), `dotnet test SelcukSSO.sln` (varsayılan paralel; 18 .NET test projesi, **928** test), Tek Kapı
+- Bu adımda çalıştırıldı ve geçti: `dotnet build` (0 uyarı), `dotnet test SelcukSSO.sln` (varsayılan paralel; 18 .NET test projesi, **970** test), Tek Kapı
   `npm test` (**49** kontrol: 35 + 14). Sayılar `docs/test-kapsami.md`'de.
-- Kod kapsamı 2026-11-24'te 18 proje için ölçüldü: satır %91,7, dal %77,4 (`docs/test-kapsami.md`); bu adımda yeniden ölçülmedi.
+- Kod kapsamı 2026-11-25'te (R12) 18 test projesiyle yeniden ölçüldü: satır %92,1 (10301 / 11180), dal %78,0 (2962 / 3797);
+  tablo 20 kaynak projeyi (Demo OBİS dahil) kapsar, 2026-11-24 değerleri (%91,7 / %77,4) `docs/test-kapsami.md`'de önceki ölçüm notu olarak durur.
 
-## Bu adımın değişiklikleri (R11, fakülte sitesinden esinlenen yerleşim)
+## Bu adımın değişiklikleri (R12, son arayüz düzeltmeleri, kapsam ve ekran görüntüleri)
+
+- **A1 (otomasyonlar):** 600 px altında üst çubuk tek satır: uygulama adı ellipsis (metin DOM'da tam), "Uygulamalarım"
+  yalnızca ızgara simgesi (CSS ile çizilir; metin `font-size: 0` ile görsel olarak gizli ama ekran okuyucuya açık), hesap
+  düğmesi sağda, 44x44 px hedefler. Yalnızca `otomasyon.css`; işaretleme değişmedi (mevcut testler `<span>Ad</span>` ve
+  `<a class="uygulamalarim-baglantisi" …>Uygulamalarım</a>` biçimini sabitliyor). Geniş ekran aynı.
+- **A2:** ana sayfadaki kısayol listesinde menü simgeleri (`MenuSimgeleri.Isaret`; `aria-hidden`, bağlantı metni ve adresi aynı).
+- **A3 (kimlik sunucusu):** hesap düğmesinde görünen ad (ad soyad, gövde yazı tipi; boşsa kullanıcı adı); menüde görünen ad,
+  altında kullanıcı adı (Mono, ikincil) ve kullanıcı türü. Açılır liste başlığı üst çubuktan açık renk miras alıyordu (beyaz
+  zeminde okunmuyordu); mürekkep rengi verildi.
+- **A4:** 11 otomasyon kartının açıklamasından "(temsili, örnek veri)" eki çıkarıldı; ilk otomasyon grubunun başlığının
+  üstünde tek satırlık not ("Bölüm otomasyonları temsili ekranlardan oluşur ve örnek veri gösterir."), yalnızca otomasyon
+  kartı gören kullanıcıda ve bir kez. Otomasyonların kendi "Temsili ekran" bandı değişmedi.
+- **A5:** Demo OBİS "OB" (`obis`, #2A6AB0 / #E4EEF8 açık 4,72:1, #9CC7F2 / #16324D koyu 7,43:1) ve Demo Yemekhane "YM" (`nar`,
+  #9C3D54 / #F7E4E9 açık 5,37:1, #E99AAE / #3B1E28 koyu 6,92:1) simge ve vurgu (istemci kaydı, `site.css`, `IndexModel.VurguRenkleri`).
+- Kod kapsamı yeniden ölçüldü (yukarıda), bütün ekran görüntüleri ve tez görselleri yenilendi: 96 ekran, `docs/tasarim/d2` 276
+  PNG, tez 01-44 (yeni: 42 Staj defterim, 43 aynı ekran 390 px, 44 Hesabım; d2'ye Hesabım, Staj defterim eklendi).
+  Görüntülerde gerçek veri yok (kurgusal test numaraları, `@test.local`, Tek Kapı'da sahte bilgiler).
+- Testler: 928 → 970 (+42: Identity +10, Staj +2, 10 otomasyonun ortak tabanında +3 × 10); hiçbiri silinmedi. Tek istisna:
+  `OtomasyonIstemcileriTests.Simge_kayittan_geliyor_…` testinin "simgesiz kayıt" kurulumu (Demo OBİS artık simge taşıdığı için
+  simge/vurgu özelliği silinmiş kopyası kaydedilir; assert'ler aynı).
+
+## Önceki adım (R11, fakülte sitesinden esinlenen yerleşim)
 
 - Kimlik sunucusu sayfalarına ve bölüm otomasyonlarının ortak düzenine fakülte sitesinin sayfa yerleşiminden dört öğe
   eklendi (yeniden tasarım değil; renkler `selcuk.css` token'ları, yazı tipi aynı; gerekçe ve neden kopyalanmadığı
@@ -49,7 +72,7 @@ hash için `git log -1`. Dal `main`.
 - `start.py` tutarlılık testi (`StartPyTutarlilikTests`): start.py'deki test kullanıcıları, roller ve kullanıcı-uygulama
   eşlemesi koddakiyle karşılaştırıldı; **uyuşmazlık çıkmadı**, start.py değişmedi.
 - `scripts/ekran-goruntuleri.mjs`: `--cikti <klasör>` (docs dışına yazar, docs PNG'lerine dokunmaz) ve `--ekranlar <ad,...>`
-  eklendi; yeni `hesabim` ekranı. docs/ altındaki PNG'ler bu adımda yenilenmedi (toplu yenileme sonraki adımda); önizleme
+  eklendi; yeni `hesabim` ekranı. docs/ altındaki PNG'ler R11'de yenilenmedi (R12'de toplu yenilendi); önizleme
   `TestResults/onizleme/` (`.gitignore`'da).
 - Testler: 818 → 928 (+110: Identity +7, Otomasyon.Ortak +17, Staj +6, 10 otomasyonun ortak tabanında +8 × 10); hiçbiri
   silinmedi, hiçbiri zayıflatılmadı ve değiştirilmedi.

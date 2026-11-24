@@ -68,6 +68,42 @@
     color: var(--ust-soluk);
 }
 
+/* Hesap düğmesindeki görünen ad (ad soyad, gövde yazı tipi; uzunsa kısalır) ve menüde en üstteki ad satırı. Altındaki
+   kullanıcı adı (Mono) ikincil satırdır: normal ağırlık, soluk renk (--soluk yüzeyde AA). Görünen ad yoksa menüde bu
+   satır olmaz, kullanıcı adı eskisi gibi kalın yazılır. */
+.ust-cubuk .hesap-adi {
+    max-width: 22ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Açılır liste üst çubuğun içindedir ve oradan açık metin rengini miras alır; başlık satırları (ad ve kullanıcı adı)
+   beyaz zeminde okunsun diye mürekkep rengi verilir (bağlantı ve düğme satırları zaten mürekkep). */
+.hesap-kimligi,
+.hesap-basligi {
+    color: var(--murekkep);
+}
+
+.hesap-kimligi {
+    padding: var(--a2) var(--a4) 0;
+}
+
+.hesap-kimligi p {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.hesap-kimligi + .hesap-basligi {
+    padding-top: 0;
+}
+
+.hesap-kimligi + .hesap-basligi .mono {
+    color: var(--soluk);
+    font-size: var(--boyut-kucuk);
+    font-weight: 400;
+}
+
 .ust-cubuk .etiket-notr {
     color: var(--ust-soluk);
     background: transparent;
@@ -144,6 +180,16 @@ main h1::after,
    mevcut düzenle akar. */
 .uygulama-grubu + .uygulama-grubu {
     margin-top: var(--a8);
+}
+
+/* Bölüm otomasyonlarının temsili ekran notu: ilk otomasyon grubunun başlığının üstünde tek satır; ondan sonraki grup
+   bölümü aralığı notun kendisinden alır. */
+.otomasyon-notu {
+    margin: var(--a8) 0 var(--a2);
+}
+
+.otomasyon-notu + .uygulama-grubu {
+    margin-top: 0;
 }
 
 .grup-baslik {
@@ -228,6 +274,16 @@ main h1::after,
     background: #E6E9EB;
 }
 
+.uygulama-simge-obis {
+    color: #2A6AB0;
+    background: #E4EEF8;
+}
+
+.uygulama-simge-nar {
+    color: #9C3D54;
+    background: #F7E4E9;
+}
+
 @media (prefers-color-scheme: dark) {
     .uygulama-simge-zeytin {
         color: #A9C98B;
@@ -282,6 +338,16 @@ main h1::after,
     .uygulama-simge-grafit {
         color: #B3C0C8;
         background: #232A2F;
+    }
+
+    .uygulama-simge-obis {
+        color: #9CC7F2;
+        background: #16324D;
+    }
+
+    .uygulama-simge-nar {
+        color: #E99AAE;
+        background: #3B1E28;
     }
 }
 

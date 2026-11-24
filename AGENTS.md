@@ -44,7 +44,8 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
     `openid profile roles`, adresler `http://127.0.0.1:4545/...` (RFC 8252 loopback); izinli kullanıcılar
     `Istemciler:TekKapi:IzinliKullaniciAdlari` (appsettings.Development.json; boşsa varsayılan `["203011001"]`).
     Özel ayarlar (`backchannel_logout_uri`, `client_uri`, `initiate_login_uri`, `aciklama`, `izinliRoller`,
-    `izinliKullaniciAdlari`, `vurgu`) OpenIddict `Properties` alanında. `staj-otomasyonu` (gizli, Development'ta
+    `izinliKullaniciAdlari`, `vurgu`) OpenIddict `Properties` alanında. `demo-obis`: simge "OB", vurgu `obis` (kendi
+    arayüzündeki şerit mavisi #2A6AB0); `demo-yemekhane`: "YM", vurgu `nar` (#9C3D54); kontrast en az 4,5:1 (açık ve koyu). `staj-otomasyonu` (gizli, Development'ta
     kaydedilir, secret user-secrets): `izinliRoller` ogrenci, staj_komisyonu, bolum_sekreteri, bolum_baskani; `vurgu`
     "zeytin" (Uygulamalarım simgesi, `IndexModel.VurguRenkleri` + site.css); `staj.oku`/`staj.yaz` kapsamları
     (`aud` `staj-api`, her ortamda açılışta oluşturulur; API henüz yok). `intibak-otomasyonu` (5301),
@@ -57,7 +58,10 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
     üretir (`BasHarfler`). `grup` özelliği (Demo OBİS/Yemekhane "Kampüs uygulamaları"; İntibak, Staj, Mezuniyet,
     ÇAP-Yandal, Danışmanlık, Lisans Projeleri, İŞKUR "Öğrenci işleri"; Etik Kurul, Bölüm Kurul "Kurullar ve
     komisyonlar"; MÜDEK, Sınav Analizi "Kalite ve analiz"; `Istemciler.Gruplar`, `KartSirasi`): Uygulamalarım kartları
-    h2 başlıklı gruplara ayırır, kartı olmayan grup gösterilmez, grubu olmayan (Tek Kapı dahil) sonda "Diğer". `etik-kurul-otomasyonu` (5303; akademisyen/etik_kurul_uyesi/bolum_baskani, "murdum", "EK"),
+    h2 başlıklı gruplara ayırır, kartı olmayan grup gösterilmez, grubu olmayan (Tek Kapı dahil) sonda "Diğer". Kart
+    açıklamaları ek not taşımaz; "Bölüm otomasyonları temsili ekranlardan oluşur ve örnek veri gösterir." notu yalnızca
+    otomasyon kartı (`Istemciler.OtomasyonMu`: kimlik `-otomasyonu` ile biter) gören kullanıcıda, ilk otomasyon grubunun
+    başlığının üstünde bir kez görünür (`IndexModel.OtomasyonNotuGrupSirasi`). `etik-kurul-otomasyonu` (5303; akademisyen/etik_kurul_uyesi/bolum_baskani, "murdum", "EK"),
     `bolum-kurul-otomasyonu` (5305; bolum_baskani/bolum_kurulu_uyesi/bolum_sekreteri/fakulte_sekreteri, "arduvaz", "BK"),
     `lisans-projeleri-otomasyonu` (5309; ogrenci/akademisyen/bolum_baskani, "cam", "LP"): aynı biçimde, kapsamlar
     `etik-kurul.*`, `bolum-kurul.*`, `lisans-projeleri.*`. `danismanlik-otomasyonu` (5306; danisman/ogrenci/
@@ -83,7 +87,9 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   - **EF Core + SQL Server** (geliştirmede LocalDB, veritabanı `SelcukSSO`). Identity, OpenIddict,
     `IstemciOturumlari` ve `DenetimKayitlari` tabloları aynı `ApplicationDbContext` içinde.
   - **Razor Pages** (Türkçe arayüz, `sen` hitabı; düzen `Selcuk.Arayuz`'un `_SelcukDuzen`'i, kimlik sunucusuna özel
-    yerleşimler `wwwroot/css/site.css`'te yalnızca token'larla; üst çubukta hesap menüsü `_HesapMenusu`, form yok):
+    yerleşimler `wwwroot/css/site.css`'te yalnızca token'larla; üst çubukta hesap menüsü `_HesapMenusu`, form yok; düğmede
+    kullanıcının görünen adı (ad soyad, gövde yazı tipi; boşsa kullanıcı adı), menüde görünen adın altında kullanıcı adı
+    (Mono, ikincil satır) ve kullanıcı türü):
     Uygulamalarım (ana sayfa; ayırıcı çizgili satırlar, "Aç" `initiate_login_uri?iss=…`), Giriş, Girişin
     ikinci adımı (2FA), Şifremi unuttum, Şifre sıfırlama, Hesabım ("Rollerin" bölümü; hesap menüsünde kullanıcı
     türü), Şifre değiştir, İki aşamalı doğrulama, Ek doğrulama (step-up), Güvenlik geçmişi, Onay ("Hesabı değiştir" = aynı istek `prompt=login`), Çıkış, Erişim reddedildi. Giriş
@@ -192,8 +198,10 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   ekran sayfaları değişmez; giriş, çıkış, hata, erişim reddedildi ve girişsiz sayfalarda yok), **ikonlu sol menü**
   (`MenuOgesi.Simge` isteğe bağlı; `MenuSimgeleri` 16 genel çizgi simgesi + varsayılan nokta, sayfaya `_MenuSimgeleri`
   ile tek gizli SVG sprite olarak yazılır, öğeler `<use href="#ms-ad">`; simge `aria-hidden` ve bağlantının dışındadır,
-  bağlantı metni ve işaretlemesi değişmez, tıklanabilir alan CSS ile satıra genişler) ve beyaz, yuvarlatılmış, ince
-  kenarlıklı (gölgesiz) menü ve içerik kartları. `_OtomasyonDuzen` (`_SelcukDuzen` üstünde;
+  bağlantı metni ve işaretlemesi değişmez, tıklanabilir alan CSS ile satıra genişler; ana sayfadaki kısayol listesinin
+  satırları da aynı simgeyle başlar, `MenuSimgeleri.Isaret`) ve beyaz, yuvarlatılmış, ince kenarlıklı (gölgesiz) menü ve
+  içerik kartları. **Dar ekranda (600 px altı) üst çubuk tek satır** (R12): uygulama adı ellipsis, "Uygulamalarım"
+  yalnızca ızgara simgesi (metin `font-size: 0` ile görsel olarak gizli, DOM'da durur), hesap düğmesi sağda, 44x44 px hedefler. `_OtomasyonDuzen` (`_SelcukDuzen` üstünde;
   üst çubukta giriş yapmış kullanıcıya "Uygulamalarım" bağlantısı (`OtomasyonBilgisi.KimlikSunucusuAdresi`,
   `Kimlik:Authority` kökü; yalnızca https veya `http://127.0.0.1`); sabit "Temsili ekran" bandı, solda rol başlıklı menü, dar ekranda selcuk.js `data-menu`, betiksizse
   `otomasyon-betiksiz.css`; TempData mesajı; alt bilgide `AltBilgiEk` bölümüyle veri rozeti). `KullaniciKapsami`
@@ -279,7 +287,9 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   loopback, back-channel), uygulama bazlı erişim izni, istemci bazlı 2FA şartı (step-up), önbellek, token budama,
   refresh mutlak sınırı, ölçüm hız sınırı gevşetmesi ve rol modeli (`RolModeliTests`: doğrulayıcı, seed, role dizisi,
   Hesabım, 2FA'nın hiçbir rolde zorunlu olmaması), yerleşim (`YerlesimTests`: gezinti yolu yalnızca Hesabım
-  sayfalarında, üst çubuk kontrastı, giriş sayfasında harici görsel/logo yok) ve `StartPyTutarlilikTests` (start.py'deki
+  sayfalarında, üst çubuk kontrastı, giriş sayfasında harici görsel/logo yok), `UygulamalarimGorunumuTests` (R12: hesap
+  düğmesinde görünen ad ve kullanıcı adına düşme, kart açıklamalarında ek yok, otomasyon notu, Demo OBİS/Yemekhane simgesi ve
+  kontrastı) ve `StartPyTutarlilikTests` (start.py'deki
   test kullanıcıları, roller ve kullanıcı-uygulama eşlemesi koddaki `BaslangicVerisi`/`Istemciler` ile aynı mı; uyuşmazlıkta
   hangi kullanıcıda ne farklı olduğunu yazar) testleri.
   `IstemciMfaTests` "yalnızca şifreyle açılmış oturum + 2FA açık" durumunu, 2FA'yı depoya güvenlik damgasını
@@ -311,7 +321,8 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   yalnızca personel verir); Etik Kurul, Bölüm Kurul, Lisans Projeleri, Danışmanlık, İŞKUR, MÜDEK ve Sınav Analizi test
   projeleri de aynı; kapsam ve şart testleri `<Ad>EkranTests`'te. Kimlik sunucusu tarafı `OtomasyonIstemcileriTests`,
   `KurulVeProjeIstemcileriTests` ve `KalanOtomasyonIstemcileriTests` (kayıt, access_denied, aud, kart, simge).
-  R11 yerleşim testleri (gezinti yolu, menü simgeleri, üst çubuk kontrastı, başlık çizgisi) `OtomasyonTemelTestleri.Yerlesim.cs`'te
+  R11 yerleşim testleri (gezinti yolu, menü simgeleri, üst çubuk kontrastı, başlık çizgisi) `OtomasyonTemelTestleri.Yerlesim.cs`'te,
+  R12 testleri (dar ekranda tek satırlık üst çubuk, kısayol simgeleri) `OtomasyonTemelTestleri.UstCubuk.cs`'te
   (10 otomasyon); denetimler `tests/Selcuk.Otomasyon.TestOrtak/YerlesimDenetimi*.cs` (ad alanı `Selcuk.TestYardimcilari`; saf
   işlevler) ve bunu Staj (`StajYerlesimTests`, kendi fabrikasıyla) ve Identity test projeleri de bağlantıyla derler.
 - `tests/Selcuk.Demo.Obis.Tests`, `tests/Selcuk.Demo.Yemekhane.Tests`: yönlendirme, rol, önbellek (`no-store`), ortak
@@ -358,7 +369,7 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   yalnızca kendi süreçlerini durdurur ve veritabanını siler. `--sadece <gruplar>` (kimlik, obis, yemekhane, staj,
   tekkapi, intibak, mezuniyet, cap, etik-kurul, bolum-kurul, lisans-projeleri, danismanlik, iskur, mudek,
   sinav-analizi) yalnızca o grupları çeker ve yalnızca onların eski PNG'lerini siler; verilmezse hepsi. Tez görselleri
-  01-34.
+  01-44 (42-44: R11 yerleşimi, Staj defterim masaüstü ve 390 px, Hesabım).
 - `scripts/run-all.ps1`: önce `dotnet build SelcukSSO.sln` (başarısızsa durur), sonra kimlik sunucusu, iki demo,
   Demo API ve on bir bölüm otomasyonunu (5301-5311) ayrı pencerelerde `dotnet run --no-build` ile başlatır; `-TekKapi` ile Tek Kapı'yı da SSO modunda
   başlatır; `-TarayiciAcma` ile sonda tarayıcı açılmaz. `-Sadece <adlar>` yalnızca seçili uygulamaları başlatır

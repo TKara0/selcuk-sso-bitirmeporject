@@ -5,8 +5,7 @@
     var gecerli = ViewContext.RouteData.Values["page"] as string;
     string? Gecerli(string sayfa) => string.Equals(gecerli, sayfa, StringComparison.OrdinalIgnoreCase) ? "page" : null;
     // Dekoratif simge (aria-hidden); kimlik sprite'tan (_MenuSimgeleri), ad bilinmiyorsa varsayılan nokta.
-    Microsoft.AspNetCore.Html.IHtmlContent Simgesi(string? ad) => new Microsoft.AspNetCore.Html.HtmlString(
-        $"<svg class=\"menu-simgesi\" aria-hidden=\"true\" focusable=\"false\" width=\"20\" height=\"20\"><use href=\"#{MenuSimgeleri.SembolKimligi(ad)}\"></use></svg>");
+    Microsoft.AspNetCore.Html.IHtmlContent Simgesi(string? ad) => new Microsoft.AspNetCore.Html.HtmlString(MenuSimgeleri.Isaret(ad));
 }
 <ul>
     <li>@Simgesi("ana-sayfa")<a href="/" aria-current="@Gecerli("/Index")">Ana sayfa</a></li>
