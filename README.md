@@ -7,7 +7,7 @@ Bitirme projesi: fakülte ve bölüm web uygulamaları için merkezi kimlik sunu
 > kullanıcı adı ve şifre ile güvenli bir şekilde tüm alt uygulamalara giriş yapabilir. Token tabanlı (JWT vb.) oturum
 > yönetimini, şifre sıfırlama vb. özelliklere sahiptir."
 
-Depoda şu an **kimlik sunucusu**, ona OpenID Connect ile bağlanan iki alt uygulama (**Demo OBİS**, **Demo Yemekhane**),
+Depoda şu an **kimlik sunucusu**, ona OpenID Connect ile bağlanan iki alt uygulama (**Demo OBİS**, **Demo Yemekhane**), on bir bölüm otomasyonu (temsili ekranlar, örnek veri; [Bölüm otomasyonları](#bölüm-otomasyonları)),
 bu uygulamaların ortak istemci kütüphanesi ve access token'ı doğrulayan bir kaynak sunucusu (**Demo API**) var. **Tek giriş** (bir kez giriş, diğer uygulamalara şifresiz geçiş),
 OIDC Back-Channel Logout ile **tek çıkış** (bir uygulamadan çıkınca hepsinden çıkış), e-postayla **şifre sıfırlama**,
 **şifre değiştirme**, TOTP tabanlı **iki aşamalı doğrulama** (2FA), güvenlik olaylarının **denetim kaydı** ve
@@ -158,6 +158,25 @@ değerine bakın:
 | `etik.test` | akademisyen, etik_kurul_uyesi | `Etik` |
 | `koordinator.test` | akademisyen, cap_yandal_koordinatoru, danisman | `Koordinator` |
 | `iskur.test` | personel, iskur_sorumlusu | `Iskur` |
+
+**Kullanıcı başına görülen uygulamalar** (kimlik sunucusunun Uygulamalarım sayfası; `izinliRoller`'dan, bölüm başkanı ve öğrenci
+düzenleri `UygulamalarimGruplariTests` ve `docs/tez-gorselleri/35-36` ile doğrulanır):
+
+| Kullanıcı | Uygulamalarım'da gördüğü uygulamalar (Demo OBİS ve Demo Yemekhane herkese açık; ayrıca) |
+|---|---|
+| `203011001` | İntibak, Staj, Mezuniyet, ÇAP-Yandal, Danışmanlık, Lisans Projeleri, İŞKUR, Tek Kapı (yalnızca bu kullanıcı; 2FA gerekli) (7 otomasyon) |
+| `203011002` | İntibak, Staj, Mezuniyet, ÇAP-Yandal, Danışmanlık, Lisans Projeleri, İŞKUR (7 otomasyon) |
+| `203011003` | İntibak, Staj, Mezuniyet, ÇAP-Yandal, Danışmanlık, Lisans Projeleri, İŞKUR (7 otomasyon) |
+| `hoca.test` | Danışmanlık, Lisans Projeleri, Etik Kurul, MÜDEK, Sınav Analizi (5 otomasyon) |
+| `personel.test` | — (yalnızca iki demo) (0 otomasyon) |
+| `baskan.test` | İntibak, Staj, ÇAP-Yandal, Danışmanlık, Lisans Projeleri, Etik Kurul, Bölüm Kurul, MÜDEK, Sınav Analizi (9 otomasyon) |
+| `sekreter.test` | İntibak, Staj, Mezuniyet, ÇAP-Yandal, Bölüm Kurul, MÜDEK (6 otomasyon) |
+| `fakultesekreter.test` | İntibak, Mezuniyet, Bölüm Kurul (3 otomasyon) |
+| `komisyon.test` | İntibak, Staj, Mezuniyet, Lisans Projeleri, Etik Kurul, Bölüm Kurul, MÜDEK, Sınav Analizi (8 otomasyon) |
+| `mudek.test` | Lisans Projeleri, Etik Kurul, Bölüm Kurul, MÜDEK, Sınav Analizi (5 otomasyon) |
+| `etik.test` | Lisans Projeleri, Etik Kurul, MÜDEK, Sınav Analizi (4 otomasyon) |
+| `koordinator.test` | ÇAP-Yandal, Danışmanlık, Lisans Projeleri, Etik Kurul, MÜDEK, Sınav Analizi (6 otomasyon) |
+| `iskur.test` | İŞKUR (1 otomasyon) |
 
 Şifre anahtarı user-secrets'ta yoksa o kullanıcı oluşturulmaz (logda uyarı). Yeni bir makinede şifre üretmek için
 (değer ekrana yazılmaz):
@@ -1311,8 +1330,10 @@ dotnet-tools.json                 dotnet-ef yerel aracı
 .gitattributes                    Satır sonu kuralları
 scripts/run-all.ps1               On beş uygulamayı (kimlik, iki demo, Demo API, on bir bölüm otomasyonu) ayrı pencerelerde başlatır (-TekKapi: Tek Kapı da, SSO modunda; -Sadece: seçili uygulamalar; -ArkaPlan: pencere açmadan, logs/ altına log)
 scripts/durdur-hepsi.ps1          run-all.ps1 -ArkaPlan ile başlatılanları logs/run-all.pids'teki PID'lerle durdurur
-scripts/olcum-calistir.ps1        Otomatik ölçüm: derle, uygulamaları ölçüm modunda başlat, ölç, durdur
+scripts/olcum-calistir.ps1        Otomatik ölçüm: derle (-Yapilandirma Debug|Release), uygulamaları ölçüm modunda başlat, ölç, durdur
 scripts/olcum_analiz.py           Ölçüm analizi (Python 3, standart kütüphane; matplotlib varsa PNG)
+scripts/olcum_derleme_karsilastir.py  Ölçüm turlarını (Debug/Release, eski/yeni kod) yan yana tabloya döker
+scripts/kapsam_birlestir.py       Cobertura kod kapsamı raporlarını birleştirir (Python 3, standart kütüphane)
 scripts/arayuz-esitle.ps1         Ortak tasarım dosyalarını (selcuk.css, yazı tipleri, kapı SVG'leri) Tek Kapı'ya kopyalar
 scripts/ekran-goruntuleri.mjs     Ekran görüntüleri (Playwright; geçici veritabanı ve Tek Kapı veri klasörü; --sadece <gruplar>)
 tools/Selcuk.Olcum/               Otomatik ölçüm aracı (konsol; yalnızca localhost)
@@ -1501,6 +1522,8 @@ powershell -ExecutionPolicy Bypass -File scripts\durdur-hepsi.ps1
   `danismanlik`, `iskur`, `mudek`, `sinav-analizi`, `obis`, `yemekhane`, `demo-api` (`ekran-goruntuleri.mjs --sadece`
   ile aynı). Geçersiz ad verilirse hiçbir şey başlatılmaz; Türkçe hata geçerli adları yazar. Demo OBİS'in Notlarım
   ekranı için `demo-api` de seçilmelidir.
+- `-Yapilandirma Release`: çözüm Release derlenir ve uygulamalar Release çıktısından başlar (varsayılan `Debug`;
+  performans ölçümü için `scripts\olcum-calistir.ps1 -Yapilandirma Release`).
 - `-ArkaPlan`: her uygulamanın çıktısı (stdout + stderr) `logs\<uygulama>.log` dosyasına (örn. `logs\kimlik.log`,
   `logs\staj.log`) yazılır; başlatılan işlemlerin PID'leri başlangıç zamanıyla `logs\run-all.pids` dosyasına yazılır.
   `logs/` git'e girmez. Betik ortam değişkeni veya parola yazmaz; loglarda yalnızca uygulamanın kendi çıktısı vardır
@@ -1562,7 +1585,8 @@ node --use-system-ca scripts/ekran-goruntuleri.mjs --sadece intibak,mezuniyet,ca
   çekilir. QR kod, anahtar ve kurtarma kodları çekimden önce örnek değerlerle değiştirilir; her çekimden önce sayfada
   o çalıştırmanın sırlarından biri var mı diye bakılır.
 - Çıktı: `docs/tasarim/d2/` (her ekranın açık ve koyu 1280 × 800 ile 390px mobil hâli) ve `docs/tez-gorselleri/`
-  (tez için seçilmiş ekranlar 01-34, açık tema, 1440px). Sonda 390px'te yatay taşma, konsol/CSP hatası ve açıklaması olmayan
+  (tez için seçilmiş ekranlar 01-38, açık tema, 1440px; 35-38 Uygulamalarım grupları ve alt uygulamalardaki dönüş
+  bağlantısı, ikisi yalnızca üst çubuk). Sonda 390px'te yatay taşma, konsol/CSP hatası ve açıklaması olmayan
   claim varsa listelenir.
 - Bitince yalnızca kendi başlattığı pencereleri ve Tek Kapı sürecini durdurur, geçici veritabanını ve veri klasörünü
   siler. Kimlik sunucusunun Development e-postaları her zamanki gibi `App_Data/eposta/`'ya yazılır (git'e girmez).
@@ -1677,6 +1701,15 @@ yapılır; gerçek Selçuk sistemlerine veya internete otomatik istek atılmaz.
 
 `ornek-` önekli dosyalar gerçek ölçüm değildir; analiz betiği onları hiçbir zaman veri olarak okumaz.
 
+**Son ölçüm özeti (2026-11-24; Windows 10.0.26300, .NET 10.0.13, AMD Ryzen 7 7840HS, 16 mantıksal çekirdek, 31,3 GB RAM;
+Development, LocalDB; 100 ölçülen deneme, hata yok).** Yayın (Release) ve Debug derlemeleri ölçülebilir fark vermedi:
+ilk giriş (soğuk) p50 Release 207,1 / 203,6 ms (iki tur), Debug 211,2 ms; tek giriş 85,4 / 83,8 / 86,3 ms; belirteç yenileme
+44,6 / 43,8 / 45,7 ms; API çağrısı 10,0 / 10,1 / 10,3 ms; tek çıkış 57,5 / 59,8 / 60,8 ms. Eşzamanlı soğuk girişte verim
+25 eşzamanlı kullanıcıda doyuyor (yaklaşık 49-53 giriş/sn; 25 → 50'de artmıyor, p50 yaklaşık ikiye katlanıyor). 26 Ekim'deki
+ilk ölçümün (Debug, ilk giriş p50 123 ms) tek kullanıcılı süreleri bugün yeniden elde edilmedi; o günkü kod bugünkü makinede
+207 ms verdi, yani fark kodtan değil ölçüm anındaki ortamdandır (nedeni ölçülmedi). Tam tablo:
+[docs/olcumler/derleme-karsilastirmasi-2026-11-24.md](docs/olcumler/derleme-karsilastirmasi-2026-11-24.md).
+
 **Önkoşul (bir kez):** ölçüm kullanıcılarının şifresi kimlik sunucusunun user-secrets'ına (değer ekrana yazılmaz):
 
 ```powershell
@@ -1688,15 +1721,17 @@ Kimlik sunucusu Development'ta açılışta `olcum.kullanici.01` … `olcum.kull
 kapalı, `@test.local`) bu şifreyle oluşturur; var olan hesaba dokunmaz. Ölçüm aracı ayrı bir sır tutmaz: kimlik
 sunucusunun user-secrets'ından (aynı `UserSecretsId`) `OlcumKullanicilari:Sifre` ve `Istemciler:DemoObis:ClientSecret`'ı
 okur. (c) ve (e) için araç, açık kimlik sunucusu oturumuyla `demo-obis` istemcisi olarak kendi token'ını alır; Demo
-OBİS'in çerezindeki token'lara erişmez.
+OBİS'in oturumundaki (sunucu tarafında saklanan) token'lara erişmez.
 
 **Çalıştırma:**
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\olcum-calistir.ps1                                 # 100 tekrar, 5 ısınma, 1/10/25/50
 powershell -ExecutionPolicy Bypass -File scripts\olcum-calistir.ps1 -Tekrar 20 -Eszamanlilik "1,10" # kısa deneme
+powershell -ExecutionPolicy Bypass -File scripts\olcum-calistir.ps1 -Yapilandirma Release           # yayın (Release) derlemesiyle
 python scripts/olcum_analiz.py                                                                       # karsilastirma.md (+ PNG)
 python scripts/olcum_analiz.py --self-test
+python scripts/olcum_derleme_karsilastir.py                                                          # turları yan yana (derleme-karsilastirmasi-<tarih>.md)
 ```
 
 Uygulamalar zaten çalışıyorsa araç doğrudan da çalıştırılabilir (`dotnet run --project tools/Selcuk.Olcum --

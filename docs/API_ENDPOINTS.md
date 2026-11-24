@@ -21,7 +21,7 @@ kapsamı alabildiği `Data/Istemciler.cs`'te. Token ömürleri: access 15 dk, re
 
 ### Kimlik sunucusu sayfaları (Razor)
 
-`/` Uygulamalarım · `/Account/Login` · `/Account/IkiAdim` · `/Account/EkDogrulama` · `/Account/SifremiUnuttum` ·
+`/` Uygulamalarım (kartlar istemci `grup` özelliğine göre h2 başlıklı gruplarda) · `/Account/Login` · `/Account/IkiAdim` · `/Account/EkDogrulama` · `/Account/SifremiUnuttum` ·
 `/Account/SifreSifirla` · `/Account/Hesabim` · `/Account/SifreDegistir` · `/Account/IkiAdimDogrulama` ·
 `/Account/GuvenlikGecmisi` · `/Account/AccessDenied` · `/Hata`. POST'lar antiforgery'lidir; giriş, 2FA, şifre
 sayfaları IP + sayfa başına dakikada 10 POST (aşılırsa 429).

@@ -127,7 +127,13 @@ public static class Rapor
         sb.Append(Inv, $"| İşlemci | {ortam.Islemci} |\n");
         sb.Append(Inv, $"| Mantıksal çekirdek | {ortam.MantiksalCekirdek} |\n");
         sb.Append(Inv, $"| RAM | {ortam.RamGb:F1} GB |\n");
-        sb.Append(Inv, $"| Uygulamalar | Development ortamı, Debug derleme, LocalDB; dört uygulama ve ölçüm aracı aynı makinede |\n");
+        // Derleme türü bu aracın derlendiği türdür; scripts/olcum-calistir.ps1 uygulamaları ve aracı aynı türle çalıştırır.
+#if DEBUG
+        const string derleme = "Debug";
+#else
+        const string derleme = "Release";
+#endif
+        sb.Append(Inv, $"| Uygulamalar | Development ortamı, {derleme} derleme, LocalDB; dört uygulama ve ölçüm aracı aynı makinede |\n");
         sb.Append(Inv, $"| Başlangıç / bitiş | {sonuc.Baslangic:yyyy-MM-dd HH:mm:ss} / {sonuc.Bitis:HH:mm:ss} ");
         sb.Append(Inv, $"({(sonuc.Bitis - sonuc.Baslangic).TotalMinutes:F1} dk) |\n\n");
 

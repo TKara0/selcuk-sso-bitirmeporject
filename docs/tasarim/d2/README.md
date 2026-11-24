@@ -122,7 +122,9 @@ değerlerle (`Örnek QR`, `ABCD EFGH …`, `ORNEK-00001` …). Görüntülerdeki
 Dosya adı `<ekran>-acik.png`, `<ekran>-koyu.png`, `<ekran>-mobil.png` (menü açık ve kurtarma modu ekranlarında
 mobil yok).
 
-35 ekran, 101 dosya.
+91 ekran, 266 dosya (2026-11-24'te toplu yenilendi: Uygulamalarım gruplu hâliyle, demolarda ve otomasyonlarda "Uygulamalarım"
+dönüş bağlantısıyla, Güvenlik geçmişinde IP adresi gövde yazı tipiyle). Aşağıdaki tablo kimlik sunucusu, demolar ve Tek Kapı
+ekranlarını; otomasyon ekranları sonraki bölümleri listeler.
 
 | Uygulama | Ekran | Dosya önü | Mobil |
 |---|---|---|---|
@@ -133,6 +135,16 @@ mobil yok).
 | Kimlik sunucusu | Ek doğrulama, kurtarma kodu modu | `ek-dogrulama-kurtarma` | — |
 | Kimlik sunucusu | Onay (Demo OBİS) | `onay` | ✓ |
 | Kimlik sunucusu | Uygulamalarım | `uygulamalarim` | ✓ |
+| Kimlik sunucusu | Uygulamalarım, gruplu (bölüm başkanı baskan.test: 4 grup, 11 kart) | `uygulamalarim-gruplu-baskan` | ✓ |
+| Kimlik sunucusu | Uygulamalarım, öğrenci gözüyle (203011001: Kampüs, Öğrenci işleri, Diğer) | `uygulamalarim-ogrenci` | ✓ |
+| Demo OBİS | Üst çubuk: "Uygulamalarım" dönüş bağlantısı (yalnızca üst çubuk) | `obis-uygulamalarim-baglantisi` | ✓ |
+| Staj Otomasyonu | Üst çubuk: "Uygulamalarım" dönüş bağlantısı (yalnızca üst çubuk) | `staj-uygulamalarim-baglantisi` | ✓ |
+| Staj Otomasyonu | Ana sayfa | `staj-ana` | ✓ |
+| Staj Otomasyonu | Stajlarım (öğrenci) | `staj-stajlarim` | ✓ |
+| Staj Otomasyonu | Başvuru inceleme (komisyon) | `staj-basvuru-inceleme` | ✓ |
+| Staj Otomasyonu | Temsili işlem mesajı | `staj-temsili-islem` | — |
+| Staj Otomasyonu | Özet (bölüm başkanı) | `staj-ozet` | ✓ |
+| Staj Otomasyonu | Erişim reddedildi | `staj-erisim-reddedildi` | ✓ |
 | Kimlik sunucusu | Uygulamalarım, hesap menüsü açık | `hesap-menusu` | — |
 | Kimlik sunucusu | 2FA kurulumu | `iki-adim-kurulum` | ✓ |
 | Kimlik sunucusu | Kurtarma kodları | `kurtarma-kodlari` | ✓ |
@@ -164,7 +176,7 @@ mobil yok).
 
 Tez görselleri (`docs/tez-gorselleri/`, açık tema, 1440px): `01-giris`, `02-onay`, `03-uygulamalarim`,
 `04-obis-notlarim`, `05-obis-token-inceleme`, `06-yemekhane-menu`, `07-tekkapi-ana`, `08-tekkapi-kilit`,
-`09-guvenlik-gecmisi`, `10-iki-adim-kurulum`.
+`09-guvenlik-gecmisi`, `10-iki-adim-kurulum`. Tüm liste: [docs/tez-gorselleri/README.md](../../tez-gorselleri/README.md).
 
 ## Gözden geçirmede bulunup düzeltilenler
 

@@ -11,6 +11,8 @@
 #   staj, intibak, mezuniyet, cap-yandal, etik-kurul, bolum-kurul, lisans-projeleri, danismanlik, iskur, mudek,
 #   sinav-analizi, obis, yemekhane, demo-api
 #   powershell -ExecutionPolicy Bypass -File scripts\run-all.ps1 -Sadece staj,intibak
+# -Yapilandirma Release verilirse çözüm Release derlenir ve uygulamalar Release çıktısından başlar (varsayılan Debug;
+#   performans ölçümü için scripts\olcum-calistir.ps1 -Yapilandirma Release).
 # -ArkaPlan verilirse uygulamalar pencere açmadan (gizli) başlar; her birinin çıktısı logs\<uygulama>.log dosyasına,
 # başlatılan işlemlerin PID'leri (başlangıç zamanıyla) logs\run-all.pids dosyasına yazılır. Kapatmak için:
 #   powershell -ExecutionPolicy Bypass -File scripts\durdur-hepsi.ps1
@@ -20,7 +22,8 @@ param(
     [switch] $TekKapi,
     [switch] $TarayiciAcma,
     [string[]] $Sadece,
-    [switch] $ArkaPlan
+    [switch] $ArkaPlan,
+    [ValidateSet('Debug', 'Release')] [string] $Yapilandirma = 'Debug'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -85,7 +88,7 @@ if ($ArkaPlan -and (Test-Path -LiteralPath $pidDosyasi)) {
 # Uygulamalar önceden derlenmiş çıktıdan başlar (--no-build): üç pencerenin aynı anda derlemesi ortak projelerin
 # (Selcuk.Istemci.Ortak) obj/bin dosyalarında kilit hatasına yol açıyordu.
 function Start-Uygulama([string] $Baslik, [string] $Proje) {
-    $komut = "`$Host.UI.RawUI.WindowTitle = '$Baslik'; Set-Location -LiteralPath '$kok'; dotnet run --no-build --project '$Proje'"
+    $komut = "`$Host.UI.RawUI.WindowTitle = '$Baslik'; Set-Location -LiteralPath '$kok'; dotnet run --no-build --project '$Proje' -c $Yapilandirma"
     Start-Process powershell -ArgumentList '-NoExit', '-NoProfile', '-Command', $komut | Out-Null
 }
 
@@ -95,7 +98,7 @@ function Start-Uygulama([string] $Baslik, [string] $Proje) {
 function Start-ArkaPlanUygulama($Uygulama) {
     $log = "logs\$($Uygulama.Ad).log"
     $surec = Start-Process -FilePath $env:ComSpec -WindowStyle Hidden -PassThru -WorkingDirectory $kok `
-        -ArgumentList "/d /c dotnet run --no-build --project $($Uygulama.Proje) > $log 2>&1"
+        -ArgumentList "/d /c dotnet run --no-build --project $($Uygulama.Proje) -c $Yapilandirma > $log 2>&1"
     $baslangic = $surec.StartTime.ToUniversalTime().Ticks
     Add-Content -LiteralPath $pidDosyasi -Value "$($surec.Id)`t$baslangic`t$($Uygulama.Ad)" -Encoding ASCII
     return $surec
@@ -121,8 +124,8 @@ function Wait-Port([int] $Port, [int] $SaniyeSiniri = 120, $Surec = $null) {
 }
 
 # Önce çözüm bir kez derlenir; derleme başarısızsa hiçbir uygulama başlatılmaz.
-Write-Host 'Çözüm derleniyor (dotnet build SelcukSSO.sln)...'
-& dotnet build (Join-Path $kok 'SelcukSSO.sln') --nologo
+Write-Host "Çözüm derleniyor (dotnet build SelcukSSO.sln -c $Yapilandirma)..."
+& dotnet build (Join-Path $kok 'SelcukSSO.sln') -c $Yapilandirma --nologo
 if ($LASTEXITCODE -ne 0) {
     $kod = $LASTEXITCODE
     Write-Host "Derleme başarısız (çıkış kodu $kod). Uygulamalar başlatılmadı." -ForegroundColor Red

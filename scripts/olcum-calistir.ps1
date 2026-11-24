@@ -4,6 +4,8 @@
 # Kullanım (proje kökünden):
 #   powershell -ExecutionPolicy Bypass -File scripts\olcum-calistir.ps1
 #   powershell -ExecutionPolicy Bypass -File scripts\olcum-calistir.ps1 -Tekrar 20 -Eszamanlilik "1,10"
+#   powershell -ExecutionPolicy Bypass -File scripts\olcum-calistir.ps1 -Yapilandirma Release   (yayın derlemesi)
+# -Yapilandirma: uygulamalar ve ölçüm aracı aynı derleme türüyle (Debug varsayılan, Release) derlenip çalıştırılır.
 # Önkoşul (bir kez): kimlik sunucusunun user-secrets'ında OlcumKullanicilari:Sifre ve Istemciler:DemoObis:ClientSecret
 # (README > Ölçüm ve değerlendirme). Ölçüm modu: Olcum:HizSiniriGevset=true yalnızca bu betiğin başlattığı süreçlere
 # ortam değişkeniyle verilir; giriş sayfasının istek sınırı yalnızca Development'ta ve olcum.kullanici.* için gevşer.
@@ -13,7 +15,8 @@ param(
     [int] $Isinma = 5,
     # Virgüllü metin: -File ile verilen "1,10" bir dizi değil tek bir metin olarak gelir.
     [string] $Eszamanlilik = '1,10,25,50',
-    [int] $KullaniciSayisi = 50
+    [int] $KullaniciSayisi = 50,
+    [ValidateSet('Debug', 'Release')] [string] $Yapilandirma = 'Debug'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -29,8 +32,8 @@ if ($dolu) {
     exit 1
 }
 
-Write-Host 'Çözüm derleniyor (dotnet build SelcukSSO.sln)...'
-& dotnet build (Join-Path $kok 'SelcukSSO.sln') --nologo
+Write-Host "Çözüm derleniyor (dotnet build SelcukSSO.sln -c $Yapilandirma)..."
+& dotnet build (Join-Path $kok 'SelcukSSO.sln') -c $Yapilandirma --nologo
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Derleme başarısız (çıkış kodu $LASTEXITCODE). Ölçüm başlatılmadı." -ForegroundColor Red
     exit $LASTEXITCODE
@@ -41,7 +44,7 @@ $cikisKodu = 1
 try {
     # Bu betiğin başlattığı pencereler ortam değişkenlerini devralır.
     $env:Olcum__HizSiniriGevset = 'true'
-    & (Join-Path $PSScriptRoot 'run-all.ps1') -TarayiciAcma
+    & (Join-Path $PSScriptRoot 'run-all.ps1') -TarayiciAcma -Yapilandirma $Yapilandirma
 
     # Port açık olsa da açılıştaki seed (ölçüm kullanıcıları) bitmeden discovery yanıt vermeyebilir.
     $hazir = $false
@@ -58,10 +61,10 @@ try {
         throw 'Kimlik sunucusu 90 saniye içinde hazır olmadı.'
     }
 
-    Write-Host "Ölçüm başlıyor: tekrar $Tekrar, ısınma $Isinma, eşzamanlılık $Eszamanlilik, kullanıcı $KullaniciSayisi"
+    Write-Host "Ölçüm başlıyor: derleme $Yapilandirma, tekrar $Tekrar, ısınma $Isinma, eşzamanlılık $Eszamanlilik, kullanıcı $KullaniciSayisi"
     Push-Location $kok
     try {
-        & dotnet run --no-build --project 'tools/Selcuk.Olcum' -- `
+        & dotnet run --no-build -c $Yapilandirma --project 'tools/Selcuk.Olcum' -- `
             --tekrar $Tekrar --isinma $Isinma --eszamanlilik $Eszamanlilik --kullanici-sayisi $KullaniciSayisi
         $cikisKodu = $LASTEXITCODE
     } finally {

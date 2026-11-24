@@ -50,6 +50,9 @@ Kapsamlı rol, kullanıcının kendi `Bolum` veya `Fakulte` alanı için geçerl
 
 Development başlangıç verisi (`BaslangicVerisi.TestKullanicilari`) açılışta bu kurallardan geçer; kurala uymayan bir
 tanım açılışı açık bir hatayla durdurur. Test kullanıcıları ve rolleri README'de (Roller ve test kullanıcıları).
+Var olan kullanıcıya eksik rol eklenirse (ve ileride rol çıkarılırsa) değişiklik `RolDegisikligiIslemi` üzerinden yapılır:
+rol kümesi değişince kullanıcının oturumları kapanır, Back-Channel Logout gider, token'ları iptal edilir ve `RolDegisti`
+denetim kaydı yazılır; küme değişmiyorsa hiçbir şey yapılmaz (bkz. tehdit-modeli.md E7).
 
 ## Yeni rol eklemek
 

@@ -66,7 +66,9 @@ flowchart LR
 - **Kimlik sunucusu** tek doğruluk kaynağıdır: kullanıcı, rol, şifre, 2FA, istemci kayıtları, oturum (`sid`) ve
   token'lar burada. Alt uygulamalar kullanıcının şifresini hiç görmez.
 - **Alt uygulamalar** kimlik sunucusuna yalnızca OIDC ile bağlanır; ortak kütüphane (`Selcuk.Istemci.Ortak`) çerez +
-  OIDC yapılandırmasını, Back-Channel Logout alıcısını ve token yenilemeyi tek yerde toplar.
+  OIDC yapılandırmasını, Back-Channel Logout alıcısını ve token yenilemeyi tek yerde toplar. Otomasyonlar ve iki demo
+  oturum biletini (token'lar dahil) sunucu tarafında şifreli tutar, çerezde yalnızca anahtar kalır
+  (`SunucuTarafliOturum`); üst çubuktaki "Uygulamalarım" bağlantısı hepsinde kimlik sunucusunun kök adresine gider.
 - **Demo API** access token'ı kendi başına (JWKS ile imza, `aud`, `typ`, süre, kapsam, rol) doğrular; kimlik
   sunucusuna istek başına sormaz.
 - **Tek Kapı** geçiş dönemi aracıdır: kullanıcı ona SSO ile girer, Tek Kapı gerçek sistemlere kendi bilgisayarındaki
@@ -133,7 +135,7 @@ sequenceDiagram
     I-->>O: id_token (sid, amr), access token (15 dk, aud demo-api), refresh token
     O->>I: GET /connect/userinfo (Bearer)
     I-->>O: name, preferred_username, fakulte, bolum, role
-    O-->>K: 302 /Notlarim (DemoObis.Oturum çerezi)
+    O-->>K: 302 /Notlarim (DemoObis.Oturum çerezi: yalnızca oturum anahtarı)
     K->>O: GET /Notlarim
     O->>A: GET /api/notlar (Bearer access token)
     A-->>O: 200 notlar (yalnızca sub'ın)

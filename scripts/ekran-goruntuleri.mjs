@@ -4,6 +4,7 @@
 //
 //   docs/tasarim/d2/    gözden geçirme için her ekranın açık, koyu (1280 × 800) ve 390px (mobil) hâli, tam sayfa
 //   docs/tez-gorselleri/ tez için seçilmiş ekranlar, açık tema, 1440px genişlik, tam sayfa
+//     (35-38: Uygulamalarım grupları ve alt uygulamalardaki dönüş bağlantısı; ikisi yalnızca üst çubuğu, öğe görüntüsü)
 //
 // Kullanım (proje kökünden; bir kez: cd araclar\tek-kapi; npm ci):
 //   node --use-system-ca scripts/ekran-goruntuleri.mjs
@@ -199,9 +200,14 @@ const TEZ_SIRASI = ['giris', 'onay', 'uygulamalarim', 'obis-notlarim', 'obis-tok
   'cap-gelen-basvurular', 'etik-kurul-basvurularim', 'etik-kurul-atanan-dosyalar', 'bolum-kurul-toplantilar',
   'bolum-kurul-oylama', 'lisans-projeleri-asamalarim', 'lisans-projeleri-eslestirme',
   'danismanlik-gorusme-talebi', 'danismanlik-ogrencilerim', 'iskur-devam-durumum', 'iskur-takip',
-  'mudek-program-ciktilari', 'mudek-veri-girisi', 'sinav-analizi-derslerim', 'sinav-analizi-bolum-geneli'];
+  'mudek-program-ciktilari', 'mudek-veri-girisi', 'sinav-analizi-derslerim', 'sinav-analizi-bolum-geneli',
+  'uygulamalarim-gruplu-baskan', 'uygulamalarim-ogrenci', 'staj-uygulamalarim-baglantisi', 'obis-uygulamalarim-baglantisi'];
 
-async function cek(sayfa, ad, { mobil = true } = {}) {
+// Sayfanın tamamı veya (oge verilirse) yalnızca o öğe (ör. üst çubuk).
+const goruntule = (sayfa, yol, oge) =>
+  oge ? sayfa.locator(oge).first().screenshot({ path: yol }) : sayfa.screenshot({ path: yol, fullPage: true });
+
+async function cek(sayfa, ad, { mobil = true, oge = null } = {}) {
   if (!seciliMi(ad)) return;
   await hazirla(sayfa);
   await sirKontrolu(sayfa, ad);
@@ -211,25 +217,25 @@ async function cek(sayfa, ad, { mobil = true } = {}) {
   await sayfa.emulateMedia({ colorScheme: 'light' });
   await hazirla(sayfa);
   await tasmaKontrolu(sayfa, ad, 'açık');
-  await sayfa.screenshot({ path: dosya('acik'), fullPage: true });
+  await goruntule(sayfa, dosya('acik'), oge);
 
   await sayfa.emulateMedia({ colorScheme: 'dark' });
   await hazirla(sayfa);
-  await sayfa.screenshot({ path: dosya('koyu'), fullPage: true });
+  await goruntule(sayfa, dosya('koyu'), oge);
   await sayfa.emulateMedia({ colorScheme: 'light' });
 
   if (mobil) {
     await sayfa.setViewportSize({ width: 390, height: 844 });
     await hazirla(sayfa);
     await tasmaKontrolu(sayfa, ad, 'mobil');
-    await sayfa.screenshot({ path: dosya('mobil'), fullPage: true });
+    await goruntule(sayfa, dosya('mobil'), oge);
   }
 
   const sira = TEZ_SIRASI.indexOf(ad);
   if (sira >= 0) {
     await sayfa.setViewportSize({ width: 1440, height: 900 });
     await hazirla(sayfa);
-    await sayfa.screenshot({ path: path.join(TEZ, `${String(sira + 1).padStart(2, '0')}-${ad}.png`), fullPage: true });
+    await goruntule(sayfa, path.join(TEZ, `${String(sira + 1).padStart(2, '0')}-${ad}.png`), oge);
   }
 
   await sayfa.setViewportSize({ width: 1280, height: 800 });
@@ -254,7 +260,21 @@ async function ornekDegerler(sayfa) {
   });
 }
 
+// Giriş sayfasının istek sınırı IP başına dakikada 10 POST'tur (HizSiniri; gevşetilmez). Betik sınıra takılmasın diye son
+// 65 saniyedeki giriş sayısı 8'e ulaştıysa en eski girişin 65 sn dolmasını bekler.
+const girisZamanlari = [];
+async function girisHiziniAyarla() {
+  const simdi = () => Date.now();
+  while (girisZamanlari.length && simdi() - girisZamanlari[0] > 65000) girisZamanlari.shift();
+  if (girisZamanlari.length >= 8) {
+    await bekle(65000 - (simdi() - girisZamanlari[0]) + 500);
+    while (girisZamanlari.length && simdi() - girisZamanlari[0] > 65000) girisZamanlari.shift();
+  }
+  girisZamanlari.push(simdi());
+}
+
 async function girisYap(sayfa, kullaniciAdi, sifre) {
+  await girisHiziniAyarla();
   await sayfa.fill('#Input_KullaniciAdi', kullaniciAdi);
   await sayfa.fill('#Input_Sifre', sifre);
   await Promise.all([sayfa.waitForLoadState('load'), sayfa.click('form button[type=submit]')]);
@@ -512,7 +532,8 @@ async function kalanOtomasyonCekimleri(tarayici) {
 
   if (gruplar.includes('iskur')) {
     const ogrenci = await yeniBaglam(tarayici);
-    await uygulamayaGir(ogrenci.sayfa, ISKUR, '203011001', SIFRELER.ogrenci);
+    // 203011001'in 2FA'sı tam çalıştırmada bu noktada açıktır (ikinci adım ister); 203011002'nin de İŞKUR kayıtları var.
+    await uygulamayaGir(ogrenci.sayfa, ISKUR, '203011002', SIFRELER.ogrenci2);
     await git(ogrenci.sayfa, ISKUR + '/Ogrenci/DevamDurumum');
     await cek(ogrenci.sayfa, 'iskur-devam-durumum');
     await ogrenci.baglam.close();
@@ -547,7 +568,35 @@ async function kalanOtomasyonCekimleri(tarayici) {
   }
 }
 
+// Uygulamalarım grupları ve alt uygulamalardan Uygulamalarım'a dönüş bağlantısı (R7). 203011001'in 2FA'sı bu çekimden
+// sonra (mevcutCekimler) kurulduğu için burada yalnızca şifreyle girer; alt uygulamalara giriş yapılmaz (onay ekranı
+// bozulmaz). Bölüm başkanı (baskan.test) Staj ve Demo OBİS'e girer; sır kontrolü her çekimde cek() içinde çalışır.
+async function uygulamalarimCekimleri(tarayici) {
+  if (!['kimlik', 'obis', 'staj'].some((g) => SECILI.includes(g))) return;
+  console.log('Uygulamalarım grupları ve dönüş bağlantısı');
+  const ogr = await yeniBaglam(tarayici);
+  await git(ogr.sayfa, KIMLIK + '/');
+  await girisYap(ogr.sayfa, '203011001', SIFRELER.ogrenci);
+  await ogr.sayfa.waitForSelector('.uygulama-grubu');
+  await cek(ogr.sayfa, 'uygulamalarim-ogrenci');
+  await ogr.baglam.close();
+
+  const { baglam, sayfa } = await yeniBaglam(tarayici);
+  await uygulamayaGir(sayfa, STAJ, 'baskan.test', SIFRELER.baskan);
+  await sayfa.waitForSelector('.uygulamalarim-baglantisi');
+  await cek(sayfa, 'staj-uygulamalarim-baglantisi', { oge: 'header.ust-cubuk' });
+  await uygulamayaGir(sayfa, OBIS, 'baskan.test', SIFRELER.baskan);
+  await sayfa.waitForSelector('.uygulamalarim-baglantisi');
+  await cek(sayfa, 'obis-uygulamalarim-baglantisi', { oge: 'header.ust-cubuk' });
+  // Dönüş bağlantısı: aynı sekmede kimlik sunucusunun Uygulamalarım sayfasına (gruplu) gider.
+  await Promise.all([sayfa.waitForNavigation(), sayfa.click('.uygulamalarim-baglantisi')]);
+  await sayfa.waitForSelector('.uygulama-grubu');
+  await cek(sayfa, 'uygulamalarim-gruplu-baskan');
+  await baglam.close();
+}
+
 async function cekimler(tarayici) {
+  await uygulamalarimCekimleri(tarayici);
   // Mevcut ekranlar tek akıştır (kimlik sunucusu oturumu, 2FA kurulumu ve Tek Kapı birbirine bağlı); bu gruplardan
   // biri seçilmişse akış baştan sona yürür, seçilmeyen grupların ekranları çekilmez (cek).
   if (ESKI_GRUPLAR.some((g) => SECILI.includes(g))) await mevcutCekimler(tarayici);
@@ -728,7 +777,8 @@ async function mevcutCekimler(tarayici) {
   const baskan = await yeniBaglam(tarayici);
   await git(baskan.sayfa, STAJ + '/Giris');
   await girisYap(baskan.sayfa, 'baskan.test', SIFRELER.baskan);
-  await izinVer(baskan.sayfa);
+  // Onay, uygulamalarimCekimleri'nde (dönüş bağlantısı çekimi) zaten verilmiş olabilir.
+  if (await baskan.sayfa.$('button[name=karar][value=kabul]')) await izinVer(baskan.sayfa);
   await adresiBekle(baskan.sayfa, new RegExp(`^${STAJ}/$`));
   await git(baskan.sayfa, STAJ + '/Baskan/Ozet');
   await cek(baskan.sayfa, 'staj-ozet');
