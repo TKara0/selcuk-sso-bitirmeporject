@@ -26,6 +26,30 @@ public static class Istemciler
     public const string VurguOzelligi = "vurgu";
     // Uygulamalarım kartındaki simgenin harfleri (en fazla iki harf, ör. "ST"); yoksa addan üretilir.
     public const string SimgeOzelligi = "simge";
+    // Uygulamalarım'da kartın altında göründüğü grup (aşağıdaki Grup* adlarından biri); yoksa veya bilinmiyorsa "Diğer".
+    public const string GrupOzelligi = "grup";
+
+    public const string GrupKampus = "Kampüs uygulamaları";
+    public const string GrupOgrenciIsleri = "Öğrenci işleri";
+    public const string GrupKurullar = "Kurullar ve komisyonlar";
+    public const string GrupKalite = "Kalite ve analiz";
+    /// <summary>Grubu olmayan (ör. Tek Kapı) veya bilinmeyen gruplu istemcilerin başlığı; hep sonda.</summary>
+    public const string GrupDiger = "Diğer";
+
+    /// <summary>Uygulamalarım'daki grupların sırası (başlıklar bu sırayla; kartı olmayan grup gösterilmez).</summary>
+    public static readonly string[] Gruplar = [GrupKampus, GrupOgrenciIsleri, GrupKurullar, GrupKalite];
+
+    /// <summary>
+    /// Grup içindeki kart sırası (istemci kimlikleri). Listede olmayan istemciler grubunun sonuna, ada göre girer.
+    /// </summary>
+    public static readonly string[] KartSirasi =
+    [
+        DemoObisClientId, DemoYemekhaneClientId,
+        IntibakOtomasyonuClientId, StajOtomasyonuClientId, MezuniyetOtomasyonuClientId, CapYandalOtomasyonuClientId,
+        DanismanlikOtomasyonuClientId, LisansProjeleriOtomasyonuClientId, IskurOtomasyonuClientId,
+        EtikKurulOtomasyonuClientId, BolumKurulOtomasyonuClientId,
+        MudekOtomasyonuClientId, SinavAnaliziOtomasyonuClientId,
+    ];
 
     // Demo API (kaynak sunucusu): notlar.oku kapsamıyla verilen access token'ın aud'u demo-api olur.
     public const string DemoApiKaynagi = "demo-api";
@@ -183,6 +207,7 @@ public static class Istemciler
             "Notlarını görüntüle; akademisyenler için ders yönetimi.", clientSecret);
         // Notlarım sayfası notları Demo API'den (notlar.oku) çeker.
         tanim.Permissions.Add(Permissions.Prefixes.Scope + NotlarOkuKapsami);
+        tanim.Properties[GrupOzelligi] = JsonSerializer.SerializeToElement(GrupKampus);
         return tanim;
     }
 
@@ -207,6 +232,7 @@ public static class Istemciler
         tanim.Properties[IzinliRollerOzelligi] = JsonSerializer.SerializeToElement(StajOtomasyonuIzinliRolleri);
         tanim.Properties[VurguOzelligi] = JsonSerializer.SerializeToElement("zeytin");
         tanim.Properties[SimgeOzelligi] = JsonSerializer.SerializeToElement("ST");
+        tanim.Properties[GrupOzelligi] = JsonSerializer.SerializeToElement(GrupOgrenciIsleri);
         return tanim;
     }
 
@@ -221,61 +247,61 @@ public static class Istemciler
     public static OpenIddictApplicationDescriptor IntibakOtomasyonu(string clientSecret) => OtomasyonTanimi(
         IntibakOtomasyonuClientId, "İntibak Otomasyonu", IntibakOtomasyonuAdres,
         "Geçiş öğrencilerinin intibak başvurusu, ders eşleştirme, komisyon kararı ve yönetim kurulu evrakı (temsili, örnek veri).",
-        clientSecret, IntibakOkuKapsami, IntibakYazKapsami, IntibakOtomasyonuIzinliRolleri, "eflatun", "İN");
+        clientSecret, IntibakOkuKapsami, IntibakYazKapsami, IntibakOtomasyonuIzinliRolleri, "eflatun", "İN", GrupOgrenciIsleri);
 
     /// <summary>Mezuniyet Otomasyonu (temsili ekranlar, örnek veri): gizli web istemcisi, mezuniyet.oku/mezuniyet.yaz.</summary>
     public static OpenIddictApplicationDescriptor MezuniyetOtomasyonu(string clientSecret) => OtomasyonTanimi(
         MezuniyetOtomasyonuClientId, "Mezuniyet Otomasyonu", MezuniyetOtomasyonuAdres,
         "Mezuniyet durumu ve başvurusu, ilişik kesme, komisyon kontrolü ve diploma hazırlığı (temsili, örnek veri).",
-        clientSecret, MezuniyetOkuKapsami, MezuniyetYazKapsami, MezuniyetOtomasyonuIzinliRolleri, "bakir", "ME");
+        clientSecret, MezuniyetOkuKapsami, MezuniyetYazKapsami, MezuniyetOtomasyonuIzinliRolleri, "bakir", "ME", GrupOgrenciIsleri);
 
     /// <summary>ÇAP-Yandal Otomasyonu (temsili ekranlar, örnek veri): gizli web istemcisi, cap-yandal.oku/cap-yandal.yaz.</summary>
     public static OpenIddictApplicationDescriptor CapYandalOtomasyonu(string clientSecret) => OtomasyonTanimi(
         CapYandalOtomasyonuClientId, "ÇAP-Yandal Otomasyonu", CapYandalOtomasyonuAdres,
         "Çift anadal ve yandal başvurusu, koordinatör sıralaması, bölüm onayı ve programdaki ilerleme (temsili, örnek veri).",
-        clientSecret, CapYandalOkuKapsami, CapYandalYazKapsami, CapYandalOtomasyonuIzinliRolleri, "hardal", "ÇY");
+        clientSecret, CapYandalOkuKapsami, CapYandalYazKapsami, CapYandalOtomasyonuIzinliRolleri, "hardal", "ÇY", GrupOgrenciIsleri);
 
     /// <summary>Etik Kurul Otomasyonu (temsili ekranlar, örnek veri): gizli web istemcisi, etik-kurul.oku/etik-kurul.yaz.</summary>
     public static OpenIddictApplicationDescriptor EtikKurulOtomasyonu(string clientSecret) => OtomasyonTanimi(
         EtikKurulOtomasyonuClientId, "Etik Kurul Otomasyonu", EtikKurulOtomasyonuAdres,
         "Araştırmalar için etik kurul başvurusu, kurul üyelerinin görüşleri ve kurul kararları (temsili, örnek veri).",
-        clientSecret, EtikKurulOkuKapsami, EtikKurulYazKapsami, EtikKurulOtomasyonuIzinliRolleri, "murdum", "EK");
+        clientSecret, EtikKurulOkuKapsami, EtikKurulYazKapsami, EtikKurulOtomasyonuIzinliRolleri, "murdum", "EK", GrupKurullar);
 
     /// <summary>Bölüm Kurul Karar Otomasyonu (temsili ekranlar, örnek veri): gizli web istemcisi, bolum-kurul.oku/bolum-kurul.yaz.</summary>
     public static OpenIddictApplicationDescriptor BolumKurulOtomasyonu(string clientSecret) => OtomasyonTanimi(
         BolumKurulOtomasyonuClientId, "Bölüm Kurul Karar Otomasyonu", BolumKurulOtomasyonuAdres,
         "Bölüm kurulu toplantıları, gündem, oylama, karar ve tutanak arşivi (temsili, örnek veri).",
-        clientSecret, BolumKurulOkuKapsami, BolumKurulYazKapsami, BolumKurulOtomasyonuIzinliRolleri, "arduvaz", "BK");
+        clientSecret, BolumKurulOkuKapsami, BolumKurulYazKapsami, BolumKurulOtomasyonuIzinliRolleri, "arduvaz", "BK", GrupKurullar);
 
     /// <summary>Lisans Projeleri Otomasyonu (temsili ekranlar, örnek veri): gizli web istemcisi, lisans-projeleri.oku/.yaz.</summary>
     public static OpenIddictApplicationDescriptor LisansProjeleriOtomasyonu(string clientSecret) => OtomasyonTanimi(
         LisansProjeleriOtomasyonuClientId, "Lisans Projeleri Otomasyonu", LisansProjeleriOtomasyonuAdres,
         "Bitirme projelerinde konu önerisi ve seçimi, öğrenci-hoca eşleştirmesi, aşamalar ve değerlendirme (temsili, örnek veri).",
-        clientSecret, LisansProjeleriOkuKapsami, LisansProjeleriYazKapsami, LisansProjeleriOtomasyonuIzinliRolleri, "cam", "LP");
+        clientSecret, LisansProjeleriOkuKapsami, LisansProjeleriYazKapsami, LisansProjeleriOtomasyonuIzinliRolleri, "cam", "LP", GrupOgrenciIsleri);
 
     /// <summary>Öğrenci Danışmanlık Otomasyonu (temsili ekranlar, örnek veri): gizli web istemcisi, danismanlik.oku/danismanlik.yaz.</summary>
     public static OpenIddictApplicationDescriptor DanismanlikOtomasyonu(string clientSecret) => OtomasyonTanimi(
         DanismanlikOtomasyonuClientId, "Öğrenci Danışmanlık Otomasyonu", DanismanlikOtomasyonuAdres,
         "Danışman-öğrenci eşleşmeleri, görüşme talepleri ve görüşme notları (temsili, örnek veri).",
-        clientSecret, DanismanlikOkuKapsami, DanismanlikYazKapsami, DanismanlikOtomasyonuIzinliRolleri, "indigo", "DA");
+        clientSecret, DanismanlikOkuKapsami, DanismanlikYazKapsami, DanismanlikOtomasyonuIzinliRolleri, "indigo", "DA", GrupOgrenciIsleri);
 
     /// <summary>İŞKUR Otomasyonu (temsili ekranlar, örnek veri): gizli web istemcisi, iskur.oku/iskur.yaz.</summary>
     public static OpenIddictApplicationDescriptor IskurOtomasyonu(string clientSecret) => OtomasyonTanimi(
         IskurOtomasyonuClientId, "İŞKUR Otomasyonu", IskurOtomasyonuAdres,
         "İŞKUR gençlik programında devam girişi ve aylık takip (temsili, örnek veri).",
-        clientSecret, IskurOkuKapsami, IskurYazKapsami, IskurOtomasyonuIzinliRolleri, "petrol", "İŞ");
+        clientSecret, IskurOkuKapsami, IskurYazKapsami, IskurOtomasyonuIzinliRolleri, "petrol", "İŞ", GrupOgrenciIsleri);
 
     /// <summary>MÜDEK Otomasyonu (temsili ekranlar, örnek veri): gizli web istemcisi, mudek.oku/mudek.yaz.</summary>
     public static OpenIddictApplicationDescriptor MudekOtomasyonu(string clientSecret) => OtomasyonTanimi(
         MudekOtomasyonuClientId, "MÜDEK Otomasyonu", MudekOtomasyonuAdres,
         "Program ve ders çıktılarının izlenmesi, eksikler ve dönem raporları (temsili, örnek veri).",
-        clientSecret, MudekOkuKapsami, MudekYazKapsami, MudekOtomasyonuIzinliRolleri, "gulkurusu", "MÜ");
+        clientSecret, MudekOkuKapsami, MudekYazKapsami, MudekOtomasyonuIzinliRolleri, "gulkurusu", "MÜ", GrupKalite);
 
     /// <summary>Sınav Başarısı Analizi Otomasyonu (temsili ekranlar, örnek veri): gizli web istemcisi, sinav-analizi.oku/sinav-analizi.yaz.</summary>
     public static OpenIddictApplicationDescriptor SinavAnaliziOtomasyonu(string clientSecret) => OtomasyonTanimi(
         SinavAnaliziOtomasyonuClientId, "Sınav Başarısı Analizi Otomasyonu", SinavAnaliziOtomasyonuAdres,
         "Derslerin sınav başarısının toplu analizi: not dağılımı, geçme oranı ve hedefler (temsili, örnek veri).",
-        clientSecret, SinavAnaliziOkuKapsami, SinavAnaliziYazKapsami, SinavAnaliziOtomasyonuIzinliRolleri, "grafit", "SA");
+        clientSecret, SinavAnaliziOkuKapsami, SinavAnaliziYazKapsami, SinavAnaliziOtomasyonuIzinliRolleri, "grafit", "SA", GrupKalite);
 
     /// <summary>Bölüm otomasyonlarının (Staj hariç) API kapsamları (tüm ortamlarda açılışta oluşturulur).</summary>
     public static IReadOnlyList<OpenIddictScopeDescriptor> OtomasyonKapsamlari() =>
@@ -304,7 +330,7 @@ public static class Istemciler
 
     /// <summary>Bölüm otomasyonu: gizli web istemcisi, oku/yaz kapsamları, izinli roller, vurgu rengi ve simge.</summary>
     private static OpenIddictApplicationDescriptor OtomasyonTanimi(string clientId, string ad, string adres, string aciklama,
-        string clientSecret, string okuKapsami, string yazKapsami, string[] izinliRoller, string vurgu, string simge)
+        string clientSecret, string okuKapsami, string yazKapsami, string[] izinliRoller, string vurgu, string simge, string grup)
     {
         var tanim = Tanim(clientId, ad, adres, aciklama, clientSecret);
         tanim.Permissions.Add(Permissions.Prefixes.Scope + okuKapsami);
@@ -312,12 +338,17 @@ public static class Istemciler
         tanim.Properties[IzinliRollerOzelligi] = JsonSerializer.SerializeToElement(izinliRoller);
         tanim.Properties[VurguOzelligi] = JsonSerializer.SerializeToElement(vurgu);
         tanim.Properties[SimgeOzelligi] = JsonSerializer.SerializeToElement(simge);
+        tanim.Properties[GrupOzelligi] = JsonSerializer.SerializeToElement(grup);
         return tanim;
     }
 
-    public static OpenIddictApplicationDescriptor DemoYemekhane(string clientSecret) => Tanim(
-        DemoYemekhaneClientId, "Demo Yemekhane", DemoYemekhaneAdres,
-        "Haftalık menü ve yemek rezervasyonu; personel için günlük sayılar.", clientSecret);
+    public static OpenIddictApplicationDescriptor DemoYemekhane(string clientSecret)
+    {
+        var tanim = Tanim(DemoYemekhaneClientId, "Demo Yemekhane", DemoYemekhaneAdres,
+            "Haftalık menü ve yemek rezervasyonu; personel için günlük sayılar.", clientSecret);
+        tanim.Properties[GrupOzelligi] = JsonSerializer.SerializeToElement(GrupKampus);
+        return tanim;
+    }
 
     /// <summary>
     /// Tek Kapı: kullanıcının kendi bilgisayarında çalışan yerel köprü uygulaması (Node.js). Public istemci (RFC 8252

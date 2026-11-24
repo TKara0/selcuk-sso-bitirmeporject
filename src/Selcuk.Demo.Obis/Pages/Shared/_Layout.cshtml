@@ -1,5 +1,6 @@
 @* Demo OBİS'in düzeni: ortak düzen (Selcuk.Arayuz) + uygulama adı, simgesi, sekmeler ve hesap menüsü. *@
 @inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Ortam
+@inject Selcuk.Istemci.Ortak.KimlikSunucusuBilgisi KimlikSunucusu
 @{
     Layout = "_SelcukDuzen";
     ViewData[Duzen.Ayar.UygulamaAdi] = "Demo OBİS";
@@ -12,8 +13,16 @@
 @section Stiller {
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 }
+@* Giriş yapmış kullanıcıya hesap menüsünün solunda "Uygulamalarım" bağlantısı: kimlik sunucusunun kök adresi
+   (Kimlik:Authority'den türetilir; yalnızca https veya http://127.0.0.1; aynı sekmede açılır, betik gerekmez). *@
 @section HesapMenusu {
-    <partial name="_IstemciHesapMenusu" model="@(new[] { new HesapMenusuBaglantisi("Profilim", Url.Page("/Profilim")!, gecerli == "/Profilim") })" />
+    <div class="ust-baglantilar">
+        @if (User.Identity?.IsAuthenticated == true && KimlikSunucusu.Adres is { } uygulamalarimAdresi)
+        {
+            <a class="uygulamalarim-baglantisi" href="@uygulamalarimAdresi">Uygulamalarım</a>
+        }
+        <partial name="_IstemciHesapMenusu" model="@(new[] { new HesapMenusuBaglantisi("Profilim", Url.Page("/Profilim")!, gecerli == "/Profilim") })" />
+    </div>
 }
 @section Sekmeler {
     @if (User.Identity?.IsAuthenticated == true)

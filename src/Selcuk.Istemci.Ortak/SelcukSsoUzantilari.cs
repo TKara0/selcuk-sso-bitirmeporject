@@ -20,12 +20,26 @@ namespace Selcuk.Istemci.Ortak;
 /// süresi dolmak üzereyken istek sırasında sessizce yenilenir ve çıkışta refresh token iptal edilir
 /// (<see cref="TokenYenileyici"/>).
 /// </summary>
+/// <summary>AddSelcukSSO'nun isteğe bağlı seçenekleri.</summary>
+public sealed class SelcukSsoSecenekleri
+{
+    /// <summary>
+    /// true ise oturum bileti (claim'ler ve access/refresh/id token) sunucu tarafında, Data Protection ile şifreli
+    /// IDistributedCache'te saklanır ve çerezde yalnızca bir anahtar kalır (<c>OturumBiletDeposu</c>). Varsayılan
+    /// kapalıdır (token'lar çerezde, parçalı).
+    /// </summary>
+    public bool SunucuTarafliOturum { get; set; }
+}
+
 public static class SelcukSsoUzantilari
 {
     public static readonly TimeSpan VarsayilanOturumSuresi = TimeSpan.FromHours(8);
 
-    public static IServiceCollection AddSelcukSSO(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddSelcukSSO(this IServiceCollection services, IConfiguration configuration,
+        Action<SelcukSsoSecenekleri>? ayarla = null)
     {
+        var secenekler = new SelcukSsoSecenekleri();
+        ayarla?.Invoke(secenekler);
         var kimlik = configuration.GetSection("Kimlik");
         var clientId = kimlik["ClientId"]
             ?? throw new InvalidOperationException("'Kimlik:ClientId' ayarı tanımlı değil.");
@@ -37,6 +51,9 @@ public static class SelcukSsoUzantilari
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton<OturumIptalDeposu>();
         services.TryAddSingleton<TokenYenileyici>();
+        // "Uygulamalarım" bağlantısı: Authority kullanım anında okunur.
+        services.TryAddSingleton(sp => new KimlikSunucusuBilgisi(
+            KimlikSunucusuBilgisi.Koku(sp.GetRequiredService<IConfiguration>()["Kimlik:Authority"])));
         services.AddAuthorization();
 
         services.AddAuthentication(options =>
@@ -118,6 +135,12 @@ public static class SelcukSsoUzantilari
                 // RP-initiated logout: önce refresh token iptal edilir (RFC 7009), sonra end-session'a gidilir.
                 options.Events.OnRedirectToIdentityProviderForSignOut = TokenYenileyici.CikistaIptalEtAsync;
             });
+
+        if (secenekler.SunucuTarafliOturum)
+        {
+            // Oturum bileti sunucu tarafında, çerezde yalnızca anahtar (localhost'ta çerez birikimi, HTTP 431).
+            Selcuk.Otomasyon.Ortak.OturumBiletDeposu.Kaydet(services);
+        }
 
         return services;
     }

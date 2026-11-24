@@ -14,24 +14,33 @@ else
 {
     <p class="giris-metni">Bu uygulamalara şifre girmeden geçebilirsin.</p>
 
-    <h2 class="gorunmez">Uygulamalarım</h2>
-    <ul class="satirlar uygulamalar">
-        @for (var i = 0; i < Model.Uygulamalar.Count; i++)
-        {
-            var uygulama = Model.Uygulamalar[i];
-            <li>
-                <span class="uygulama-simge@(uygulama.Vurgu is null ? "" : " uygulama-simge-" + uygulama.Vurgu)" aria-hidden="true">@uygulama.SimgeMetni</span>
-                <div>
-                    <p class="satir-baslik"><span id="uygulama-@i">@uygulama.Ad</span>
-                        @if (uygulama.MfaGerekli)
-                        {
-                            <span class="etiket" title="Bu uygulamaya iki aşamalı doğrulanmış oturumla girilir">2FA gerekli</span>
-                        }
-                    </p>
-                    <p class="ipucu">@uygulama.Aciklama</p>
-                </div>
-                <a class="dugme dugme-ikincil" href="@uygulama.GirisAdresi" aria-describedby="uygulama-@i">Aç</a>
-            </li>
-        }
-    </ul>
+    @* Gruplar h1'in altında h2 başlıklı bölümlerdir (başlık sırası); kartı olmayan grup yoktur. Kart numarası bütün
+       sayfada tekdir ("Aç" bağlantısı aria-describedby ile kartın adına bağlanır). *@
+    var kartNo = 0;
+    for (var g = 0; g < Model.Gruplar.Count; g++)
+    {
+        var grup = Model.Gruplar[g];
+        <section class="uygulama-grubu" aria-labelledby="grup-@g">
+            <h2 id="grup-@g" class="grup-baslik">@grup.Baslik</h2>
+            <ul class="satirlar uygulamalar">
+                @foreach (var uygulama in grup.Kartlar)
+                {
+                    var i = kartNo++;
+                    <li>
+                        <span class="uygulama-simge@(uygulama.Vurgu is null ? "" : " uygulama-simge-" + uygulama.Vurgu)" aria-hidden="true">@uygulama.SimgeMetni</span>
+                        <div>
+                            <p class="satir-baslik"><span id="uygulama-@i">@uygulama.Ad</span>
+                                @if (uygulama.MfaGerekli)
+                                {
+                                    <span class="etiket" title="Bu uygulamaya iki aşamalı doğrulanmış oturumla girilir">2FA gerekli</span>
+                                }
+                            </p>
+                            <p class="ipucu">@uygulama.Aciklama</p>
+                        </div>
+                        <a class="dugme dugme-ikincil" href="@uygulama.GirisAdresi" aria-describedby="uygulama-@i">Aç</a>
+                    </li>
+                }
+            </ul>
+        </section>
+    }
 }

@@ -50,7 +50,7 @@ Alınan önlemler [Güvenlik önlemleri](#güvenlik-önlemleri) bölümünde. Di
 | Revocation | `/connect/revoke` | RFC 7009: gizli istemciler refresh token'ı iptal eder (çıkışta) |
 | UserInfo | `/connect/userinfo` | Kapsama göre kullanıcı bilgisi |
 | End-session | `/connect/logout` | Çıkış sayfası; Back-Channel Logout bildirimlerini gönderir, `post_logout_redirect_uri` ile istemciye döner |
-| Uygulamalarım | `/` | Giriş yapmış kullanıcıya kayıtlı uygulamaların kartları; kart `initiate_login_uri?iss=…` adresine gider |
+| Uygulamalarım | `/` | Giriş yapmış kullanıcıya kayıtlı uygulamaların kartları, `grup` özelliğine göre h2 başlıklı gruplar altında (kampüs, öğrenci işleri, kurullar, kalite; grubu olmayan "Diğer"); kart `initiate_login_uri?iss=…` adresine gider |
 | Şifremi unuttum | `/Account/SifremiUnuttum` | Kullanıcı adı, öğrenci no veya e-postayla sıfırlama bağlantısı isteği |
 | Şifre sıfırlama | `/Account/SifreSifirla?kullanici=…&kod=…` | E-postadaki bağlantı: yeni şifre + tekrar |
 | Hesabım | `/Account/Hesabim` | Hesap bilgileri; **Şifre değiştir** (`/Account/SifreDegistir`) |
@@ -913,7 +913,18 @@ kaynağı seçimi, hata sayfaları, güvenlik başlıkları, Back-Channel Logout
 **Uygulamalarım bağlantısı:** giriş yapmış kullanıcının üst çubuğunda, hesap menüsünün solunda **Uygulamalarım**
 bağlantısı bulunur (kimlik sunucusunun kök adresi; aynı sekmede açılır). Adres `Kimlik:Authority` ayarından türetilir
 (yalnızca https veya `http://127.0.0.1`; kullanıcı girdisinden adres türetilmez, açık yönlendirme yoktur), dar ekranda da
-görünür ve betik gerektirmez. Erişim reddedildi ve hata sayfalarında da vardır; girişsiz sayfada yoktur.
+görünür ve betik gerektirmez. Erişim reddedildi ve hata sayfalarında da vardır; girişsiz sayfada yoktur. Demo OBİS ve
+Demo Yemekhane'nin kendi düzen dosyalarında (`Pages/Shared/_Layout.cshtml`) aynı bağlantı vardır; adres
+`Selcuk.Istemci.Ortak`'taki `KimlikSunucusuBilgisi` servisinden gelir (otomasyonlarla aynı türetme, tek yerde).
+
+**Uygulamalarım grupları:** kimlik sunucusunun Uygulamalarım sayfası kartları istemci kaydındaki isteğe bağlı `grup`
+özelliğine (`simge` gibi OpenIddict `Properties` alanında) göre h2 başlıklı bölümlere ayırır; sıra ve içerik:
+**Kampüs uygulamaları** (Demo OBİS, Demo Yemekhane), **Öğrenci işleri** (İntibak, Staj, Mezuniyet, ÇAP-Yandal,
+Öğrenci Danışmanlık, Lisans Projeleri, İŞKUR), **Kurullar ve komisyonlar** (Etik Kurul, Bölüm Kurul Karar), **Kalite ve
+analiz** (MÜDEK, Sınav Başarısı Analizi). Kullanıcının hiç kartı olmayan grup başlığıyla birlikte gösterilmez; grubu
+olmayan (ör. Tek Kapı) veya tanımsız bir gruba yazılmış istemci sonda **Diğer** altında görünür. Grup içi sıra
+`Istemciler.KartSirasi`'dır. Yeni bir otomasyonun grubu `Istemciler.OtomasyonTanimi`'na verilir
+([docs/otomasyon-sablonu.md](docs/otomasyon-sablonu.md)). Dar ekranda satırlar mevcut düzenle akar.
 
 **Ekranlar temsilidir:** veriler örnektir (mock), formlar antiforgery korumalı gerçek bir POST yapar ama hiçbir şey
 kaydedilmez ("Bu ekran temsilidir; işlem kaydedilmedi."). Her sayfanın üstünde "Temsili ekran" bandı, alt bilgide veri
@@ -925,9 +936,11 @@ değişir:
 "VeriKaynagi": { "Mod": "Api", "ApiAdresi": "https://…/" }   // kaynak sunucusu (Bearer access token)
 ```
 
-Otomasyonların oturum bileti (token'lar dahil) sunucu tarafında şifreli tutulur, çerezde yalnızca anahtar kalır
-(`OturumBiletDeposu`): localhost'ta bütün uygulamaların çerezleri her isteğe eklendiğinden token'lı çerezler başlık
-sınırını (32 KB) aşıp HTTP 431'e yol açıyordu. Uygulama yeniden başlarsa oturum tek girişle sessizce yenilenir.
+Otomasyonların ve iki demonun (Demo OBİS, Demo Yemekhane) oturum bileti (token'lar dahil) sunucu tarafında şifreli
+tutulur, çerezde yalnızca anahtar kalır (`OturumBiletDeposu`, `Selcuk.Istemci.Ortak`): localhost'ta bütün uygulamaların
+çerezleri her isteğe eklendiğinden token'lı çerezler başlık sınırını (32 KB) aşıp HTTP 431'e yol açıyordu. Depo
+`AddSelcukSSO(configuration, sso => sso.SunucuTarafliOturum = true)` ile açılır; varsayılan kapalıdır (token'lar
+çerezde kalır). Otomasyon şablonu ve iki demo açar. Uygulama yeniden başlarsa oturum tek girişle sessizce yenilenir.
 Geçersiz mod veya Api modunda https olmayan adres açılışı durdurur. Api modunda API'ye ulaşılamazsa (bağlantı,
 5 sn zaman aşımı, 5xx) "Veri kaynağına şu an ulaşılamıyor" (503), 401/403'te "Bu verilere erişim yetkin yok" (403);
 stack trace hiçbir ortamda gösterilmez. Mock modunda kapsamı uygulama (`KullaniciKapsami`: öğrenci yalnızca kendi
@@ -1857,6 +1870,11 @@ yakalanır.
 | `Izinli_roller_giris_yapiyor_access_token_kendi_API_kaynagi_icin` (KalanOtomasyon, ×13) | Her izinli rol (danışman olarak hoca.test ve koordinator.test dahil): token `aud` yalnızca kendi `<ad>-api`'si, oku/yaz, rol |
 | `Uygulamalarim_kartlari_izinli_rollere_kayittaki_simgeyle_gorunuyor` (KalanOtomasyon) | baskan.test Danışmanlık, MÜDEK ve Sınav Analizi kartlarını görür, İŞKUR'u görmez; iskur.test yalnızca İŞKUR'u, sekreter.test yalnızca MÜDEK'i, 203011002 Danışmanlık ve İŞKUR'u görür |
 | `Simge_kayittan_geliyor_simgesiz_veya_gecersiz_simgede_addan_uretiliyor` | Staj "ST" (kayıttan), Demo OBİS "DO" (simgesiz: addan), geçersiz simge ("UZUN") yerine "İO"; `GecerliSimge` bir-iki harf |
+| `Baskan_dokuz_otomasyon_kartini_dogru_gruplarda_goruyor_Mezuniyet_ve_ISKUR_yok` (UygulamalarimGruplariTests) | baskan.test: dört grup, sırayla; 9 otomasyon kartı; Mezuniyet ve İŞKUR görünmez |
+| `Ogrenci_yalnizca_izinli_kartlari_goruyor_bos_grup_basligi_cikmiyor` | 203011001: yalnızca Kampüs ve Öğrenci işleri (7 kart); Kurullar ve Kalite başlığı yok |
+| `Grubu_olmayan_veya_bilinmeyen_gruplu_istemci_sonda_Diger_altinda_gorunuyor` | Tek Kapı (grupsuz) ve bilinmeyen grup adı "Diğer"de, sonda; kart içeriği (2FA etiketi, iss'li bağlantı) aynı |
+| `Basliklar_h1_altinda_h2_bolumler_kart_kimlikleri_tek_ve_Ac_baglantilari_karti_tarif_ediyor` | Tek h1, grup başına h2 + `aria-labelledby`, h3 yok; kart kimlikleri tek, "Aç" bağlantıları `aria-describedby` ile karta bağlı |
+| `Her_kayitli_uygulamanin_grubu_tanimli_Tek_Kapi_gruplu_degil` | Her kayıt fonksiyonu beklenen grubu yazar; `KartSirasi` bütün istemcileri kapsar; `GecerliGrup` |
 | **Selcuk.Istemci.Ortak.Tests** | |
 | `Cok_rollu_kullanicida_IsInRole_her_rolde_true_olmayan_rolde_false` | Tam OIDC girişi (sahte sunucu, imzalı id_token'da `role` dizisi): her rolde `IsInRole` true, katalogdaki diğer rollerde ve dizinin metin hâlinde false |
 | `Tek_rollu_kullanicida_metin_bicimi_ayni_sekilde_isleniyor` | `role` metin olduğunda da `IsInRole` doğru |
@@ -1877,7 +1895,13 @@ yakalanır.
 | `Invalid_grant_gelince_yerel_oturum_kapaniyor_ve_kimlik_dogrulamaya_gidiliyor` | invalid_grant: korumalı sayfa authorize'a yönlenir, çerez silinir, refresh token bir daha gönderilmez |
 | `Eszamanli_istekler_ayni_refresh_tokeni_bir_kez_kullaniyor` | Aynı çerezle 5 eşzamanlı istek (sunucu yanıtı gecikmeli): hepsi 200, tek token isteği |
 | `Cikista_once_refresh_token_iptal_ediliyor_sonra_end_sessiona_gidiliyor` | Çıkış: revocation isteği (token, `token_type_hint`, client kimlik bilgileri), sonra end-session'a yönlendirme |
+| `SunucuTarafliOturumSecenekTests` (Istemci.Ortak, 3 test, 10 durum) | `SunucuTarafliOturum` varsayılan kapalı (SessionStore yok); açıkken çerez şemasının deposu `OturumBiletDeposu` ve iptal dinleyicisi aynı nesne; `KimlikSunucusuBilgisi` yalnızca https/loopback Authority kökünü verir |
 | **Selcuk.Demo.Obis.Tests** | |
+| `Giris_sonrasi_oturum_tek_kucuk_cerez_cerezde_token_yok_token_lar_depoda` (SunucuTarafliOturumTests) | Gerçek çerez şemasıyla giriş (7 KB token): tek `Set-Cookie`, parça yok, değer < 500 karakter, çerez biletinde token yok, token'lar şifreli depoda |
+| `Notlarim_ve_Token_Inceleme_depodaki_token_larla_calisiyor` | Demo API çağrısının Bearer'ı depodaki access token; Token İnceleme depodaki token'ları okur |
+| `Cikis_oturum_kaydini_hemen_siliyor` | `/Cikis` POST: end-session yönlendirmesi, depo kaydı hemen silinir |
+| `Back_channel_logout_oturum_kaydini_hemen_siliyor_cerez_bir_daha_gecmiyor` | İmzalı logout_token: kayıt silinir; aynı çerez girişe yönlendirir |
+| `Cikis_ve_Uygulamalarim_baglantisi_girisli_sayfada_duruyor_href_Authority_kokune_esit` | Girişli sayfada `uygulamalarim-baglantisi` href'i Authority köküne eşit; Çıkış düğmesi duruyor |
 | `Profilim_cok_rollu_kullanicinin_rollerini_gruplu_gosteriyor` | Profilim'de katman başlıkları, Türkçe adlar, "Bölüm başkanı (Bilgisayar Mühendisliği)", ham kimlik yok |
 | `Profilim_tek_rolu_ve_idari_personeli_gorunen_adiyla_gosteriyor` | "İdari personel"; boş katman başlığı yok |
 | `Role_claiminin_aciklamasi_rol_katmanlarini_soyluyor` | Token İnceleme'de `role` açıklaması |
@@ -1901,6 +1925,7 @@ yakalanır.
 | `Dis_donus_adresine_yonlendirilmiyor` (×3) | State'te `https://evil.example`, `//evil.example`, `/\evil.example`: yönlendirme `/`'a |
 | `Korumali_sayfalarda_no_store_var_ana_sayfa_ve_statik_dosyada_yok` | Profilim, Notlarım, Ders Yönetimi ve girişsiz korumalı sayfanın yönlendirmesi `no-store`; ana sayfa ve CSS'te yok |
 | **Selcuk.Demo.Yemekhane.Tests** | |
+| `SunucuTarafliOturumTests` (4) | Demo OBİS'tekiyle aynı: tek küçük çerez ve depoda token; çıkışta ve Back-Channel Logout'ta kayıt silinir; Uygulamalarım bağlantısı Authority köküne eşit, Çıkış duruyor |
 | `Haftalik_menu_herkese_acik` | Girişsiz 200; üst çubukta uygulama simgesi (DY), "Demo Yemekhane" ve "Test" etiketi; menü görünür; "Tek Şifre ile giriş yap" |
 | `Girissiz_kullanici_Rezervasyonlarim_icin_kimlik_sunucusuna_yonlendiriliyor` | 302 → authorize, `client_id=demo-yemekhane`, `code_challenge` + `S256` |
 | `Ogrenci_Yemekhane_Yonetimi_erisim_reddedildi` | ogrenci: Yönetim → Erişim reddedildi; Rezervasyonlarım 200 |

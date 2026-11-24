@@ -1,8 +1,8 @@
 # CURRENT_STATE
 
-Son güncelleme: 2026-11-01 (otomasyonlara "Uygulamalarım" bağlantısı; `run-all.ps1` için `-Sadece`, `-ArkaPlan` ve
-`durdur-hepsi.ps1`). Son commit: bu belgeyi içeren "Otomasyonlara Uygulamalarım bağlantısı; run-all için -Sadece,
--ArkaPlan ve durdurma betiği" (öncesi `bfee031`); hash için `git log -1`. Dal `main`.
+Son güncelleme: 2026-11-24 (Uygulamalarım grupları, demolarda dönüş bağlantısı ve sunucu tarafı oturum). Son commit: bu
+belgeyi içeren "Uygulamalarım grupları, demolarda dönüş bağlantısı ve sunucu tarafı oturum" (öncesi `fa06e55`); hash için
+`git log -1`. Dal `main`.
 
 ## Çalışanlar (kodda var ve testle kapsanıyor)
 
@@ -26,11 +26,25 @@ Son güncelleme: 2026-11-01 (otomasyonlara "Uygulamalarım" bağlantısı; `run-
 
 ## Doğrulama durumu
 
-- Bu adımda çalıştırıldı ve geçti: `dotnet build` (0 uyarı), `dotnet test` (18 .NET test projesi, **735** test), Tek Kapı
+- Bu adımda çalıştırıldı ve geçti: `dotnet build` (0 uyarı), `dotnet test SelcukSSO.sln -m:1` (18 .NET test projesi, **759** test; paralel koşuda R21), Tek Kapı
   `npm test` (**49** kontrol: 35 + 14). Sayılar `docs/test-kapsami.md`'de.
 - Kod kapsamı satır %82,5 / dal %69,7 Adım 8 ölçümüdür; sonradan yeniden ölçülmedi (otomasyon projeleri dahil değil).
 
-## Bu adımın değişiklikleri (kullanılabilirlik)
+## Bu adımın değişiklikleri (R7, kullanılabilirlik)
+
+- Uygulamalarım: kartlar istemci `grup` özelliğine göre h2 başlıklı gruplarda (Kampüs uygulamaları, Öğrenci işleri,
+  Kurullar ve komisyonlar, Kalite ve analiz; grupsuz "Diğer"); kartı olmayan grup gösterilmez. Tek Kapı kaydı değişmedi.
+- Demo OBİS ve Demo Yemekhane: üst çubukta "Uygulamalarım" bağlantısı (`KimlikSunucusuBilgisi`, otomasyonlarla ortak
+  türetme) ve sunucu tarafı oturum (`OturumBiletDeposu` `Selcuk.Istemci.Ortak`'a taşındı, `AddSelcukSSO` seçeneği
+  `SunucuTarafliOturum`, varsayılan kapalı; şablon ve iki demo açar). KNOWN_ISSUES R15 kapandı.
+- Güvenlik geçmişi: IP adresi gövde yazı tipiyle ve tabular rakamla (R20 kodda kapandı; PNG'ler yenilenmedi).
+- Uçtan uca ölçüm (run-all.ps1 -ArkaPlan, geçici betik, baskan.test, 11 uygulama sırayla): localhost Cookie başlığı
+  31.022 bayt (demolar 4 parçalı çerez) → 6.740 bayt (demo başına tek 304 karakterlik çerez); hiçbir yanıtta 431 yok;
+  öğrenciyle Demo OBİS Notlarım (Demo API çağrısı) ve Token İnceleme çalıştı. Token yenileme (15 dk) uçtan uca beklenmedi;
+  yenileme testleri Istemci.Ortak.Tests'tedir.
+- Testler: +24 (Identity 5, Istemci.Ortak 10, Demo OBİS 5, Demo Yemekhane 4), hiçbiri silinmedi.
+
+## Önceki adım (kullanılabilirlik)
 
 - Otomasyonların ortak düzeni (`_OtomasyonDuzen`): giriş yapmış kullanıcının üst çubuğunda hesap menüsünün solunda
   "Uygulamalarım" bağlantısı (kimlik sunucusunun kök adresi; `Kimlik:Authority`'den `OtomasyonBilgisi.KimlikSunucusuKoku`

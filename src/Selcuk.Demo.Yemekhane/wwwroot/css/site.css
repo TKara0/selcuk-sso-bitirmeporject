@@ -15,6 +15,28 @@
     }
 }
 
+/* Üst çubuk: "Uygulamalarım" bağlantısı hesap menüsünün solunda. Dar ekranda çubuk sarılır (marka üstte, bağlantı ve
+   hesap düğmesi altta); bağlantı betik gerektirmez. Renk --baglanti (yüzey zemininde AA), odak halkası ortak
+   :focus-visible. Otomasyonların otomasyon.css'indeki kuralla aynıdır. */
+.uygulama-cubugu {
+    flex-wrap: wrap;
+}
+
+.ust-baglantilar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--a2) var(--a4);
+}
+
+.uygulamalarim-baglantisi {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--dokunma);
+    font-weight: 700;
+}
+
 /* Haftalık menü: geniş ekranda her gün bir sütun (ayırıcı çizgili tek yüzey, kart ızgarası değil), dar ekranda her
    gün bir satır. Bugünün sütunu uygulamanın renginde. */
 .hafta {

@@ -54,7 +54,10 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
     bolum_sekreteri; `vurgu` eflatun/bakir/hardal; kapsamlar `<ad>.oku`/`<ad>.yaz`, `aud` `<ad>-api`
     (`Istemciler.OtomasyonKapsamlari`; `cap-yandal.*`). `simge` özelliği (iki harf; Staj "ST", İntibak "İN", Mezuniyet
     "ME", ÇAP-Yandal "ÇY"): Uygulamalarım kartı bunu gösterir (`IndexModel.GecerliSimge`), yoksa veya geçersizse addan
-    üretir (`BasHarfler`). `etik-kurul-otomasyonu` (5303; akademisyen/etik_kurul_uyesi/bolum_baskani, "murdum", "EK"),
+    üretir (`BasHarfler`). `grup` özelliği (Demo OBİS/Yemekhane "Kampüs uygulamaları"; İntibak, Staj, Mezuniyet,
+    ÇAP-Yandal, Danışmanlık, Lisans Projeleri, İŞKUR "Öğrenci işleri"; Etik Kurul, Bölüm Kurul "Kurullar ve
+    komisyonlar"; MÜDEK, Sınav Analizi "Kalite ve analiz"; `Istemciler.Gruplar`, `KartSirasi`): Uygulamalarım kartları
+    h2 başlıklı gruplara ayırır, kartı olmayan grup gösterilmez, grubu olmayan (Tek Kapı dahil) sonda "Diğer". `etik-kurul-otomasyonu` (5303; akademisyen/etik_kurul_uyesi/bolum_baskani, "murdum", "EK"),
     `bolum-kurul-otomasyonu` (5305; bolum_baskani/bolum_kurulu_uyesi/bolum_sekreteri/fakulte_sekreteri, "arduvaz", "BK"),
     `lisans-projeleri-otomasyonu` (5309; ogrenci/akademisyen/bolum_baskani, "cam", "LP"): aynı biçimde, kapsamlar
     `etik-kurul.*`, `bolum-kurul.*`, `lisans-projeleri.*`. `danismanlik-otomasyonu` (5306; danisman/ogrenci/
@@ -160,7 +163,8 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   oturumu çerez doğrulamasında reddeder; kayıtlar `IDistributedCache`'te, varsayılan bellek içi, en az çerez süresi
   kadar). Çerez süresi `Kimlik:OturumSuresi` (varsayılan 8 saat, kayan). `GirisDonusHatasi` `/signin-oidc`
   hatalarını `/GirisHatasi`'na yönlendirir; `UcuncuTarafGiris` initiate_login isteğindeki `iss`'i doğrular (yanlışsa
-  400). `TokenYenileyici`: çerezdeki access token'ın süresine 1 dk'dan az kaldıysa çerez doğrulamasında refresh token
+  400). `OturumBiletDeposu` (isteğe bağlı `SunucuTarafliOturum`, varsayılan kapalı; ad alanı `Selcuk.Otomasyon.Ortak` kaldı) ve
+  `KimlikSunucusuBilgisi` ("Uygulamalarım" adresi). `TokenYenileyici`: çerezdeki access token'ın süresine 1 dk'dan az kaldıysa çerez doğrulamasında refresh token
   ile yeniler (aynı refresh token için tek uçuş, sonuç 1 dk paylaşılır; invalid_grant'te yerel oturum kapanır);
   çıkışta (`OnRedirectToIdentityProviderForSignOut`) önce refresh token'ı iptal eder. Ek kapsamlar
   `Kimlik:EkKapsamlar`. Yeni bir alt uygulama bu kütüphaneyle bağlanır.
@@ -179,7 +183,7 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   `otomasyon-betiksiz.css`; TempData mesajı; alt bilgide `AltBilgiEk` bölümüyle veri rozeti). `KullaniciKapsami`
   (preferred_username, bolum, fakulte; `Kapsar(Kendi|Bolum|Fakulte, …)`; Api modunda süzmeyi API yapar).
   `TemsiliIslem.TemsiliIslemSonucu()` (veriyi değiştirmeden aynı sayfaya, TempData mesajı). `OturumBiletDeposu`
-  (çerez `SessionStore`: bilet ve token'lar Data Protection ile şifreli `IDistributedCache`'te, çerezde yalnızca
+  (artık `Selcuk.Istemci.Ortak`'ta, şablon açar; çerez `SessionStore`: bilet ve token'lar Data Protection ile şifreli `IDistributedCache`'te, çerezde yalnızca
   anahtar; localhost'ta bütün uygulamaların çerezleri birikip Kestrel'in 32 KB başlık sınırını aşıyordu, HTTP 431;
   kaydın süresi biletin bitişi, yoksa çerez ömrü; bitişi geçmiş kayıt okununca silinir; çıkışta `RemoveAsync`,
   Back-Channel Logout'ta `IOturumIptalDinleyicisi` ile sid/sub dizinindeki kayıtlar hemen silinir). Ortak parçalar
@@ -227,7 +231,8 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   adları örnektir. Örnek veri 16-17 kayıt, ikisi Elektrik-Elektronik'ten. Sözleşmeler
   `docs/api-sozlesmeleri/danismanlik.md`, `iskur.md`, `mudek.md`, `sinav-analizi.md`.
 - `src/Selcuk.Demo.Obis` (https://localhost:5101): ortak düzen (`Selcuk.Arayuz`, simge "DO", vurgu lacivert
-  #2F4F8F / koyu #9DB5E8). Rol bazlı sayfalar (Notlarım: ogrenci, Ders Yönetimi: akademisyen), Profilim, yalnızca
+  #2F4F8F / koyu #9DB5E8). Üst çubukta "Uygulamalarım" bağlantısı (`KimlikSunucusuBilgisi`) ve sunucu tarafı oturum
+  (`SunucuTarafliOturum`; çerezde yalnızca anahtar). Rol bazlı sayfalar (Notlarım: ogrenci, Ders Yönetimi: akademisyen), Profilim, yalnızca
   Development'ta Token İnceleme (her claim bir satır: Mono ad/değer, Türkçe açıklama `TokenIncelemeModel.Aciklamalar`;
   ham JSON açılır bölümde; refresh token yalnızca var/son kullanma), RP-initiated logout. Notlarım notları Demo
   API'den (`NotlarApiIstemcisi`, `DemoApi:Adres`, oturumdaki access token) çeker; toplam kredi ve ağırlıklı ortalama
@@ -237,7 +242,8 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   kimlik sunucusu, JWKS; `aud` = `demo-api`, `typ` = `at+jwt`, `IncludeErrorDetails = false`). `GET /api/notlar`:
   `scope` ⊇ `notlar.oku` ve rol `ogrenci` (yoksa 401/403); yalnızca token'daki `sub`'ın notları (`INotDeposu`).
   Güvenlik başlıkları ve `no-store`.
-- `src/Selcuk.Demo.Yemekhane` (https://localhost:5102): ortak düzen (simge "DY", vurgu nar #9C3D54 / koyu #E99AAE).
+- `src/Selcuk.Demo.Yemekhane` (https://localhost:5102): ortak düzen (simge "DY", vurgu nar #9C3D54 / koyu #E99AAE). Aynı
+  "Uygulamalarım" bağlantısı ve sunucu tarafı oturum.
   Haftalık menü (herkese açık; günler sütun, bugün vurgulu), Rezervasyonlarım (bellek içi; gün listesi, durum etiketi,
   sonuç `TempData` ile bantta ve `data-duyur` ile ekran okuyucuya), Yemekhane Yönetimi (personel), Profilim,
   RP-initiated logout. Veriler uydurmadır.

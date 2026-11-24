@@ -23,6 +23,16 @@
     margin: var(--a1) 0 0;
 }
 
+/* Uygulamalarım grupları: her grup h2 başlıklı bir bölüm; gruplar arasında token aralığı. Dar ekranda satırlar
+   mevcut düzenle akar. */
+.uygulama-grubu + .uygulama-grubu {
+    margin-top: var(--a8);
+}
+
+.grup-baslik {
+    margin-bottom: var(--a1);
+}
+
 /* Uygulamalarım: ayırıcı çizgili satırlar; geniş ekranda iki sütun (kart ızgarası değil). */
 .uygulamalar > li {
     display: grid;
@@ -292,8 +302,11 @@
     white-space: nowrap;
 }
 
-/* IP adresi Mono, harf aralığı yok. */
+/* IP adresi gövde yazı tipiyle ve tabular rakamla. Ortak .mono sınıfı (Mono yazı tipi) bu hücrede geçersiz kılınır:
+   tek aralıklı yazı tipinde "::1" gibi adresler ": : 1" aralıklı görünüyordu. */
 .gecmis td.mono {
+    font-family: var(--yazi);
+    font-variant-numeric: tabular-nums;
     letter-spacing: 0;
 }
 

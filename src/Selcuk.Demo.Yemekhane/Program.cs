@@ -4,7 +4,9 @@ using Selcuk.Istemci.Ortak;
 var builder = WebApplication.CreateBuilder(args);
 
 // Cookie + OpenID Connect (code + PKCE), claim eşlemeleri ve Back-Channel Logout: Selcuk.Istemci.Ortak.
-builder.Services.AddSelcukSSO(builder.Configuration);
+// Oturum bileti ve token'lar sunucu tarafında saklanır, çerezde yalnızca anahtar kalır (localhost'ta çerez birikimi,
+// HTTP 431).
+builder.Services.AddSelcukSSO(builder.Configuration, sso => sso.SunucuTarafliOturum = true);
 builder.Services.AddSingleton<RezervasyonDeposu>();
 builder.Services.AddRazorPages();
 

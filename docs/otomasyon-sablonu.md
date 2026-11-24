@@ -18,7 +18,8 @@ app.UseSelcukOtomasyon();
 ```
 
 - **`AddSelcukOtomasyon`** (servisler, tek çağrı): `AddSelcukSSO` (çerez + OIDC, code + PKCE, userinfo, token yenileme,
-  Back-Channel Logout alıcısının servisleri), oturum biletinin sunucu tarafında saklanması (`OturumBiletDeposu`:
+  Back-Channel Logout alıcısının servisleri), oturum biletinin sunucu tarafında saklanması (`SunucuTarafliOturum`
+  seçeneğiyle açılan `OturumBiletDeposu`, artık `Selcuk.Istemci.Ortak`'ta; Demo OBİS ve Demo Yemekhane de açar:
   bilet ve token'lar Data Protection ile şifreli olarak `IDistributedCache`'te, çerezde yalnızca anahtar. Geliştirmede
   bütün uygulamalar localhost'ta olduğundan tarayıcı her isteğe hepsinin çerezlerini gönderir; token'lı çerezler
   birkaç uygulamadan sonra Kestrel'in 32 KB başlık sınırını aşıyordu, HTTP 431. Sınır yükseltilmedi. Kaydın süresi
@@ -93,8 +94,12 @@ karşılığına bakın.
 4. **`appsettings.json`.** `Kimlik` (`Authority`, `ClientId`, `CerezAdi`, `EkKapsamlar`: `offline_access`, `<ad>.oku`,
    `<ad>.yaz`) ve `VeriKaynagi` (`Mod: "Mock"`).
 5. **İstemci kaydı.** `src/Selcuk.Identity/Data/Istemciler.cs`'te `Tanim(…)` ile gizli web istemcisi (adresler
-   portdan türer), `<ad>.oku`/`<ad>.yaz` izinleri, `izinliRoller`, `vurgu` ve `simge` (iki harf, üst çubuktakiyle aynı;
-   Uygulamalarım kartı bunu gösterir, yoksa addan üretir) özellikleri (`Istemciler.OtomasyonTanimi`); kapsam tanımları
+   portdan türer), `<ad>.oku`/`<ad>.yaz` izinleri, `izinliRoller`, `vurgu`, `simge` (iki harf, üst çubuktakiyle aynı;
+   Uygulamalarım kartı bunu gösterir, yoksa addan üretir) ve `grup` özellikleri (`Istemciler.OtomasyonTanimi`; `grup`
+   Uygulamalarım'da kartın altında göründüğü başlıktır: `Istemciler.GrupOgrenciIsleri`, `GrupKurullar` veya `GrupKalite`;
+   yeni bir grup gerekirse `Istemciler.Gruplar`'a eklenir. Grup içi sıra için `Istemciler.KartSirasi`'na istemci kimliği
+   eklenir, eklenmezse kart grubunun sonuna ada göre girer. `grup` verilmezse veya tanımsızsa kart "Diğer" altında
+   görünür); kapsam tanımları
    (`Resources = { "<ad>-api" }`) ve Program.cs `RegisterScopes`. `BaslangicVerisi`'nde kapsamlar (her ortam) ve
    `IstemciKaydetAsync(…, "Istemciler:<Ad>:ClientSecret", …)` (Development). Sır user-secrets'ta: kimlik sunucusunda
    `Istemciler:<Ad>:ClientSecret`, otomasyonda `Kimlik:ClientSecret` (aynı rastgele değer, ekrana yazdırmadan).

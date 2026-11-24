@@ -81,11 +81,7 @@ public interface IDogrulanabilirAyar
 /// </summary>
 public sealed record OtomasyonBilgisi(string Ad, string Simge, string Aciklama, string? KimlikSunucusuAdresi = null)
 {
-    public static string? KimlikSunucusuKoku(string? authority) =>
-        Uri.TryCreate(authority, UriKind.Absolute, out var adres) && string.IsNullOrEmpty(adres.UserInfo)
-        && (adres.Scheme == Uri.UriSchemeHttps || (adres.Scheme == Uri.UriSchemeHttp && adres.Host == "127.0.0.1"))
-            ? adres.GetLeftPart(UriPartial.Authority) + "/"
-            : null;
+    public static string? KimlikSunucusuKoku(string? authority) => KimlikSunucusuBilgisi.Koku(authority);
 }
 
 /// <summary>
@@ -113,13 +109,12 @@ public static class OtomasyonUzantilari
         ayarla(secenekler);
         Dogrula(secenekler);
 
-        services.AddSelcukSSO(configuration);
         // Oturum bileti sunucu tarafında, çerezde yalnızca anahtar (localhost'ta çerez birikimi, HTTP 431).
-        OturumBiletDeposu.Kaydet(services);
+        services.AddSelcukSSO(configuration, sso => sso.SunucuTarafliOturum = true);
         services.AddHttpContextAccessor();
         // Authority, AddSelcukSSO gibi kullanım anında okunur.
         services.AddSingleton(sp => new OtomasyonBilgisi(secenekler.Ad, secenekler.Simge, secenekler.Aciklama,
-            OtomasyonBilgisi.KimlikSunucusuKoku(sp.GetRequiredService<IConfiguration>()["Kimlik:Authority"])));
+            sp.GetRequiredService<KimlikSunucusuBilgisi>().Adres));
         var menu = new OtomasyonMenusu([.. secenekler.Menu]);
         services.AddSingleton(menu);
 

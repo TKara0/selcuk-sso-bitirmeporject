@@ -19,7 +19,8 @@ Kaynak: `AGENTS.md`, README, tehdit modeli. Her karar değiştirilmemesi gereken
 | Tek DbContext, SQL Server LocalDB; testte SQLite in-memory | Basitlik; hızlı izole test | – | Test başına adlandırılmış paylaşımlı önbellekli DB |
 | Selcuk.Roller tek kaynak, ad alanı kökte (`Selcuk.Roller`) | `Roller` adı gölgelenmesin | Ayrı ad alanı → gölgeleme | Yeni rol = katalogda bir satır; doğrulayıcı geçmeli |
 | Otomasyonlar temsili ekran + Mock veri; Api modu `https` zorunlu | API'ler henüz yok | – | Ekranlar gerçek veri iddia etmez ("Temsili ekran" bandı) |
-| Çerez yerine sunucu tarafı oturum bileti (`OturumBiletDeposu`) | localhost'ta çerez birikimi 431 hatası verdi | Çerezde token → başlık sınırı aşılıyor | Çerezde yalnızca anahtar |
+| Çerez yerine sunucu tarafı oturum bileti (`OturumBiletDeposu`): otomasyonlara ve Demo OBİS/Yemekhane'ye de uygulandı | localhost'ta çerez birikimi 431 hatası verdi; iki demo da aynı riski taşıyordu | Çerezde token → başlık sınırı aşılıyor; sınırı yükseltmek (reddedildi) | Depo `Selcuk.Istemci.Ortak`'ta, `AddSelcukSSO` seçeneği `SunucuTarafliOturum` (varsayılan kapalı; otomasyon şablonu ve iki demo açar); çerezde yalnızca anahtar |
+| Uygulamalarım'da kartlar istemci `grup` özelliğiyle gruplanır; grup başlıkları ve sırası kodda (`Istemciler.Gruplar`, `KartSirasi`) | Kart sayısı arttı (13); yönetim paneli yok | Alfabetik tek liste (önceki durum); grubu rolden türetmek | Grubu olmayan/bilinmeyen gruplu istemci "Diğer"; kartı olmayan grup gösterilmez |
 | Tasarım: shadow yok, CSP gevşetilmez, satır içi stil/betik yok | Erişilebilirlik + CSP | – | Yeni bileşenler yalnızca token'larla |
 | Gerçek Selçuk sistemlerine yalnızca `araclar/tek-kapi`; test/demo/kimlik sunucusu bağlanmaz | Kural (c) | – | Test verisi kurgusal, `@test.local` |
 | Ölçüm aracı yalnızca localhost + https | Yanlışlıkla dış istek (I8) | – | `YerelAg.Dogrula` + `YalnizcaYerelHandler` |

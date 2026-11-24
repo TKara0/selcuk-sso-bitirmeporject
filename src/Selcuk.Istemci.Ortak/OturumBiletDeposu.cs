@@ -7,11 +7,15 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Selcuk.Istemci.Ortak;
 
+// Ad alanı bilerek Selcuk.Otomasyon.Ortak kaldı: depo önce otomasyon şablonundaydı, Istemci.Ortak'a taşınırken mevcut
+// testlerin (Assert.IsType<OturumBiletDeposu>) değişmeden derlenmesi için ad alanı korundu.
 namespace Selcuk.Otomasyon.Ortak;
 
 /// <summary>
 /// Oturum biletinin (claim'ler ve SaveTokens ile access/refresh/id token) sunucu tarafında saklanması
-/// (CookieAuthenticationOptions.SessionStore). Çerezde yalnızca küçük bir anahtar kalır. Gerekçe: geliştirmede bütün
+/// (CookieAuthenticationOptions.SessionStore). AddSelcukSSO'nun isteğe bağlı seçeneğidir
+/// (<c>SelcukSsoSecenekleri.SunucuTarafliOturum</c>, varsayılan kapalı); bölüm otomasyonları, Demo OBİS ve Demo
+/// Yemekhane açar. Çerezde yalnızca küçük bir anahtar kalır. Gerekçe: geliştirmede bütün
 /// uygulamalar localhost'ta çalışır ve tarayıcı çerezleri porta göre ayırmaz; her uygulamanın token'lı çerezi
 /// (3-4 parça) diğerlerine de gönderilir ve birkaç uygulamadan sonra istek başlıkları Kestrel'in sınırını (32 KB)
 /// aşar (HTTP 431). Sınır yükseltilmez; bilet bu uygulamanın Data Protection anahtarıyla şifrelenip IDistributedCache'e
@@ -144,7 +148,7 @@ public sealed class OturumBiletDeposu(
             ? [.. Encoding.UTF8.GetString(veri).Split('\n', StringSplitOptions.RemoveEmptyEntries)]
             : [];
 
-    /// <summary>Çerez şemasının oturum deposu bu sınıf olur (AddSelcukOtomasyon).</summary>
+    /// <summary>Çerez şemasının oturum deposu bu sınıf olur (AddSelcukSSO, SunucuTarafliOturum açıkken).</summary>
     internal static void Kaydet(IServiceCollection services)
     {
         services.AddSingleton<OturumBiletDeposu>();

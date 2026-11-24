@@ -9,8 +9,9 @@ haritası var.
 src/Selcuk.Identity            kimlik sunucusu (Program.cs, Data/, Oidc/, Hesap/, Denetim/, Eposta/, Pages/)
 src/Selcuk.Roller              rol kataloğu (Roller.Katalog, RolDogrulayici) – tek kaynak
 src/Selcuk.Arayuz              RCL: tasarım sistemi (selcuk.css/js, fontlar, kapı SVG, _SelcukDuzen)
-src/Selcuk.Istemci.Ortak       AddSelcukSSO, Back-Channel alıcısı, OturumIptalDeposu, TokenYenileyici
-src/Selcuk.Otomasyon.Ortak     AddSelcukOtomasyon/UseSelcukOtomasyon, menü→yetki, VeriKaynagi, OturumBiletDeposu
+src/Selcuk.Istemci.Ortak       AddSelcukSSO, Back-Channel alıcısı, OturumIptalDeposu, TokenYenileyici, OturumBiletDeposu
+                               (isteğe bağlı sunucu tarafı oturum), KimlikSunucusuBilgisi (Uygulamalarım adresi)
+src/Selcuk.Otomasyon.Ortak     AddSelcukOtomasyon/UseSelcukOtomasyon, menü→yetki, VeriKaynagi
 src/Selcuk.Otomasyon.*         Intibak/Staj/EtikKurul/Mezuniyet/BolumKurul/Danismanlik/Iskur/Mudek/LisansProjeleri/
                                SinavAnalizi/CapYandal (5301-5311): Sozlesme/ (DTO + arayüz), Veri/ (Mock + Api)
 src/Selcuk.Demo.Obis|Yemekhane|Api
@@ -51,7 +52,13 @@ Arka plan hizmetleri: denetim yazma/temizleme, e-posta gönderim, token budama.
 
 `AddSelcukSSO` (Cookie + OIDC) → `MapSelcukBackChannelLogout` (`POST /signout-backchannel`) → `TokenYenileyici`
 (çerez doğrulamasında refresh) → `OturumIptalDeposu` (iptal edilen sid reddedilir; `IDistributedCache`, varsayılan
-bellek içi). Otomasyonlarda çerez yalnızca anahtar taşır (`OturumBiletDeposu`, Data Protection ile şifreli önbellek).
+bellek içi). `AddSelcukSSO(configuration, sso => sso.SunucuTarafliOturum = true)` ile (varsayılan kapalı) çerez yalnızca
+anahtar taşır: `OturumBiletDeposu` (`Selcuk.Istemci.Ortak`, Data Protection ile şifreli `IDistributedCache`, süre çerez
+ömrüyle aynı, çıkışta ve Back-Channel Logout'ta hemen silinir). Otomasyon şablonu, Demo OBİS ve Demo Yemekhane açar. Depo
+sınıfının ad alanı eski yerinden kalma `Selcuk.Otomasyon.Ortak`'tır (mevcut testlerin değişmemesi için). Alt uygulamaların
+"Uygulamalarım" bağlantısının adresi `KimlikSunucusuBilgisi` servisindendir (`Kimlik:Authority` kökü; yalnızca https veya
+`http://127.0.0.1`). Kimlik sunucusunun Uygulamalarım sayfası kartları istemci `grup` özelliğine göre gruplar
+(`Istemciler.Gruplar`, `KartSirasi`; grupsuz → "Diğer").
 Yeni otomasyon kontrol listesi: [otomasyon-sablonu.md](otomasyon-sablonu.md).
 
 ## Veri kaynakları
