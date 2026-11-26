@@ -9,6 +9,7 @@ Tek Şifre Giriş Sistemi: tek komutla başlatma (Windows; yalnızca Python stan
     python start.py --kurulum --deneme hiçbir şey yazmadan neyin üretileceğini (yalnızca anahtar adları) göster
     python start.py --sadece staj,obis yalnızca seçili uygulamaları başlat (kimlik sunucusu her zaman başlar)
     python start.py --tarayici-acma    tarayıcıyı açma
+    python start.py --hesaplar         yalnızca TEST_KULLANICILARI.md'yi üret (gösterim hesapları; git'e girmez)
 
 Uygulama listesi burada yinelenmez: scripts/run-all.ps1'den okunur ve uygulamalar `run-all.ps1 -ArkaPlan` ile
 başlatılır (çıktı logs/<ad>.log, PID'ler logs/run-all.pids); kapatma `scripts/durdur-hepsi.ps1` iledir. Tek Kapı
@@ -17,6 +18,10 @@ başlatılmaz.
 Sırlar: bu betik yalnızca user-secrets ANAHTAR ADLARINA bakar ve gösterir. Değerler ekrana, loga veya başka bir dosyaya
 yazılmaz; --kurulum yeni değerleri yalnızca `dotnet user-secrets set` ile kullanıcının user-secrets deposuna yazar, var
 olan hiçbir değeri değiştirmez. Sertifikayı kendiliğinden güvenilir yapmaz (komutu önerir).
+
+Tek istisna TEST_KULLANICILARI.md'dir (her başlatmada ve --hesaplar ile üretilir): yalnızca altı gösterim hesabının
+(GOSTERIM_HESAPLARI; kurgusal, yalnızca yerel Development) şifreleri user-secrets'tan bu yerel dosyaya yazılır; konsola
+yazılmaz. Dosya git'te yok sayılmıyorsa (`git check-ignore`) yazılmaz.
 """
 from __future__ import annotations
 
@@ -42,6 +47,7 @@ RUN_ALL = KOK / "scripts" / "run-all.ps1"
 DURDUR = KOK / "scripts" / "durdur-hepsi.ps1"
 LOG_KLASORU = KOK / "logs"
 PID_DOSYASI = LOG_KLASORU / "run-all.pids"
+HESAP_DOSYASI = KOK / "TEST_KULLANICILARI.md"
 KIMLIK_ADRESI = "https://localhost:5001"
 IDENTITY_PROJESI = "src/Selcuk.Identity"
 KIMLIK_SUNUCUSU_AD = "kimlik"
@@ -63,6 +69,18 @@ TEST_KULLANICILARI = [
     ("Koordinator", "koordinator.test", ["akademisyen", "cap_yandal_koordinatoru", "danisman"]),
     ("Iskur", "iskur.test", ["personel", "iskur_sorumlusu"]),
 ]
+
+# TEST_KULLANICILARI.md'ye yazılan gösterim hesapları (yalnızca bunlar; BaslangicVerisi.GosterimHesaplari ile aynı):
+# user-secrets anahtarı -> (kategori, görünen ad). Sıra dosyadaki satır sırasıdır; önerilen iki hesap en üsttedir.
+GOSTERIM_HESAPLARI = {
+    "Ogrenci2": ("Öğrenci", "Test Öğrenci İki"),
+    "BolumBaskani": ("Bölüm başkanı", "Test Bölüm Başkanı"),
+    "Akademisyen": ("Akademisyen", "Test Akademisyen"),
+    "BolumSekreteri": ("Bölüm sekreteri", "Test Bölüm Sekreteri"),
+    "FakulteSekreteri": ("Fakülte sekreteri", "Test Fakülte Sekreteri"),
+    "Komisyon": ("Komisyon üyesi", "Test Komisyon Üyesi"),
+}
+ONERILEN_HESAPLAR = ("Ogrenci2", "BolumBaskani")
 
 # Uygulama (run-all.ps1 adı) -> kimlik sunucusundaki istemci anahtarı. Kimlik sunucusunda
 # `Istemciler:<anahtar>:ClientSecret`, uygulamada `Kimlik:ClientSecret` aynı değerde olmalıdır.
@@ -353,6 +371,68 @@ def on_kontrol(uygulamalar: list[dict]) -> bool:
 
 
 # ---------------------------------------------------------------------------------------------------------------
+# TEST_KULLANICILARI.md
+
+def hesap_listesi_metni(sirlar: dict[str, str]) -> str:
+    """Dosyanın içeriği. Kullanıcı ve roller TEST_KULLANICILARI'ndan, şifreler kimlik sunucusunun user-secrets'ından."""
+    kullanicilar = {anahtar: (ad, roller) for anahtar, ad, roller in TEST_KULLANICILARI}
+    satirlar = [
+        "# Test hesapları",
+        "",
+        "> **Bu dosya yalnızca bu bilgisayardadır, git'e girmez. Hesaplar kurgusaldır ve yalnızca yerel geliştirme",
+        "> ortamı içindir. Paylaşma.**",
+        "",
+        "★ gösterim için önerilen iki hesap.",
+        "",
+        "| Kategori | Kullanıcı adı | Görünen ad | Roller | Uygulamalarım'da gördüğü uygulamalar | Şifre |",
+        "|---|---|---|---|---|---|",
+    ]
+    for anahtar, (kategori, gorunen_ad) in GOSTERIM_HESAPLARI.items():
+        kullanici, roller = kullanicilar[anahtar]
+        # Demo API'nin Uygulamalarım'da kartı yoktur.
+        gorulen = [KISA_AD[ad] for ad, izinli in UYGULAMA_ROLLERI.items()
+                   if ad != "demo-api" and (not izinli or set(roller) & set(izinli))]
+        deger = sirlar.get(f"TestKullanicilari:{anahtar}:Sifre")
+        # Tablo hücresi: "|" kaçışlanır.
+        sifre = "`" + str(deger).replace("|", "\\|") + "`" if deger else "yok (`python start.py --kurulum`)"
+        isaret = "★ " if anahtar in ONERILEN_HESAPLAR else ""
+        satirlar.append(f"| {isaret}{kategori} | `{kullanici}` | {gorunen_ad} | {', '.join(roller)} "
+                        f"| {', '.join(gorulen)} | {sifre} |")
+    satirlar += [
+        "",
+        f"**Giriş adresi:** {KIMLIK_ADRESI} (önce `python start.py`).",
+        "",
+        "## Kullanım",
+        "",
+        "- Hesap değiştirmek için çıkış yap (bir uygulamadan çıkınca hepsinden çıkılır) veya ayrı bir gizli pencere kullan.",
+        "- 5 hatalı denemede hesap 15 dakika kilitlenir.",
+        "- Şifreler bu bilgisayarın user-secrets'ındaki `TestKullanicilari:<Anahtar>:Sifre` değerleridir. Kimlik sunucusu",
+        "  Development'ta açılırken bu hesapların veritabanındaki şifresi farklıysa o değere eşitler (uygulamadan değiştirdiğin",
+        "  şifre bir sonraki açılışta geri döner).",
+        "- Bu dosya her `python start.py` çalıştırmasında yeniden üretilir (`python start.py --hesaplar` yalnızca dosyayı",
+        "  üretir); elle yaptığın değişiklikler silinir.",
+        "",
+    ]
+    return "\n".join(satirlar)
+
+
+def hesaplari_yaz() -> bool:
+    """TEST_KULLANICILARI.md'yi üretir. Git'in dosyayı yok saydığı doğrulanamazsa yazmaz. Konsola şifre yazılmaz."""
+    kod, _ = komut_calistir(["git", "check-ignore", "--quiet", HESAP_DOSYASI.name], 30)
+    if kod != 0:
+        uyari(f"{HESAP_DOSYASI.name} yazılmadı: git'te yok sayıldığı doğrulanamadı (git check-ignore). "
+              f".gitignore'da '{HESAP_DOSYASI.name}' satırı olmalı ve dosya git'e eklenmemiş olmalı.")
+        return False
+    try:
+        HESAP_DOSYASI.write_text(hesap_listesi_metni(secrets_oku(IDENTITY_PROJESI)), encoding="utf-8")
+    except OSError as hata:
+        uyari(f"{HESAP_DOSYASI.name} yazılamadı ({type(hata).__name__}).")
+        return False
+    yaz(f"Test hesapları: {HESAP_DOSYASI.name}")
+    return True
+
+
+# ---------------------------------------------------------------------------------------------------------------
 # --kurulum
 
 def rastgele_sir() -> str:
@@ -537,7 +617,10 @@ def kullanicilari_yaz(uygulamalar: list[dict]) -> None:
 
 
 def baslat(uygulamalar: list[dict], sadece: str | None, tarayici_acma: bool, zaman_asimi: int) -> int:
-    if not on_kontrol(uygulamalar):
+    hazir = on_kontrol(uygulamalar)
+    hesaplari_yaz()
+    yaz()
+    if not hazir:
         yaz("Ön kontrol başarısız; hiçbir uygulama başlatılmadı. Yukarıdaki ✗ satırlarındaki komutlarla düzelt, sonra yeniden çalıştır.")
         return 1
 
@@ -623,6 +706,7 @@ def main() -> int:
     ayrisici.add_argument("--sadece", metavar="AD,AD", help="yalnızca seçili uygulamalar (run-all.ps1 -Sadece ile aynı adlar)")
     ayrisici.add_argument("--tarayici-acma", action="store_true", help="tarayıcıyı açma")
     ayrisici.add_argument("--zaman-asimi", type=int, default=120, metavar="SN", help="uygulama başına cevap bekleme süresi (varsayılan 120)")
+    ayrisici.add_argument("--hesaplar", action="store_true", help="yalnızca TEST_KULLANICILARI.md'yi üret (git'e girmez)")
     arguman = ayrisici.parse_args()
     if arguman.deneme and not arguman.kurulum:
         ayrisici.error("--deneme yalnızca --kurulum ile kullanılır")
@@ -636,6 +720,8 @@ def main() -> int:
         return durdur(tum)
     if arguman.kurulum:
         return kurulum(tum, arguman.deneme)
+    if arguman.hesaplar:
+        return 0 if hesaplari_yaz() else 1
     return baslat(uygulamalar, arguman.sadece, arguman.tarayici_acma, arguman.zaman_asimi)
 
 

@@ -104,6 +104,10 @@ bekleme; `Ctrl+C` veya başka oturumdan `--durdur` ile kapatılır ve portlarda 
 sırrı kimlik sunucusunda ve uygulamada aynı değerdir (32 bayt, base64); var olan değer değiştirilmez, değer yazdırılmaz;
 `--deneme` hiçbir şey yazmaz. Kimlik sunucusundaki test kullanıcı ve istemci listesi `start.py`'de ayrıca durur
 (`BaslangicVerisi.cs` ve `Istemciler.cs` ile aynı olmalı; yeni istemci/kullanıcı eklenince burası da güncellenir).
+Her başlatmada (ve `--hesaplar` ile tek başına) `GOSTERIM_HESAPLARI`'ndaki altı hesap, user-secrets'taki şifreleriyle
+git dışı `TEST_KULLANICILARI.md`'ye yazılır (`git check-ignore` doğrulanmadan yazılmaz; konsola şifre yazılmaz).
+Kimlik sunucusu Development açılışında yalnızca bu hesapların (`BaslangicVerisi.GosterimHesaplari`) veritabanı şifresini
+user-secrets değerine eşitler ve `SifreDegisikligi` ile oturumlarını kapatır.
 
 ## Test mimarisi
 

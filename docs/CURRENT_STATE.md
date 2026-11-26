@@ -1,7 +1,7 @@
 # CURRENT_STATE
 
-Son güncelleme: 2026-11-25 (R12, son arayüz düzeltmeleri, güncel kod kapsamı ve ekran görüntülerinin yenilenmesi).
-Son commit: bu belgeyi içeren "Son arayüz düzeltmeleri, güncel kod kapsamı ve ekran görüntülerinin yenilenmesi" (öncesi `62636b6`);
+Son güncelleme: 2026-11-26 (R13, test hesapları için yerel liste ve gösterim şifreleri).
+Son commit: bu belgeyi içeren "Test hesapları için yerel liste ve gösterim şifreleri" (öncesi `75b020f`);
 hash için `git log -1`. Dal `main`.
 
 ## Çalışanlar (kodda var ve testle kapsanıyor)
@@ -12,7 +12,8 @@ hash için `git log -1`. Dal `main`.
 - Şifre sıfırlama/değiştirme, kilit (5/15 dk), hız sınırı, 2FA (TOTP, kurtarma kodu, cihaz hatırlama, step-up),
   denetim kaydı + güvenlik geçmişi, uygulama bazlı erişim izni, rol kataloğu (çok rollü kullanıcı).
 - Tek komutla başlatma: `python start.py` (ön kontrol, `run-all.ps1 -ArkaPlan`, https bekleme, Ctrl+C / `--durdur`;
-  `--kurulum` eksik user-secrets'ı üretir). Bkz. README > Hızlı başlangıç.
+  `--kurulum` eksik user-secrets'ı üretir; her başlatmada ve `--hesaplar` ile git dışı `TEST_KULLANICILARI.md`). Bkz.
+  README > Hızlı başlangıç.
 - Ortak tasarım sistemi; Demo OBİS (gerçek bir öğrenci bilgi sisteminin sayfa düzenine benzeyen temsili arayüz: mavi şerit,
   sekme çubuğu, 10 öğrenci ve 2 akademisyen sekmesi), Demo Yemekhane, Demo API; on bir bölüm otomasyonunun hepsi hazır (temsili ekran,
   Mock veri): İntibak 5301, Staj 5302, Etik Kurul 5303, Mezuniyet 5304, Bölüm Kurul Karar 5305, Öğrenci Danışmanlık
@@ -30,12 +31,29 @@ hash için `git log -1`. Dal `main`.
 
 ## Doğrulama durumu
 
-- Bu adımda çalıştırıldı ve geçti: `dotnet build` (0 uyarı), `dotnet test SelcukSSO.sln` (varsayılan paralel; 18 .NET test projesi, **970** test), Tek Kapı
+- Bu adımda çalıştırıldı ve geçti: `dotnet build` (0 uyarı), `dotnet test SelcukSSO.sln` (varsayılan paralel; 18 .NET test projesi, **978** test), Tek Kapı
   `npm test` (**49** kontrol: 35 + 14). Sayılar `docs/test-kapsami.md`'de.
+- Uçtan uca (R13, yerel): `python start.py` ile 15 uygulama başladı; altı gösterim hesabıyla `TEST_KULLANICILARI.md`'deki
+  şifrelerle giriş yapılıp Uygulamalarım açıldı; veritabanında yalnızca bu altı hesabın şifre özeti değişti; sistem
+  kapatıldı.
 - Kod kapsamı 2026-11-25'te (R12) 18 test projesiyle yeniden ölçüldü: satır %92,1 (10301 / 11180), dal %78,0 (2962 / 3797);
   tablo 20 kaynak projeyi (Demo OBİS dahil) kapsar, 2026-11-24 değerleri (%91,7 / %77,4) `docs/test-kapsami.md`'de önceki ölçüm notu olarak durur.
 
-## Bu adımın değişiklikleri (R12, son arayüz düzeltmeleri, kapsam ve ekran görüntüleri)
+## Bu adımın değişiklikleri (R13, test hesapları)
+
+- Altı gösterim hesabı (203011002, hoca.test, baskan.test, sekreter.test, fakultesekreter.test, komisyon.test) bu
+  bilgisayarın user-secrets'ında akılda kalır, politikaya uyan şifreler aldı; depoda şifre yok. Diğer hesapların,
+  ölçüm kullanıcılarının ve istemci sırlarının değerleri değişmedi. `start.py --kurulum` değişmedi (her şeyi rastgele
+  üretir). Karar gerekçesi [DECISIONS.md](DECISIONS.md).
+- `BaslangicVerisi`: yalnızca Development'ta ve yalnızca `GosterimHesaplari` için veritabanı şifresi user-secrets'tan
+  farklıysa Identity ile sıfırlanır; `SifreDegisikligi.SifirlandiAsync` (artık isteğe bağlı denetim ayrıntısı alır)
+  oturumları kapatır ve denetim yazar.
+- `start.py`: `TEST_KULLANICILARI.md` üretimi (her başlatmada ve `--hesaplar`), `.gitignore`'a eklendi.
+- 203011001: iki aşamalı doğrulama yerel veritabanında **açık** (kapatılmadı) ve şifresi user-secrets'taki değerden
+  farklı; eşitleme kapsamında olmadığı için ikisi de değişmedi.
+- Testler: 970 → 978 (+8 Identity); hiçbiri silinmedi veya değiştirilmedi.
+
+## Önceki adım (R12, son arayüz düzeltmeleri, kapsam ve ekran görüntüleri)
 
 - **A1 (otomasyonlar):** 600 px altında üst çubuk tek satır: uygulama adı ellipsis (metin DOM'da tam), "Uygulamalarım"
   yalnızca ızgara simgesi (CSS ile çizilir; metin `font-size: 0` ile görsel olarak gizli ama ekran okuyucuya açık), hesap

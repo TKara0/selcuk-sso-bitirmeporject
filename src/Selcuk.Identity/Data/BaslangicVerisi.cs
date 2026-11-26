@@ -7,7 +7,8 @@ namespace Selcuk.Identity.Data;
 /// <summary>
 /// Uygulama açılışında rol kataloğundaki (Selcuk.Roller) bütün rolleri oluşturur. Yalnızca Development ortamında,
 /// şifreleri user-secrets'tan okunan test kullanıcılarını (rolleri <see cref="RolDogrulayici"/>'dan geçer; var olan
-/// kullanıcıya yalnızca eksik rolleri eklenir), ölçüm kullanıcılarını (<see cref="OlcumKullanicilari"/>), demo
+/// kullanıcıya yalnızca eksik rolleri eklenir; <see cref="GosterimHesaplari"/>'nın şifresi user-secrets değerine
+/// eşitlenir), ölçüm kullanıcılarını (<see cref="OlcumKullanicilari"/>), demo
 /// istemcileri (demo-obis, demo-yemekhane), on bir bölüm otomasyonunu (intibak-, staj-, etik-kurul-, mezuniyet-,
 /// bolum-kurul-, danismanlik-, iskur-, mudek-, lisans-projeleri-, sinav-analizi- ve cap-yandal-otomasyonu) ve Tek Kapı'yı (public istemci,
 /// izinli kullanıcılar Istemciler:TekKapi:IzinliKullaniciAdlari ayarından) ekler veya günceller.
@@ -53,6 +54,16 @@ public sealed class BaslangicVerisi(
             Roller.Akademisyen, Roller.CapYandalKoordinatoru, Roller.Danisman),
         new("Iskur", "iskur.test", "Test İŞKUR Sorumlusu", Teknoloji, Bilgisayar, Roller.Personel, Roller.IskurSorumlusu),
     ];
+
+    /// <summary>
+    /// Gösterim hesapları (her kullanıcı kategorisinden bir tane; <see cref="TestKullanicilari"/> alt kümesi, start.py
+    /// GOSTERIM_HESAPLARI ile aynı). Yalnızca bunların veritabanındaki şifresi Development açılışında user-secrets'taki
+    /// değere eşitlenir; diğer test kullanıcılarının şifresine dokunulmaz.
+    /// </summary>
+    public static readonly IReadOnlySet<string> GosterimHesaplari = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "203011002", "baskan.test", "hoca.test", "sekreter.test", "fakultesekreter.test", "komisyon.test",
+    };
 
     /// <summary>Seed tanımlarının rolleri kurallara uymuyorsa açılış bu hatayla durur.</summary>
     public static void TanimlariDogrula(IEnumerable<TestKullanicisi> tanimlar)
@@ -105,10 +116,15 @@ public sealed class BaslangicVerisi(
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
             // Var olan kullanıcıya eksik rol eklenirse oturumları kapatma ve denetim tek serviste (RolDegisikligiIslemi).
             var rolDegisikligi = scope.ServiceProvider.GetRequiredService<RolDegisikligiIslemi>();
+            var sifreDegisikligi = scope.ServiceProvider.GetRequiredService<SifreDegisikligi>();
             foreach (var kullanici in TestKullanicilari)
             {
-                await TestKullanicisiOlusturAsync(userManager, kullanici,
-                    configuration[$"TestKullanicilari:{kullanici.AyarAnahtari}:Sifre"], logger, rolDegisikligi);
+                var sifre = configuration[$"TestKullanicilari:{kullanici.AyarAnahtari}:Sifre"];
+                await TestKullanicisiOlusturAsync(userManager, kullanici, sifre, logger, rolDegisikligi);
+                if (GosterimHesaplari.Contains(kullanici.KullaniciAdi))
+                {
+                    await SifreyiEsitleAsync(userManager, sifreDegisikligi, kullanici.KullaniciAdi, sifre);
+                }
             }
 
             await OlcumKullanicilariniOlusturAsync(userManager);
@@ -223,6 +239,37 @@ public sealed class BaslangicVerisi(
         {
             logger.LogInformation("{Adet} ölçüm kullanıcısı oluşturuldu.", olusturulan);
         }
+    }
+
+    /// <summary>
+    /// Yalnızca Development açılışında ve yalnızca <see cref="GosterimHesaplari"/> için çağrılır. Veritabanındaki şifre
+    /// user-secrets'taki değerle uyuşmuyorsa Identity'nin şifre sıfırlama akışıyla (politika denetlenir, özet Identity'ye
+    /// aittir) o değere sıfırlar ve şifre sıfırlamadaki ortak işleri yapar (<see cref="SifreDegisikligi.SifirlandiAsync"/>:
+    /// kilit ve sayaç sıfırlanır, bütün oturumlar ve token'lar kapanır, denetim kaydı, bilgilendirme e-postası). 2FA
+    /// ayarlarına dokunmaz. Değer yoksa, kullanıcı yoksa veya şifre aynıysa hiçbir şey yapmaz. Şifre loglanmaz.
+    /// </summary>
+    private async Task SifreyiEsitleAsync(
+        UserManager<ApplicationUser> userManager, SifreDegisikligi sifreDegisikligi, string kullaniciAdi, string? sifre)
+    {
+        if (string.IsNullOrEmpty(sifre)
+            || await userManager.FindByNameAsync(kullaniciAdi) is not { } kullanici
+            || await userManager.CheckPasswordAsync(kullanici, sifre))
+        {
+            return;
+        }
+
+        var token = await userManager.GeneratePasswordResetTokenAsync(kullanici);
+        var sonuc = await userManager.ResetPasswordAsync(kullanici, token, sifre);
+        if (!sonuc.Succeeded)
+        {
+            logger.LogError("Test kullanıcısı {KullaniciAdi} için şifre eşitlenemedi: {Hatalar}",
+                kullaniciAdi, string.Join("; ", sonuc.Errors.Select(e => e.Description)));
+            return;
+        }
+
+        await sifreDegisikligi.SifirlandiAsync(kullanici, "neden=test-sifresi-esitleme");
+        logger.LogInformation("Test kullanıcısının şifresi user-secrets değerine eşitlendi, açık oturumları kapatıldı: {KullaniciAdi}",
+            kullaniciAdi);
     }
 
     /// <summary>

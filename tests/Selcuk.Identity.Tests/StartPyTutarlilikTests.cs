@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -202,6 +203,52 @@ public sealed partial class StartPyTutarlilikTests
         Assert.False(k.Roller.ToHashSet().SetEquals(kod.Roller));
         Assert.False(KodIzinliRoller("StajOtomasyonu").ToHashSet().SetEquals(PyUygulamaRolleri(py)["staj"]));
     }
+
+    [Fact]
+    public void Start_py_gosterim_hesaplari_koddakiyle_ayni()
+    {
+        var py = File.ReadAllText(Path.Combine(DepoKoku(), "start.py"));
+        var kullanicilar = PyKullanicilari(py).ToDictionary(k => k.AyarAnahtari, k => k.KullaniciAdi);
+        var hesaplar = PyHesapSatiri().Matches(Blok(py, "GOSTERIM_HESAPLARI"))
+            .Select(m => (Anahtar: m.Groups[1].Value, GorunenAd: m.Groups[3].Value)).ToList();
+
+        Assert.Equal(BaslangicVerisi.GosterimHesaplari.Order(StringComparer.Ordinal),
+            hesaplar.Select(h => kullanicilar[h.Anahtar]).Order(StringComparer.Ordinal));
+        foreach (var (anahtar, gorunenAd) in hesaplar)
+        {
+            Assert.Equal(BaslangicVerisi.TestKullanicilari.Single(t => t.AyarAnahtari == anahtar).AdSoyad, gorunenAd);
+        }
+
+        // Her kullanıcı kategorisinden bir hesap; önerilen iki hesap listenin en üstünde.
+        Assert.Equal(["Ogrenci2", "BolumBaskani"], hesaplar.Take(2).Select(h => h.Anahtar));
+        Assert.Contains("ONERILEN_HESAPLAR = (\"Ogrenci2\", \"BolumBaskani\")", py);
+    }
+
+    [Fact]
+    public void Hesap_listesi_dosyasi_gitignore_da_ve_izlenen_dosyalar_arasinda_yok()
+    {
+        const string Dosya = "TEST_KULLANICILARI.md";
+        var kok = DepoKoku();
+
+        Assert.Contains(Dosya, File.ReadAllLines(Path.Combine(kok, ".gitignore")).Select(s => s.Trim()));
+        // Dosya henüz yokken de git onu yok saymalı (check-ignore 0); hiçbir klasörde izlenen kopyası olmamalı.
+        Assert.Equal((0, Dosya), Git(kok, "check-ignore", Dosya));
+        Assert.Equal((0, string.Empty), Git(kok, "ls-files", "--", $":(glob)**/{Dosya}"));
+        // start.py dosyayı yazmadan önce aynı denetimi yapar.
+        Assert.Contains("\"git\", \"check-ignore\"", File.ReadAllText(Path.Combine(kok, "start.py")));
+    }
+
+    private static (int Kod, string Cikti) Git(string kok, params string[] argumanlar)
+    {
+        var bilgi = new ProcessStartInfo("git", argumanlar) { WorkingDirectory = kok, RedirectStandardOutput = true };
+        using var islem = Process.Start(bilgi)!;
+        var cikti = islem.StandardOutput.ReadToEnd();
+        islem.WaitForExit();
+        return (islem.ExitCode, cikti.Trim());
+    }
+
+    [GeneratedRegex("""\s"(\w+)":\s*\("([^"]+)",\s*"([^"]+)"\)""")]
+    private static partial Regex PyHesapSatiri();
 
     [GeneratedRegex("\"([^\"]*)\"")]
     private static partial Regex StringTirnakli();

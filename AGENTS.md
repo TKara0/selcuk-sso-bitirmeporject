@@ -148,7 +148,11 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   yeni rol = bir satır. `RolDogrulayici`: tutarlılık kuralları. `Roller.Grupla`: katmana göre görünüm (kapsamlı rolde
   birim). Kimlik sunucusu, `Selcuk.Istemci.Ortak` ve `Selcuk.Arayuz` referans alır; demolar `Roller.…` sabitlerini
   buradan kullanır. Development test kullanıcıları (`BaslangicVerisi.TestKullanicilari`, 13 kullanıcı) açılışta
-  doğrulayıcıdan geçer (ihlal açılışı durdurur); var olana yalnızca eksik roller eklenir. Ayrıntı `docs/roller.md`.
+  doğrulayıcıdan geçer (ihlal açılışı durdurur); var olana yalnızca eksik roller eklenir. Tek ek istisna altı gösterim
+  hesabıdır (`BaslangicVerisi.GosterimHesaplari`: 203011002, baskan.test, hoca.test, sekreter.test,
+  fakultesekreter.test, komisyon.test): yalnızca Development'ta, veritabanındaki şifre user-secrets'taki değerden
+  farklıysa `UserManager` sıfırlama akışıyla eşitlenir, `SifreDegisikligi.SifirlandiAsync` oturumları kapatır ve
+  denetim kaydı yazar (şifresiz). Diğer hesapların şifresine dokunulmaz. Ayrıntı `docs/roller.md`.
 - `src/Selcuk.Arayuz`: ortak tasarım sistemi ("Taç kapı"), Razor Class Library; statik dosyalar
   `_content/Selcuk.Arayuz/` altında. `css/selcuk.css`: token'lar (renk açık/koyu `prefers-color-scheme`, tipografi,
   4'ün katı aralık, köşe 6/12px, gölge yok), uygulama vurgu rengi (`--uygulama-vurgu`, `--uygulama-vurgu-acik`;
@@ -291,7 +295,9 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   düğmesinde görünen ad ve kullanıcı adına düşme, kart açıklamalarında ek yok, otomasyon notu, Demo OBİS/Yemekhane simgesi ve
   kontrastı) ve `StartPyTutarlilikTests` (start.py'deki
   test kullanıcıları, roller ve kullanıcı-uygulama eşlemesi koddaki `BaslangicVerisi`/`Istemciler` ile aynı mı; uyuşmazlıkta
-  hangi kullanıcıda ne farklı olduğunu yazar) testleri.
+  hangi kullanıcıda ne farklı olduğunu yazar; gösterim hesapları aynı mı, `TEST_KULLANICILARI.md` git dışı mı) ve
+  `TestSifresiEsitlemeTests` (gösterim hesabında Development şifre eşitlemesi, diğer ortam ve hesaplarda çalışmaması)
+  testleri.
   `IstemciMfaTests` "yalnızca şifreyle açılmış oturum + 2FA açık" durumunu, 2FA'yı depoya güvenlik damgasını
   değiştirmeden yazarak kurar. `OidcYardimcisi` istemci parametreli (varsayılan
   demo-obis; public istemci için `PublicTokenIsteAsync`).
@@ -370,6 +376,10 @@ alt uygulamalara OpenID Connect üzerinden giriş yapar. Oturum yönetimi token 
   tekkapi, intibak, mezuniyet, cap, etik-kurul, bolum-kurul, lisans-projeleri, danismanlik, iskur, mudek,
   sinav-analizi) yalnızca o grupları çeker ve yalnızca onların eski PNG'lerini siler; verilmezse hepsi. Tez görselleri
   01-44 (42-44: R11 yerleşimi, Staj defterim masaüstü ve 390 px, Hesabım).
+- `start.py` (depo kökü, Python standart kütüphanesi): tek komutla başlatma, `--durdur`, `--kurulum [--deneme]`
+  (eksik user-secrets'ı rastgele üretir; depoda şifre yoktur) ve `--hesaplar`. Her başlatmada ve `--hesaplar` ile
+  `TEST_KULLANICILARI.md`'yi üretir (yalnızca `GOSTERIM_HESAPLARI`; şifreler user-secrets'tan; `git check-ignore`
+  doğrulanmadan yazılmaz; konsola şifre yazılmaz).
 - `scripts/run-all.ps1`: önce `dotnet build SelcukSSO.sln` (başarısızsa durur), sonra kimlik sunucusu, iki demo,
   Demo API ve on bir bölüm otomasyonunu (5301-5311) ayrı pencerelerde `dotnet run --no-build` ile başlatır; `-TekKapi` ile Tek Kapı'yı da SSO modunda
   başlatır; `-TarayiciAcma` ile sonda tarayıcı açılmaz. `-Sadece <adlar>` yalnızca seçili uygulamaları başlatır
@@ -388,6 +398,9 @@ a) **Kapsam dışına çıkma.** Yalnızca istenen değişikliği yap. İstenmey
 b) **Şifreler ve sırlar koda, loglara ve repoya girmez.** Geliştirmede `dotnet user-secrets`, diğer ortamlarda ortam
    değişkenleri veya güvenli bir sır deposu kullanılır. Şifreleri, token'ları veya bağlantı sırlarını loglama, çıktıya
    yazdırma ve commit'leme.
+   Bilinçli tek istisna: "user-secrets değerleri hiçbir dosyaya yazılmaz" kuralına karşın `start.py`,
+   `TEST_KULLANICILARI.md`'ye şifre yazar. Yalnızca bu dosya, yalnızca bu bilgisayarda, git dışı (`.gitignore`) ve
+   yalnızca kurgusal altı gösterim hesabı için; başka dosyaya, loga veya konsola yazılmaz.
 
 c) **Kimlik sunucusu ve demo uygulamalar gerçek Selçuk sistemlerine bağlanmaz.** İstisna: `araclar/tek-kapi`,
    kullanıcının kendi hesabıyla, kendi bilgisayarında çalışan kişisel ESSO aracıdır. Kuralları

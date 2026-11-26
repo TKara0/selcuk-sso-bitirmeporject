@@ -21,20 +21,20 @@ public sealed class SifreDegisikligi(
     TimeProvider zaman)
 {
     /// <summary>Sıfırlama: hesap kilidi ve hatalı deneme sayacı sıfırlanır, kullanıcının tüm oturumları kapatılır.</summary>
-    public async Task SifirlandiAsync(ApplicationUser user)
+    public async Task SifirlandiAsync(ApplicationUser user, string? ayrinti = null)
     {
         await userManager.SetLockoutEndDateAsync(user, null);
         await userManager.ResetAccessFailedCountAsync(user);
-        await TamamlaAsync(user, haricSid: null, DenetimOlayi.SifreSifirlandi);
+        await TamamlaAsync(user, haricSid: null, DenetimOlayi.SifreSifirlandi, ayrinti);
     }
 
     /// <summary>Değiştirme: şifreyi değiştiren oturum (mevcutSid) açık kalır, diğerleri kapatılır.</summary>
     public Task DegistirildiAsync(ApplicationUser user, string? mevcutSid) =>
         TamamlaAsync(user, mevcutSid, DenetimOlayi.SifreDegisti);
 
-    private async Task TamamlaAsync(ApplicationUser user, string? haricSid, DenetimOlayi olay)
+    private async Task TamamlaAsync(ApplicationUser user, string? haricSid, DenetimOlayi olay, string? ayrinti = null)
     {
-        denetim.Ekle(olay, DenetimSonucu.Basarili, user.Id);
+        denetim.Ekle(olay, DenetimSonucu.Basarili, user.Id, ayrinti: ayrinti);
 
         // Tarayıcı bağlantıyı kapatsa da bildirimler tamamlansın (süre sınırı HttpClient'ta).
         await backChannelLogout.KullaniciOturumlariniKapatAsync(user.Id, haricSid, CancellationToken.None);

@@ -34,6 +34,11 @@ her portun https ile cevap vermesini bekler, uygulama/adres/durum tablosunu ve t
 gördüğünü yazar (şifre yazmaz), tarayıcıda https://localhost:5001 (Uygulamalarım) adresini açar ve açık kalır.
 Şifreleri görmek için: `dotnet user-secrets list --project src/Selcuk.Identity`.
 
+**Gösterim hesapları:** her kullanıcı kategorisinden birer tane olan altı test hesabı ve şifreleri `TEST_KULLANICILARI.md`
+dosyasındadır (`start.py` her çalıştırmada üretir, git'e girmez; yalnızca dosyayı üretmek için `python start.py --hesaplar`).
+Dosya şifreleri bu bilgisayarın user-secrets'ından okur ve konsola yazmaz; `git check-ignore` dosyanın yok sayıldığını
+doğrulamazsa yazılmaz.
+
 **Durdurma:** çalışan pencerede `Ctrl+C` (`scripts/durdur-hepsi.ps1` çağrılır, portların kapandığı doğrulanır) ya da
 başka bir oturumdan `python start.py --durdur`.
 
@@ -181,11 +186,23 @@ kapatıldı"** (`RolDegisti`) denetim kaydı yazılır: `ayrinti` alanı `eski=a
 
 **Test kullanıcıları** (yalnızca Development; ad soyadlar uydurma, e-postalar `<kullanıcı adı>@test.local`; hepsi
 Teknoloji Fakültesi, `personel.test` ve `fakultesekreter.test` dışındakiler Bilgisayar Mühendisliği). Seed, rolleri
-`RolDogrulayici`'dan geçirir; kurala uymayan bir tanım açılışı açık bir hatayla durdurur. Var olan kullanıcının şifresine
-ve 2FA ayarlarına dokunulmaz, yalnızca eksik rolleri eklenir; rol kümesi gerçekten değişirse (`RolDegisikligiIslemi`,
-bkz. aşağıdaki "Rol değişikliği" notu) kullanıcının açık oturumları kapatılır. Şifreler rastgele üretilip user-secrets'a yazılmıştır;
-görmek için `dotnet user-secrets list --project src/Selcuk.Identity` çıktısındaki `TestKullanicilari:<Anahtar>:Sifre`
-değerine bakın:
+`RolDogrulayici`'dan geçirir; kurala uymayan bir tanım açılışı açık bir hatayla durdurur. Var olan kullanıcıda eksik
+roller eklenir; rol kümesi gerçekten değişirse (`RolDegisikligiIslemi`, bkz. yukarıdaki "Rol değişikliği" notu)
+kullanıcının açık oturumları kapatılır. 2FA ayarlarına dokunulmaz. Şifreler user-secrets'tadır (`start.py --kurulum`
+rastgele üretir; depoda şifre yoktur); görmek için `dotnet user-secrets list --project src/Selcuk.Identity` çıktısındaki
+`TestKullanicilari:<Anahtar>:Sifre` değerine bakın.
+
+**Gösterim hesaplarında şifre eşitlemesi:** altı hesapta (`203011002`, `hoca.test`, `baskan.test`, `sekreter.test`,
+`fakultesekreter.test`, `komisyon.test`; `BaslangicVerisi.GosterimHesaplari`) veritabanındaki şifre user-secrets'taki
+değerden farklıysa açılış onu Identity'nin sıfırlama akışıyla o değere getirir (şifre politikası denetlenir): hesap kilidi
+ve sayaç sıfırlanır, oturumlar ve token'lar kapatılır (Back-Channel Logout), bilgilendirme e-postası ve
+`neden=test-sifresi-esitleme` ayrıntılı "Şifre sıfırlandı" denetim kaydı yazılır (şifre kayda ve loga girmez). Uygulamadan
+değiştirdiğin şifre bu hesaplarda bir sonraki açılışta geri döner. Eşitleme yalnızca Development'tadır; diğer test
+kullanıcılarının, ölçüm kullanıcılarının ve başka hesapların şifresine dokunulmaz. Kendine akılda kalır bir şifre vermek
+için (politika: en az 10 karakter, büyük harf, küçük harf, rakam) değeri `dotnet user-secrets set
+"TestKullanicilari:<Anahtar>:Sifre" "<şifre>" --project src/Selcuk.Identity` ile yaz ve kimlik sunucusunu yeniden başlat.
+
+Test kullanıcıları:
 
 | Kullanıcı adı | Roller | Şifre anahtarı (`TestKullanicilari:…:Sifre`) |
 |---|---|---|
@@ -2014,6 +2031,8 @@ yakalanır.
 | `YerlesimTests` (5, Identity) | Gezinti yolu yalnızca Hesabım ve alt sayfalarında ("Uygulamalarım / Hesabım / Sayfa"), giriş, girişin ikinci adımı, onay, çıkış ve hata sayfalarında yok; koyu lacivert üst çubuk ve Test rozeti kontrastı (açık ve koyu); başlık çizgisi CSS ile, gölge yok; giriş sayfasında harici görsel, logo ve resmî site menüsü yok |
 | `UygulamalarimGorunumuTests` (10, Identity; R12) | Hesap düğmesinde görünen ad gövde yazı tipiyle, menüde altında kullanıcı adı (ikincil, Mono) ve kullanıcı türü; görünen ad boş veya boşluksa düğmede kullanıcı adı ve ad satırı yok; kart açıklamalarında "(temsili, örnek veri)" eki yok; bölüm otomasyonları notu otomasyon kartı gören kullanıcıda bir kez ve ilk otomasyon grubunun başlığının hemen üstünde, yalnızca demo kartı görenlerde yok; Demo OBİS "OB" (`obis`) ve Demo Yemekhane "YM" (`nar`) kartı; bu iki simgenin açık ve koyu tema kontrastı ≥ 4,5:1 |
 | `RolDegisikligiTests` (6, Identity) | Rol eklenince ve çıkarılınca: kimlik sunucusu oturumları kapanır, refresh token `invalid_grant`, her sid'e Back-Channel Logout, `RolDegisti` denetim kaydı (eski/yeni rol listesi, sır yok), yeni girişte yeni roller; küme değişmiyorsa hiçbir şey olmaz; başka kullanıcılar etkilenmez; kurallara uymayan değişiklik uygulanmaz; başlangıç verisi eksik rol eklerse oturumları kapatır, tekrar açılışta dokunmaz |
+| `TestSifresiEsitlemeTests` (6, Identity: Fact 3 + Theory ×3) | Development açılışında gösterim hesabının değişen şifresi: yeni şifreyle giriş olur, eskisi reddedilir, kimlik sunucusu oturumu, refresh token ve istemci oturumu (Back-Channel Logout) kapanır, `neden=test-sifresi-esitleme` denetim kaydı yazılır, şifre denetim tablosunda ve logda yok; aynı değerle tekrar açılışta hiçbir şey olmaz; Testing, Staging ve Production'da eşitleme çalışmaz; listede olmayan kullanıcı, ölçüm kullanıcısı ve gösterim dışı test kullanıcıları etkilenmez; eksik veya politikaya uymayan değer hiçbir şeyi değiştirmez; 2FA açık kalır |
+| `Start_py_gosterim_hesaplari_koddakiyle_ayni`, `Hesap_listesi_dosyasi_gitignore_da_ve_izlenen_dosyalar_arasinda_yok` (StartPyTutarlilikTests) | start.py `GOSTERIM_HESAPLARI` ile `BaslangicVerisi.GosterimHesaplari` ve görünen adlar aynı, önerilen iki hesap en üstte; `TEST_KULLANICILARI.md` `.gitignore`'da, git yok sayıyor, hiçbir klasörde izlenen kopyası yok, start.py yazmadan önce `git check-ignore` çalıştırıyor |
 | `CsrfTests` (Identity: Fact 3 + Theory ×12) | Çalışan uygulamadan toplanan her POST işleyicisi (Login, IkiAdim, EkDogrulama, IkiAdimDogrulama Baslat/Etkinlestir/KodlariYenile/Kapat, SifreDegistir, SifremiUnuttum, SifreSifirla, Authorize, Logout) antiforgery'siz 400 alır, yan etki yok (oturum açılmaz, şifre/2FA/damga değişmez, e-posta gitmez, onay kaydı oluşmaz, çıkış yapılmaz), token'la aynı istek 400 almaz; işleyici listesi ve `[IgnoreAntiforgeryToken]` denetimi; protokol uçları (`/connect/token`, `/connect/revoke`, `/connect/userinfo`) antiforgery beklemez |
 | **Selcuk.Istemci.Ortak.Tests** | |
 | `Cok_rollu_kullanicida_IsInRole_her_rolde_true_olmayan_rolde_false` | Tam OIDC girişi (sahte sunucu, imzalı id_token'da `role` dizisi): her rolde `IsInRole` true, katalogdaki diğer rollerde ve dizinin metin hâlinde false |
